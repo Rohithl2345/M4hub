@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:15
+    container_name: m4hub-db
+    environment:
+      POSTGRES_USER: m4hub
+      POSTGRES_PASSWORD: m4hub_pass
+      POSTGRES_DB: m4hub_db
+      TZ: Asia/Kolkata          # maps Windows 'Asia/Calcutta' to supported 'Asia/Kolkata'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U m4hub -d m4hub_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: m4hub-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_HOST: db
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_DB: m4hub_db
+      SPRING_DATASOURCE_USERNAME: m4hub
+      SPRING_DATASOURCE_PASSWORD: m4hub_pass
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:

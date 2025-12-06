@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${SPRING_DATASOURCE_HOST:localhost}:${SPRING_DATASOURCE_PORT:5433}/${SPRING_DATASOURCE_DB:m4hub_db}
+    username: ${SPRING_DATASOURCE_USERNAME:m4hub}
+    password: ${SPRING_DATASOURCE_PASSWORD:m4hub_pass}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQL15Dialect
+    show-sql: true
+server:
+  port: ${SERVER_PORT:8080}
