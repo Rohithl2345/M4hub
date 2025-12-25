@@ -7,6 +7,18 @@ spring:
       maximum-pool-size: 5
       minimum-idle: 1
       connection-timeout: 30000
+  
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: ${PORT:8080}
@@ -24,10 +36,13 @@ app:
     enabled: true
 
 # SMS Configuration (Production)
-# SMS Configuration (Production)
 sms:
   enabled: ${SMS_ENABLED:false}
   provider: ${SMS_PROVIDER:console}
+
+# Email Provider Service Check
+email:
+  provider: ${EMAIL_PROVIDER:smtp}
 
 # Twilio Configuration
 twilio:
@@ -37,24 +52,6 @@ twilio:
     token: ${TWILIO_AUTH_TOKEN:placeholder}
   phone:
     number: ${TWILIO_PHONE_NUMBER:placeholder}
-
-# Mail Configuration (Generic SMTP)
-spring:
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
-# Email Provider Service Check
-email:
-  provider: ${EMAIL_PROVIDER:smtp}
 
 # Firebase Configuration
 firebase:
