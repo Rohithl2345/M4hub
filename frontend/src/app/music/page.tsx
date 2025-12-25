@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import DashboardLayout from '@/components/DashboardLayout';
 import AudioPlayer from '@/components/AudioPlayer';
-import { Track } from '@/services/music.service';
+
 import styles from './music.module.css';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
