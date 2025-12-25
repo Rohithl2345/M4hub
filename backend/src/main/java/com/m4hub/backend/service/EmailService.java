@@ -32,8 +32,8 @@ public class EmailService {
         try {
             if ("console".equals(emailProvider)) {
                 sendOtpConsole(email, otpCode);
-            } else if ("gmail".equals(emailProvider)) {
-                sendOtpViaGmail(email, otpCode);
+            } else if ("smtp".equals(emailProvider)) {
+                sendOtpViaSmtp(email, otpCode);
             } else {
                 // Default fallback
                 logger.warn("Unknown email provider: {}, falling back to console", emailProvider);
@@ -56,7 +56,7 @@ public class EmailService {
         logger.info("=".repeat(60));
     }
 
-    private void sendOtpViaGmail(String email, String otpCode) {
+    private void sendOtpViaSmtp(String email, String otpCode) {
         if (javaMailSender == null) {
             logger.error("JavaMailSender is null. Check mail configuration.");
             throw new RuntimeException("Email configuration error");
