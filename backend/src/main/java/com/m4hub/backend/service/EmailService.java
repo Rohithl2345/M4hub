@@ -20,7 +20,7 @@ public class EmailService {
     @Value("${email.provider:console}")
     private String emailProvider;
 
-    @Value("${email.from.address:${spring.mail.username:noreply@m4hub.com}}")
+    @Value("${EMAIL_FROM:${spring.mail.username:noreply@m4hub.com}}")
     private String fromAddress;
 
     @Value("${email.from.name:M4Hub}")
@@ -65,10 +65,10 @@ public class EmailService {
         }
 
         SimpleMailMessage message = new SimpleMailMessage();
-        String senderLine = fromName + " <" + fromAddress + ">";
-        message.setFrom(senderLine);
+        // Use the fromAddress directly to ensure maximum compatibility with SMTP relays
+        message.setFrom(fromAddress);
         message.setTo(email);
-        message.setSubject("M4Hub Verification Code");
+        message.setSubject("[" + fromName + "] Verification Code");
         message.setText("Hello,\n\nYour M4Hub verification code is: " + otpCode
                 + "\n\nThis code is valid for 5 minutes.\n\nBest regards,\nM4Hub Team");
 
