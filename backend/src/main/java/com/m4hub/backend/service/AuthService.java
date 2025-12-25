@@ -190,8 +190,7 @@ public class AuthService {
         // Send OTP via email
         emailService.sendOtp(email, otpCode);
 
-        // For debugging: Include OTP in message so user can login if email is slow
-        return new AuthResponse(true, "OTP sent successfully to " + email + " (Debug OTP: " + otpCode + ")");
+        return new AuthResponse(true, "OTP sent successfully to " + email);
     }
 
     /**
