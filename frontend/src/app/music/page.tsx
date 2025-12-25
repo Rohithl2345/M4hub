@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import DashboardLayout from '@/components/DashboardLayout';
 import AudioPlayer from '@/components/AudioPlayer';
-import type { Track as AudioPlayerTrack } from '@/components/AudioPlayer';
+import { Track } from '@/services/music.service';
 import styles from './music.module.css';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
@@ -24,7 +24,7 @@ export default function MusicPage() {
     const [tracks, setTracks] = useState<Track[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [currentTrack, setCurrentTrack] = useState<AudioPlayerTrack | null>(null);
+    const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
     const [currentTrackIndex, setCurrentTrackIndex] = useState(-1);
     const [filter, setFilter] = useState<FilterType>('all');
 
@@ -66,15 +66,7 @@ export default function MusicPage() {
     };
 
     const playTrack = (track: Track, index: number) => {
-        const audioTrack: AudioPlayerTrack = {
-            id: track.id,
-            name: track.name,
-            artist_name: track.artist_name,
-            audio: track.audio,
-            image: track.album_image,
-            duration: track.duration
-        };
-        setCurrentTrack(audioTrack);
+        setCurrentTrack(track);
         setCurrentTrackIndex(index);
     };
 
