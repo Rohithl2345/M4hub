@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
+    url: ${JDBC_DATABASE_URL:${SPRING_DATASOURCE_URL}}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
@@ -16,10 +16,7 @@ server:
 app:
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:https://yourdomain.com}
-    enabled: ${SSL_ENABLED:false}
-    key-store: ${SSL_KEY_STORE:classpath:keystore.p12}
-    key-store-password: ${SSL_KEY_STORE_PASSWORD}
-    key-store-type: PKCS12
+
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
