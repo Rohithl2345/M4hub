@@ -42,6 +42,26 @@ twilio:
   phone:
     number: ${TWILIO_PHONE_NUMBER:+1234567890}
 
+# Email Configuration
+email:
+  provider: ${EMAIL_PROVIDER:console} # Default to console for local dev
+  from:
+    address: noreply@m4hub.com
+    name: M4Hub Local
+
+spring:
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 # Firebase Configuration
 firebase:
   credentials:

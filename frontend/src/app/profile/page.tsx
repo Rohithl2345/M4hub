@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { selectIsAuthenticated, selectUser, selectToken, selectIsLoading, updateUserEmail } from '@/store/slices/authSlice';
+import { selectIsAuthenticated, selectUser, selectToken, selectIsLoading, updateUserEmail, updateUserPhone } from '@/store/slices/authSlice';
 import DashboardLayout from '@/components/DashboardLayout';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
@@ -138,10 +138,10 @@ export default function ProfilePage() {
             );
 
             if (response.data.success) {
+                dispatch(updateUserPhone(newPhone)); // Update Redux state
                 setSuccess('Phone number updated successfully!');
                 setIsEditingPhone(false);
                 setTimeout(() => setSuccess(''), 3000);
-                // Optionally refresh user data here
             }
         } catch (err) {
             const error = err as { response?: { data?: { message?: string } } };

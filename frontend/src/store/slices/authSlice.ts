@@ -89,10 +89,19 @@ const authSlice = createSlice({
                 }
             }
         },
+        updateUserPhone: (state, action: PayloadAction<string>) => {
+            if (state.user) {
+                state.user.phoneNumber = action.payload;
+                // Update localStorage
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('user', JSON.stringify(state.user));
+                }
+            }
+        },
     },
 });
 
-export const { setCredentials, logout, setLoading, restoreAuth, updateUserEmail, updateUsername } = authSlice.actions;
+export const { setCredentials, logout, setLoading, restoreAuth, updateUserEmail, updateUsername, updateUserPhone } = authSlice.actions;
 export default authSlice.reducer;
 
 // Selectors
