@@ -38,6 +38,20 @@ twilio:
   phone:
     number: ${TWILIO_PHONE_NUMBER:placeholder}
 
+# Mail Configuration (Gmail SMTP)
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 # Firebase Configuration
 firebase:
   credentials:
