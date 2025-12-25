@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,7 +20,7 @@ public class EmailService {
     @Value("${email.provider:console}")
     private String emailProvider;
 
-    @Value("${spring.mail.username:noreply@m4hub.com}")
+    @Value("${email.from.address:${spring.mail.username:noreply@m4hub.com}}")
     private String fromAddress;
 
     @Value("${email.from.name:M4Hub}")
@@ -28,6 +29,7 @@ public class EmailService {
     /**
      * Send OTP to email address
      */
+    @Async
     public void sendOtp(String email, String otpCode) {
         try {
             if ("console".equals(emailProvider)) {
@@ -63,7 +65,8 @@ public class EmailService {
         }
 
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
+        String senderLine = fromName + " <" + fromAddress + ">";
+        message.setFrom(senderLine);
         message.setTo(email);
         message.setSubject("M4Hub Verification Code");
         message.setText("Hello,\n\nYour M4Hub verification code is: " + otpCode

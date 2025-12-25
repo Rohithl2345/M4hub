@@ -19,6 +19,9 @@ spring:
           auth: true
           starttls:
             enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 server:
   port: ${PORT:8080}
@@ -40,9 +43,12 @@ sms:
   enabled: ${SMS_ENABLED:false}
   provider: ${SMS_PROVIDER:console}
 
-# Email Provider Service Check
+# Email Details
 email:
   provider: ${EMAIL_PROVIDER:smtp}
+  from:
+    address: ${EMAIL_FROM_ADDRESS:${MAIL_USERNAME:noreply@m4hub.com}}
+    name: ${EMAIL_FROM_NAME:M4Hub}
 
 # Twilio Configuration
 twilio:
