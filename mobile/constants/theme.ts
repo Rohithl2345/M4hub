@@ -5,10 +5,7 @@
 
 import { Platform } from 'react-native';
 
-<<<<<<< Updated upstream
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
-=======
+
 // Typography
 export const Typography = {
   fontSizes: {
@@ -98,39 +95,25 @@ export const Layout = {
   tabBarHeight: 60,
 };
 
-// Deprecated - use colors.ts instead
 const tintColorLight = '#5433ff';
 const tintColorDark = '#20bdff';
->>>>>>> Stashed changes
 
 export const Colors = {
   light: {
     text: '#11181C',
     background: '#fff',
     tint: tintColorLight,
-<<<<<<< Updated upstream
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-=======
     icon: '#5433ff',
     tabIconDefault: '#999999',
     tabIconSelected: '#5433ff',
->>>>>>> Stashed changes
   },
   dark: {
     text: '#ECEDEE',
     background: '#151718',
     tint: tintColorDark,
-<<<<<<< Updated upstream
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-=======
     icon: '#cccccc',
     tabIconDefault: '#999999',
     tabIconSelected: '#cccccc',
->>>>>>> Stashed changes
   },
 };
 

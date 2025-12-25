@@ -19,6 +19,7 @@ import { selectToken } from '../../store/slices/authSlice';
 import chatService, { ChatMessage, FriendRequest, UserSearchResult } from '../../services/chat.service';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../../constants/colors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -245,7 +246,7 @@ export default function MessagesScreen() {
         if (type === 'request') {
             return (
                 <View style={styles.cardItem}>
-                    <View style={[styles.avatar, { backgroundColor: '#10b981' }]}>
+                    <View style={[styles.avatar, { backgroundColor: COLORS.SUCCESS }]}>
                         <Text style={styles.avatarText}>{(item.sender.name || item.sender.username || 'U').charAt(0).toUpperCase()}</Text>
                     </View>
                     <View style={styles.cardContent}>
@@ -268,7 +269,7 @@ export default function MessagesScreen() {
                 style={styles.cardItem}
                 onPress={() => isFriend ? handleSelectFriend(item) : handleSelectGroup(item)}
             >
-                <View style={[styles.avatar, { backgroundColor: isFriend ? '#6366f1' : '#8b5cf6' }]}>
+                <View style={[styles.avatar, { backgroundColor: isFriend ? COLORS.PRIMARY : COLORS.SECONDARY }]}>
                     {isFriend ? (
                         <>
                             <Text style={styles.avatarText}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
@@ -302,7 +303,7 @@ export default function MessagesScreen() {
         return (
             <View style={styles.container}>
                 <LinearGradient
-                    colors={['#6366f1', '#a855f7']}
+                    colors={[COLORS.PRIMARY, COLORS.SECONDARY]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.header}
@@ -388,9 +389,9 @@ export default function MessagesScreen() {
                                         {/* Received Section */}
                                         <View style={{ marginBottom: 32 }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-                                                <Ionicons name="person-add" size={24} color="#6366f1" style={{ marginRight: 12 }} />
+                                                <Ionicons name="person-add" size={24} color={COLORS.PRIMARY} style={{ marginRight: 12 }} />
                                                 <Text style={{ fontSize: 22, fontWeight: '900', color: '#1e293b' }}>Received Requests</Text>
-                                                <View style={{ marginLeft: 'auto', backgroundColor: '#6366f1', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12 }}>
+                                                <View style={{ marginLeft: 'auto', backgroundColor: COLORS.PRIMARY, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12 }}>
                                                     <Text style={{ color: 'white', fontWeight: '800', fontSize: 12 }}>{pendingRequests.length}</Text>
                                                 </View>
                                             </View>
@@ -398,7 +399,7 @@ export default function MessagesScreen() {
                                             {pendingRequests.length > 0 ? (
                                                 pendingRequests.map((request) => (
                                                     <View key={request.id} style={styles.cardItem}>
-                                                        <View style={[styles.avatar, { backgroundColor: '#10b981' }]}>
+                                                        <View style={[styles.avatar, { backgroundColor: COLORS.SUCCESS }]}>
                                                             <Text style={styles.avatarText}>{(request.sender.name || request.sender.username || 'U').charAt(0).toUpperCase()}</Text>
                                                         </View>
                                                         <View style={styles.cardContent}>
@@ -523,7 +524,7 @@ export default function MessagesScreen() {
 
                                 return (
                                     <View style={styles.cardItem}>
-                                        <View style={[styles.avatar, { backgroundColor: isSelf ? '#6366f1' : '#cbd5e1' }]}>
+                                        <View style={[styles.avatar, { backgroundColor: isSelf ? COLORS.PRIMARY : '#cbd5e1' }]}>
                                             <Text style={styles.avatarText}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
                                         </View>
                                         <View style={styles.cardContent}>
@@ -603,13 +604,13 @@ export default function MessagesScreen() {
                     >
                         <View style={styles.attachMenu}>
                             <TouchableOpacity style={styles.attachOption} onPress={() => { setShowAttachMenu(false); Alert.alert('Feat', 'File selection coming soon'); }}>
-                                <View style={[styles.optionIcon, { backgroundColor: '#6366f1' }]}>
+                                <View style={[styles.optionIcon, { backgroundColor: COLORS.PRIMARY }]}>
                                     <Ionicons name="document-text" size={24} color="white" />
                                 </View>
                                 <Text style={styles.optionText}>Send File</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.attachOption} onPress={() => { setShowAttachMenu(false); Alert.alert('Feat', 'Photo selection coming soon'); }}>
-                                <View style={[styles.optionIcon, { backgroundColor: '#a855f7' }]}>
+                                <View style={[styles.optionIcon, { backgroundColor: COLORS.SECONDARY }]}>
                                     <Ionicons name="image" size={24} color="white" />
                                 </View>
                                 <Text style={styles.optionText}>Send Photo</Text>
@@ -628,7 +629,7 @@ export default function MessagesScreen() {
             keyboardVerticalOffset={90}
         >
             <LinearGradient
-                colors={['#6366f1', '#a855f7']}
+                colors={[COLORS.PRIMARY, COLORS.SECONDARY]}
                 style={styles.chatHeader}
             >
                 <TouchableOpacity onPress={() => setSelectedEntity(null)} style={styles.backButton}>
@@ -688,7 +689,7 @@ export default function MessagesScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.sendBtn} onPress={handleSendMessage}>
                         <LinearGradient
-                            colors={['#6366f1', '#a855f7']}
+                            colors={[COLORS.PRIMARY, COLORS.SECONDARY]}
                             style={styles.sendBtnGradient}
                         >
                             <Ionicons name="send" size={20} color="white" />
@@ -751,7 +752,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     online: {
-        backgroundColor: '#10b981',
+        backgroundColor: COLORS.SUCCESS,
     },
     offline: {
         backgroundColor: '#94a3b8',
@@ -889,7 +890,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     acceptBtn: {
-        backgroundColor: '#10b981',
+        backgroundColor: COLORS.SUCCESS,
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 12,
@@ -900,7 +901,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     addBtn: {
-        backgroundColor: '#6366f1',
+        backgroundColor: COLORS.PRIMARY,
         width: 40,
         height: 40,
         borderRadius: 12,
@@ -964,7 +965,7 @@ const styles = StyleSheet.create({
         color: '#1e293b',
     },
     searchBtnText: {
-        color: '#6366f1',
+        color: COLORS.PRIMARY,
         fontWeight: '800',
     },
     inputField: {
@@ -980,7 +981,7 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     primaryBtn: {
-        backgroundColor: '#6366f1',
+        backgroundColor: COLORS.PRIMARY,
         padding: 18,
         borderRadius: 16,
         alignItems: 'center',
@@ -1036,7 +1037,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     bubbleSent: {
-        backgroundColor: '#6366f1',
+        backgroundColor: COLORS.PRIMARY,
         borderBottomRightRadius: 4,
     },
     bubbleReceived: {
