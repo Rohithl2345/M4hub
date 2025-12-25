@@ -16,8 +16,9 @@ This guide provides step-by-step instructions for deploying the M4hub applicatio
    - **Environment**: `Docker`
    - **Region**: Choose the one closest to you.
 5. Add the following **Environment Variables**:
-   - `SPRING_DATASOURCE_URL`: Use your Neon connection string (add `?sslmode=require` at the end).
-   - `SPRING_DATASOURCE_USERNAME`: Your Neon username.
+   - `SPRING_DATASOURCE_URL`: **Important**: Neon gives you `postgres://...`. You must change it to start with `jdbc:postgresql://` and remove the user/password parts. 
+     - Example: `jdbc:postgresql://ep-cool-frog-123.aws.neon.tech/neondb?sslmode=require`
+   - `SPRING_DATASOURCE_USERNAME`: Your Neon username (e.g., `alex`).
    - `SPRING_DATASOURCE_PASSWORD`: Your Neon password.
    - `SPRING_PROFILES_ACTIVE`: `prod`
    - `SERVER_PORT`: `8080`
