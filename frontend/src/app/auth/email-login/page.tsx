@@ -136,7 +136,7 @@ function EmailLoginPageInner() {
                 }
             }
         } catch {
-            setError('Cannot connect to server. Please ensure the backend is running on port 8080.');
+            setError(`Cannot connect to server at ${env.apiUrl}. Please check your connection.`);
         } finally {
             setLoading(false);
         }
