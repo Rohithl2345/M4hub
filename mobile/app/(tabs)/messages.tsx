@@ -1,0 +1,1098 @@
+import React, { useEffect, useState, useRef } from 'react';
+import {
+    View,
+    Text,
+    FlatList,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    Modal,
+    Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Platform,
+    Image,
+} from 'react-native';
+import { useSelector } from 'react-redux';
+import { useAppSelector } from '../../store/hooks';
+import { selectToken } from '../../store/slices/authSlice';
+import chatService, { ChatMessage, FriendRequest, UserSearchResult } from '../../services/chat.service';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width, height } = Dimensions.get('window');
+
+export default function MessagesScreen() {
+    const user = useAppSelector((state) => state.auth.user);
+    const token = useAppSelector(selectToken);
+    const [friends, setFriends] = useState<UserSearchResult[]>([]);
+    const [groups, setGroups] = useState<any[]>([]);
+    const [selectedEntity, setSelectedEntity] = useState<{ type: 'friend' | 'group', data: any } | null>(null);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [messageInput, setMessageInput] = useState('');
+    const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
+    const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
+    const [activeTab, setActiveTab] = useState(0); // 0: Friends, 1: Groups, 2: Requests
+
+    // Dialog/Search states
+    const [showSearch, setShowSearch] = useState(false);
+    const [showCreateGroup, setShowCreateGroup] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [newGroupDesc, setNewGroupDesc] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+    const [hasSearched, setHasSearched] = useState(false);
+    const [showAttachMenu, setShowAttachMenu] = useState(false);
+
+    const flatListRef = useRef<FlatList>(null);
+
+
+
+    useEffect(() => {
+        if (user?.id && token) {
+            chatService.connect(user.id, () => {
+                console.log('Connected to chat');
+            });
+            return () => chatService.disconnect();
+        }
+    }, [user?.id, token]);
+
+    useEffect(() => {
+        if (!user?.id || !token) return;
+
+        const unsubMessage = chatService.onMessage((message) => {
+            const isCurrentChat = selectedEntity && (
+                (selectedEntity.type === 'friend' && (message.senderId === selectedEntity.data.id || message.receiverId === selectedEntity.data.id)) ||
+                (selectedEntity.type === 'group' && message.receiverId === selectedEntity.data.id)
+            );
+
+            if (isCurrentChat) {
+                setMessages((prev) => [...prev, message]);
+            }
+            loadFriends();
+        });
+
+        const unsubRequest = chatService.onRequest(() => {
+            console.log('Refreshing requests due to real-time notification');
+            loadPendingRequests();
+        });
+
+        const unsubPresence = chatService.onPresence((data: any) => {
+            console.log('Presence update received:', data);
+            setFriends(prevFriends => prevFriends.map(f => {
+                if (f.id == data.userId) {
+                    return { ...f, isActive: data.isActive };
+                }
+                return f;
+            }));
+        });
+
+        loadFriends();
+        loadGroups();
+        loadPendingRequests();
+
+        // Fallback polling every 15 seconds
+        const interval = setInterval(loadPendingRequests, 15000);
+
+        return () => {
+            unsubMessage();
+            unsubRequest();
+            unsubPresence();
+            clearInterval(interval);
+        };
+    }, [user?.id, token, selectedEntity]);
+
+    const loadFriends = async () => {
+        if (!token) return;
+        try {
+            const friendsList = await chatService.getFriends(token);
+            setFriends(friendsList);
+        } catch (error) {
+            console.error('Error loading friends:', error);
+        }
+    };
+
+    const loadGroups = async () => {
+        if (!token) return;
+        try {
+            const list = await chatService.getGroups(token);
+            setGroups(list);
+        } catch (error) {
+            console.error('Error loading groups:', error);
+        }
+    };
+
+    const loadPendingRequests = async () => {
+        if (!token) return;
+        try {
+            const [received, sent] = await Promise.all([
+                chatService.getPendingRequests(token),
+                chatService.getSentRequests(token)
+            ]);
+            setPendingRequests(received);
+            setSentRequests(sent);
+        } catch (error) {
+            console.error('Error loading requests:', error);
+        }
+    };
+
+    const handleSelectFriend = async (friend: UserSearchResult) => {
+        if (!token) return;
+        setSelectedEntity({ type: 'friend', data: friend });
+        try {
+            const conversation = await chatService.getConversation(friend.id, token);
+            setMessages(conversation);
+        } catch (error) {
+            console.error('Error loading conversation:', error);
+        }
+    };
+
+    const handleSelectGroup = async (group: any) => {
+        if (!token) return;
+        setSelectedEntity({ type: 'group', data: group });
+        try {
+            const conversation = await chatService.getGroupMessages(group.id, token);
+            setMessages(conversation);
+        } catch (error) {
+            console.error('Error loading group messages:', error);
+        }
+    };
+
+    const handleSendMessage = () => {
+        if (!messageInput.trim() || !user) return;
+
+        if (selectedEntity?.type === 'friend') {
+            chatService.sendMessage(user.id, selectedEntity.data.id, messageInput);
+            const newMessage: ChatMessage = {
+                id: Date.now(),
+                senderId: user.id,
+                receiverId: selectedEntity.data.id,
+                content: messageInput,
+                messageType: 'TEXT',
+                createdAt: new Date().toISOString(),
+                isDelivered: false,
+                isRead: false
+            };
+            setMessages((prev) => [...prev, newMessage]);
+        } else if (selectedEntity?.type === 'group') {
+            chatService.sendGroupMessage(user.id, selectedEntity.data.id, messageInput);
+        }
+
+        setMessageInput('');
+    };
+
+    const handleSearch = async () => {
+        if (!token) return;
+        const query = searchQuery.trim();
+        if (query) {
+            setIsSearching(true);
+            setHasSearched(true);
+            try {
+                const results = await chatService.searchUsers(query, token);
+                setSearchResults(results || []);
+            } catch (error) {
+                console.error('Error searching users:', error);
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }
+    };
+
+    const handleAcceptRequest = async (requestId: number) => {
+        if (!token) return;
+        try {
+            await chatService.acceptRequest(requestId, token);
+            loadPendingRequests();
+            loadFriends();
+        } catch (error) {
+            console.error('Error accepting request:', error);
+        }
+    };
+
+    const handleCreateGroup = async () => {
+        if (!token || !newGroupName.trim()) return;
+        try {
+            await chatService.createGroup(newGroupName, newGroupDesc, token);
+            setShowCreateGroup(false);
+            setNewGroupName('');
+            setNewGroupDesc('');
+            loadGroups();
+        } catch (error) {
+            console.error('Error creating group:', error);
+        }
+    };
+
+    const renderEmptyState = (type: string) => {
+        const configs: any = {
+            friends: { icon: 'person-add', title: 'No Friends Yet', subtitle: 'Search and add friends to start chatting.' },
+            groups: { icon: 'people', title: 'No Groups', subtitle: 'Join or create a group to chat with many.' },
+            requests: { icon: 'checkmark-circle', title: 'All Caught Up', subtitle: 'No pending friend requests.' },
+        };
+        const config = configs[type] || configs.friends;
+
+        return (
+            <View style={styles.emptyContainer}>
+                <Ionicons name={config.icon} size={80} color="#cbd5e1" />
+                <Text style={styles.emptyTitle}>{config.title}</Text>
+                <Text style={styles.emptySubtitle}>{config.subtitle}</Text>
+            </View>
+        );
+    };
+
+    const renderListItem = ({ item, type }: { item: any, type: 'friend' | 'group' | 'request' }) => {
+        if (type === 'request') {
+            return (
+                <View style={styles.cardItem}>
+                    <View style={[styles.avatar, { backgroundColor: '#10b981' }]}>
+                        <Text style={styles.avatarText}>{(item.sender.name || item.sender.username || 'U').charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>{item.sender.name || (item.sender.username ? `@${item.sender.username}` : item.sender.email)}</Text>
+                        <Text style={styles.cardSubtitle}>New friend request</Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.acceptBtn}
+                        onPress={() => handleAcceptRequest(item.id)}
+                    >
+                        <Text style={styles.acceptBtnText}>Accept</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        const isFriend = type === 'friend';
+        return (
+            <TouchableOpacity
+                style={styles.cardItem}
+                onPress={() => isFriend ? handleSelectFriend(item) : handleSelectGroup(item)}
+            >
+                <View style={[styles.avatar, { backgroundColor: isFriend ? '#6366f1' : '#8b5cf6' }]}>
+                    {isFriend ? (
+                        <>
+                            <Text style={styles.avatarText}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
+                            <View style={[styles.statusDotList, item.isActive ? styles.online : styles.offline]} />
+                        </>
+                    ) : (
+                        <Ionicons name="people" size={24} color="white" />
+                    )}
+                </View>
+                <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                        <Text style={styles.cardTitle} numberOfLines={1}>
+                            {isFriend ? (item.name || (item.username ? `@${item.username}` : item.email)) : item.name}
+                        </Text>
+                        {item.lastMessageAt && (
+                            <Text style={styles.listTimestamp}>
+                                {new Date(item.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                        )}
+                    </View>
+                    <Text style={styles.cardSubtitle} numberOfLines={1}>
+                        {isFriend ? (item.lastMessageContent || (item.username ? `@${item.username}` : item.email)) : (item.description || 'Global Team')}
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+            </TouchableOpacity>
+        );
+    };
+
+    if (!selectedEntity) {
+        return (
+            <View style={styles.container}>
+                <LinearGradient
+                    colors={['#6366f1', '#a855f7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.header}
+                >
+                    <View style={styles.headerTop}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <Ionicons name="chatbubble-ellipses" size={32} color="white" />
+                            <View>
+                                <Text style={styles.headerTitle}>Messenger</Text>
+                                <Text style={styles.headerSubtitleTop}>Stay connected with your friends and groups</Text>
+                            </View>
+                        </View>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.iconCircle}>
+                                <Ionicons name="person-add" size={18} color="white" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setShowCreateGroup(true)} style={styles.iconCircle}>
+                                <Ionicons name="add" size={22} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View style={styles.tabBar}>
+                        {[
+                            { label: 'Friends', icon: 'people' },
+                            { label: 'Groups', icon: 'grid' },
+                            { label: 'Requests', icon: 'mail-unread' }
+                        ].map((tab, index) => (
+                            <TouchableOpacity
+                                key={tab.label}
+                                style={styles.tabItem}
+                                onPress={() => setActiveTab(index)}
+                            >
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <Ionicons
+                                        name={tab.icon as any}
+                                        size={16}
+                                        color={activeTab === index ? 'white' : 'rgba(255,255,255,0.7)'}
+                                    />
+                                    <View>
+                                        <Text style={[styles.tabText, activeTab === index && styles.activeTabText]}>
+                                            {tab.label}
+                                        </Text>
+                                        {index === 2 && (pendingRequests.length + sentRequests.length) > 0 && (
+                                            <View style={styles.tabBadge}>
+                                                <Text style={styles.tabBadgeText}>{pendingRequests.length + sentRequests.length}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                                {activeTab === index && <View style={styles.tabIndicator} />}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </LinearGradient>
+
+                <View style={styles.listContainer}>
+                    {activeTab === 0 && (
+                        <FlatList
+                            data={friends}
+                            renderItem={(props) => renderListItem({ ...props, type: 'friend' })}
+                            keyExtractor={(item) => item.id.toString()}
+                            ListEmptyComponent={() => renderEmptyState('friends')}
+                            contentContainerStyle={{ padding: 16 }}
+                        />
+                    )}
+                    {activeTab === 1 && (
+                        <FlatList
+                            data={groups}
+                            renderItem={(props) => renderListItem({ ...props, type: 'group' })}
+                            keyExtractor={(item) => item.id.toString()}
+                            ListEmptyComponent={() => renderEmptyState('groups')}
+                            contentContainerStyle={{ padding: 16 }}
+                        />
+                    )}
+                    {activeTab === 2 && (
+                        <View style={{ flex: 1 }}>
+                            <FlatList
+                                data={[]}
+                                renderItem={null}
+                                ListHeaderComponent={
+                                    <View>
+                                        {/* Received Section */}
+                                        <View style={{ marginBottom: 32 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                                                <Ionicons name="person-add" size={24} color="#6366f1" style={{ marginRight: 12 }} />
+                                                <Text style={{ fontSize: 22, fontWeight: '900', color: '#1e293b' }}>Received Requests</Text>
+                                                <View style={{ marginLeft: 'auto', backgroundColor: '#6366f1', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12 }}>
+                                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 12 }}>{pendingRequests.length}</Text>
+                                                </View>
+                                            </View>
+
+                                            {pendingRequests.length > 0 ? (
+                                                pendingRequests.map((request) => (
+                                                    <View key={request.id} style={styles.cardItem}>
+                                                        <View style={[styles.avatar, { backgroundColor: '#10b981' }]}>
+                                                            <Text style={styles.avatarText}>{(request.sender.name || request.sender.username || 'U').charAt(0).toUpperCase()}</Text>
+                                                        </View>
+                                                        <View style={styles.cardContent}>
+                                                            <Text style={styles.cardTitle}>{request.sender.name || (request.sender.username ? `@${request.sender.username}` : request.sender.email)}</Text>
+                                                            <Text style={styles.cardSubtitle}>Incoming Request</Text>
+                                                        </View>
+                                                        <TouchableOpacity
+                                                            style={styles.acceptBtn}
+                                                            onPress={() => handleAcceptRequest(request.id)}
+                                                        >
+                                                            <Text style={styles.acceptBtnText}>Accept</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                ))
+                                            ) : (
+                                                <View style={{ padding: 30, alignItems: 'center', backgroundColor: 'white', borderRadius: 24 }}>
+                                                    <Text style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '600' }}>No incoming requests</Text>
+                                                </View>
+                                            )}
+                                        </View>
+
+                                        {/* Sent Section */}
+                                        <View>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                                                <Ionicons name="send" size={20} color="#64748b" style={{ marginRight: 12 }} />
+                                                <Text style={{ fontSize: 22, fontWeight: '900', color: '#1e293b' }}>Sent Requests</Text>
+                                                <View style={{ marginLeft: 'auto', backgroundColor: '#94a3b8', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12 }}>
+                                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 12 }}>{sentRequests.length}</Text>
+                                                </View>
+                                            </View>
+
+                                            {sentRequests.length > 0 ? (
+                                                sentRequests.map((request) => (
+                                                    <View key={request.id} style={styles.cardItem}>
+                                                        <View style={[styles.avatar, { backgroundColor: '#cbd5e1' }]}>
+                                                            <Text style={styles.avatarText}>{(request.receiver.name || request.receiver.username || 'U').charAt(0).toUpperCase()}</Text>
+                                                        </View>
+                                                        <View style={styles.cardContent}>
+                                                            <Text style={styles.cardTitle}>{request.receiver.name || (request.receiver.username ? `@${request.receiver.username}` : request.receiver.email)}</Text>
+                                                            <Text style={styles.cardSubtitle}>Outgoing Request</Text>
+                                                        </View>
+                                                        <View style={[styles.acceptBtn, { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: '#cbd5e1' }]}>
+                                                            <Text style={[styles.acceptBtnText, { color: '#64748b' }]}>Pending</Text>
+                                                        </View>
+                                                    </View>
+                                                ))
+                                            ) : (
+                                                <View style={{ padding: 30, alignItems: 'center', backgroundColor: 'white', borderRadius: 24 }}>
+                                                    <Text style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '600' }}>No outgoing requests</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                }
+                                contentContainerStyle={{ padding: 16 }}
+                            />
+                        </View>
+                    )}
+                </View>
+
+                {/* Search Modal */}
+                <Modal
+                    visible={showSearch}
+                    animationType="slide"
+                    transparent={false}
+                    onShow={() => {
+                        setHasSearched(false);
+                        setSearchResults([]);
+                        setSearchQuery('');
+                    }}
+                >
+                    <View style={styles.modalBody}>
+                        <View style={styles.modalHeader}>
+                            <TouchableOpacity onPress={() => setShowSearch(false)}>
+                                <Ionicons name="close" size={28} color="#1e293b" />
+                            </TouchableOpacity>
+                            <Text style={styles.modalTitle}>Find Friends</Text>
+                            <View style={{ width: 28 }} />
+                        </View>
+                        <View style={styles.searchBar}>
+                            <Ionicons name="search" size={20} color="#64748b" />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search username..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                onSubmitEditing={handleSearch}
+                            />
+                            <TouchableOpacity onPress={handleSearch}>
+                                <Text style={styles.searchBtnText}>Go</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={searchResults}
+                            keyExtractor={(item) => item.id.toString()}
+                            ListEmptyComponent={() => {
+                                if (isSearching) {
+                                    return <Text style={{ textAlign: 'center', marginTop: 40, color: '#64748b', fontWeight: 'bold' }}>Searching...</Text>;
+                                }
+                                if (hasSearched) {
+                                    return (
+                                        <View style={{ alignItems: 'center', marginTop: 60 }}>
+                                            <Ionicons name="search-outline" size={60} color="#cbd5e1" />
+                                            <Text style={{ textAlign: 'center', marginTop: 16, color: '#64748b', fontWeight: 'bold', fontSize: 18 }}>No users found for "{searchQuery}"</Text>
+                                        </View>
+                                    );
+                                }
+                                return null;
+                            }}
+                            renderItem={({ item }) => {
+                                if (!item) return null;
+                                const isFriend = (friends || []).some(f => f?.id === item.id);
+                                const isPending = (pendingRequests || []).some(r => r?.sender?.id === item.id);
+                                const isSent = (sentRequests || []).some(r => r?.receiver?.id === item.id);
+                                const isSelf = user?.id === item.id;
+
+                                let statusText = '';
+                                if (isFriend) statusText = 'Friend';
+                                else if (isPending) statusText = 'Request Received';
+                                else if (isSent) statusText = 'Request Pending';
+                                else if (isSelf) statusText = 'You';
+
+                                return (
+                                    <View style={styles.cardItem}>
+                                        <View style={[styles.avatar, { backgroundColor: isSelf ? '#6366f1' : '#cbd5e1' }]}>
+                                            <Text style={styles.avatarText}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
+                                        </View>
+                                        <View style={styles.cardContent}>
+                                            <Text style={styles.cardTitle}>{item.name || (item.username ? `@${item.username}` : item.email)}</Text>
+                                            <Text style={styles.cardSubtitle}>{statusText || (item.username ? `@${item.username}` : item.email)}</Text>
+                                        </View>
+                                        {(!isFriend && !isSent && !isSelf && !isPending) && (
+                                            <TouchableOpacity
+                                                style={styles.addBtn}
+                                                onPress={async () => {
+                                                    if (!token) return;
+                                                    try {
+                                                        await chatService.sendFriendRequest(token, undefined, item.id);
+                                                        Alert.alert('Success', 'Friend request sent!');
+                                                        loadPendingRequests();
+                                                        // Immediately refresh search to show pending status
+                                                        handleSearch();
+                                                    } catch (err) {
+                                                        Alert.alert('Error', 'Failed to send request');
+                                                    }
+                                                }}
+                                            >
+                                                <Ionicons name="person-add" size={20} color="white" />
+                                            </TouchableOpacity>
+                                        )}
+                                        {isSent && <Ionicons name="checkmark-circle" size={24} color="#cbd5e1" />}
+                                    </View>
+                                );
+                            }}
+                            contentContainerStyle={{ padding: 16 }}
+                        />
+                    </View>
+                </Modal>
+
+                {/* Create Group Modal */}
+                <Modal visible={showCreateGroup} animationType="slide" transparent={false}>
+                    <View style={styles.modalBody}>
+                        <View style={styles.modalHeader}>
+                            <TouchableOpacity onPress={() => setShowCreateGroup(false)}>
+                                <Ionicons name="close" size={28} color="#1e293b" />
+                            </TouchableOpacity>
+                            <Text style={styles.modalTitle}>New Group</Text>
+                            <View style={{ width: 28 }} />
+                        </View>
+                        <View style={{ padding: 24 }}>
+                            <TextInput
+                                style={styles.inputField}
+                                placeholder="Group Name"
+                                value={newGroupName}
+                                onChangeText={setNewGroupName}
+                            />
+                            <TextInput
+                                style={[styles.inputField, { height: 100, textAlignVertical: 'top' }]}
+                                placeholder="Description"
+                                value={newGroupDesc}
+                                onChangeText={setNewGroupDesc}
+                                multiline
+                            />
+                            <TouchableOpacity style={styles.primaryBtn} onPress={handleCreateGroup}>
+                                <Text style={styles.primaryBtnText}>Create Group</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Attachment Menu */}
+                <Modal
+                    visible={showAttachMenu}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowAttachMenu(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowAttachMenu(false)}
+                    >
+                        <View style={styles.attachMenu}>
+                            <TouchableOpacity style={styles.attachOption} onPress={() => { setShowAttachMenu(false); Alert.alert('Feat', 'File selection coming soon'); }}>
+                                <View style={[styles.optionIcon, { backgroundColor: '#6366f1' }]}>
+                                    <Ionicons name="document-text" size={24} color="white" />
+                                </View>
+                                <Text style={styles.optionText}>Send File</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.attachOption} onPress={() => { setShowAttachMenu(false); Alert.alert('Feat', 'Photo selection coming soon'); }}>
+                                <View style={[styles.optionIcon, { backgroundColor: '#a855f7' }]}>
+                                    <Ionicons name="image" size={24} color="white" />
+                                </View>
+                                <Text style={styles.optionText}>Send Photo</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+            </View >
+        );
+    }
+
+    return (
+        <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={90}
+        >
+            <LinearGradient
+                colors={['#6366f1', '#a855f7']}
+                style={styles.chatHeader}
+            >
+                <TouchableOpacity onPress={() => setSelectedEntity(null)} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color="white" />
+                </TouchableOpacity>
+                <View style={styles.chatHeaderInfo}>
+                    <Text style={styles.chatHeaderTitle}>
+                        {selectedEntity.type === 'friend' ? (selectedEntity.data.name || selectedEntity.data.username) : selectedEntity.data.name}
+                    </Text>
+                    {selectedEntity.type === 'friend' ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <View style={[styles.headerStatusDot, selectedEntity.data.isActive ? styles.online : styles.offline]} />
+                            <Text style={styles.chatHeaderSubtitle}>
+                                {selectedEntity.data.isActive ? 'Online' : 'Offline'}
+                            </Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.chatHeaderSubtitle}>Group Conversation</Text>
+                    )}
+                </View>
+                <TouchableOpacity>
+                    <Ionicons name="ellipsis-vertical" size={24} color="white" />
+                </TouchableOpacity>
+            </LinearGradient>
+
+            <FlatList
+                ref={flatListRef}
+                data={messages}
+                keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                renderItem={({ item }) => (
+                    <View style={[styles.msgWrapper, item.senderId === user?.id ? styles.msgSent : styles.msgReceived]}>
+                        <View style={[styles.msgBubble, item.senderId === user?.id ? styles.bubbleSent : styles.bubbleReceived]}>
+                            <Text style={[styles.msgText, item.senderId === user?.id ? styles.textSent : styles.textReceived]}>
+                                {item.content}
+                            </Text>
+                        </View>
+                        <Text style={styles.msgTime}>
+                            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                    </View>
+                )}
+                contentContainerStyle={{ padding: 16 }}
+            />
+
+            <View style={styles.chatInputContainer}>
+                <View style={styles.inputInner}>
+                    <TextInput
+                        style={styles.chatInput}
+                        placeholder="Type something..."
+                        value={messageInput}
+                        onChangeText={setMessageInput}
+                        multiline
+                    />
+                    <TouchableOpacity style={{ padding: 8 }} onPress={() => setShowAttachMenu(true)}>
+                        <Ionicons name="attach" size={24} color="#64748b" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.sendBtn} onPress={handleSendMessage}>
+                        <LinearGradient
+                            colors={['#6366f1', '#a855f7']}
+                            style={styles.sendBtnGradient}
+                        >
+                            <Ionicons name="send" size={20} color="white" />
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </KeyboardAvoidingView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    attachMenu: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    },
+    attachOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        gap: 16,
+    },
+    optionIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    optionText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1e293b',
+    },
+    statusDotList: {
+        position: 'absolute',
+        bottom: 2,
+        right: 2,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        borderWidth: 2,
+        borderColor: 'white',
+    },
+    headerStatusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    online: {
+        backgroundColor: '#10b981',
+    },
+    offline: {
+        backgroundColor: '#94a3b8',
+    },
+    header: {
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingBottom: 0,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
+    },
+    headerTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        marginBottom: 20,
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: 'white',
+        letterSpacing: -0.5,
+    },
+    headerSubtitleTop: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.8)',
+        fontWeight: '600',
+    },
+    headerActions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    iconCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    tabBar: {
+        flexDirection: 'row',
+        paddingHorizontal: 12,
+        gap: 8,
+    },
+    tabItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+        position: 'relative',
+    },
+    tabText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.7)',
+    },
+    activeTabText: {
+        color: 'white',
+    },
+    tabIndicator: {
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        height: 3,
+        backgroundColor: 'white',
+        borderRadius: 1.5,
+    },
+    tabBadge: {
+        position: 'absolute',
+        top: -8,
+        right: -12,
+        backgroundColor: '#ef4444',
+        minWidth: 16,
+        height: 16,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+    },
+    tabBadgeText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    listContainer: {
+        flex: 1,
+    },
+    cardItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 24,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 3,
+    },
+    avatar: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        color: 'white',
+        fontSize: 24,
+        fontWeight: '800',
+    },
+    cardContent: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#1e293b',
+    },
+    cardSubtitle: {
+        fontSize: 14,
+        color: '#64748b',
+        marginTop: 2,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    listTimestamp: {
+        fontSize: 12,
+        color: '#94a3b8',
+        fontWeight: '600',
+    },
+    acceptBtn: {
+        backgroundColor: '#10b981',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 12,
+    },
+    acceptBtnText: {
+        color: 'white',
+        fontWeight: '800',
+        fontSize: 14,
+    },
+    addBtn: {
+        backgroundColor: '#6366f1',
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 100,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: '#1e293b',
+        marginTop: 20,
+    },
+    emptySubtitle: {
+        fontSize: 15,
+        color: '#64748b',
+        marginTop: 8,
+        textAlign: 'center',
+        paddingHorizontal: 40,
+    },
+    // Modal Styles
+    modalBody: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        paddingTop: Platform.OS === 'ios' ? 60 : 20,
+        backgroundColor: 'white',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: '#1e293b',
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        margin: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 18,
+        gap: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#1e293b',
+    },
+    searchBtnText: {
+        color: '#6366f1',
+        fontWeight: '800',
+    },
+    inputField: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 16,
+        fontSize: 16,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 4,
+        elevation: 1,
+    },
+    primaryBtn: {
+        backgroundColor: '#6366f1',
+        padding: 18,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginTop: 12,
+    },
+    primaryBtnText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '800',
+    },
+    // Chat UI
+    chatHeader: {
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingBottom: 20,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+    },
+    chatHeaderInfo: {
+        flex: 1,
+        marginLeft: 8,
+    },
+    chatHeaderTitle: {
+        color: 'white',
+        fontSize: 20,
+        fontWeight: '800',
+    },
+    chatHeaderSubtitle: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 13,
+    },
+    msgWrapper: {
+        marginBottom: 16,
+        maxWidth: '85%',
+    },
+    msgSent: {
+        alignSelf: 'flex-end',
+        alignItems: 'flex-end',
+    },
+    msgReceived: {
+        alignSelf: 'flex-start',
+        alignItems: 'flex-start',
+    },
+    msgBubble: {
+        padding: 14,
+        borderRadius: 20,
+    },
+    bubbleSent: {
+        backgroundColor: '#6366f1',
+        borderBottomRightRadius: 4,
+    },
+    bubbleReceived: {
+        backgroundColor: 'white',
+        borderBottomLeftRadius: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 1,
+    },
+    msgText: {
+        fontSize: 16,
+        lineHeight: 22,
+    },
+    textSent: {
+        color: 'white',
+    },
+    textReceived: {
+        color: '#1e293b',
+    },
+    msgTime: {
+        fontSize: 11,
+        color: '#94a3b8',
+        marginTop: 6,
+    },
+    chatInputContainer: {
+        padding: 20,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+        backgroundColor: 'white',
+        borderTopWidth: 1,
+        borderTopColor: '#f1f5f9',
+    },
+    inputInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderRadius: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 12,
+    },
+    chatInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#1e293b',
+        maxHeight: 100,
+    },
+    sendBtn: {
+        padding: 4,
+    },
+    sendBtnGradient: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+});

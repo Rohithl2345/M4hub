@@ -1,0 +1,95 @@
+# Complete Docker Compose for All Layers (Development + Production)
+
+services:
+  # Database Layer
+  db:
+    image: postgres:15-alpine
+    container_name: m4hub-db-complete
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-m4hub_db}
+      POSTGRES_USER: ${POSTGRES_USER:-m4hub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-m4hub_pass}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-m4hub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - m4hub-network
+
+  # Backend API Layer (Spring Boot)
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: m4hub-backend-complete
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-dev}
+      DATABASE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-m4hub_db}
+      DATABASE_USERNAME: ${POSTGRES_USER:-m4hub}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-m4hub_pass}
+      SERVER_PORT: 8080
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:19006}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - m4hub-network
+
+  # Frontend Web Layer (Next.js)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-production}
+        NEXT_PUBLIC_ENABLE_LOGGING: ${NEXT_PUBLIC_ENABLE_LOGGING:-false}
+        NEXT_PUBLIC_APP_NAME: M4Hub
+        NEXT_PUBLIC_APP_VERSION: 1.0.0
+    container_name: m4hub-frontend-complete
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - m4hub-network
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-production}
+
+  # Mobile Dev Server Layer (Expo)
+  mobile:
+    build:
+      context: ../mobile
+      dockerfile: Dockerfile
+    container_name: m4hub-mobile-complete
+    ports:
+      - "19000:19000"  # Expo DevTools
+      - "19001:19001"  # Expo DevTools
+      - "19002:19002"  # Expo DevTools
+      - "${MOBILE_PORT:-8081}:8081"  # Metro bundler
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - m4hub-network
+    environment:
+      EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
+      API_URL: http://backend:8080
+
+volumes:
+  postgres_data:
+
+networks:
+  m4hub-network:
+    driver: bridge
