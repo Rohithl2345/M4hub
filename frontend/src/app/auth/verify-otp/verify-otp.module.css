@@ -1,0 +1,150 @@
+.container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
+    padding: 16px 0;
+}
+
+.centerWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.card {
+    max-width: 400px;
+    width: 100%;
+    padding: 32px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #5433ff;
+}
+
+.phoneNumber {
+    margin-top: 8px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+.otpContainer {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    justify-content: center;
+}
+
+.otpInput,
+.otpInputFilled {
+    width: 56px;
+}
+
+.otpInput :global(.MuiOutlinedInput-root) {
+    border-radius: 16px;
+    background-color: white;
+}
+
+.otpInput :global(.MuiOutlinedInput-root fieldset) {
+    border-color: #ccc;
+    border-width: 2px;
+}
+
+.otpInput :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.otpInput :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.otpInputFilled :global(.MuiOutlinedInput-root) {
+    border-radius: 16px;
+    background-color: white;
+}
+
+.otpInputFilled :global(.MuiOutlinedInput-root fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.otpInputFilled :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.otpInputFilled :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.alert {
+    margin-bottom: 16px;
+    border-radius: 16px;
+}
+
+.verifyButton {
+    padding: 12px 0;
+    background-color: #5433ff;
+    color: white;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.verifyButton:hover {
+    background-color: #20bdff;
+}
+
+.verifyButton:disabled {
+    background-color: #ccc;
+    color: #666;
+}
+
+.resendContainer {
+    text-align: center;
+    margin-top: 24px;
+}
+
+.resendLink {
+    color: #5433ff;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.resendLink:hover {
+    text-decoration: underline;
+}
+
+.changePhoneContainer {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.changePhoneLink {
+    color: #666;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.changePhoneLink:hover {
+    text-decoration: underline;
+    color: #5433ff;
+}

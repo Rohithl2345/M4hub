@@ -1,98 +1,63 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { useAppSelector } from '@/store/hooks';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { homeStyles } from '../_styles/index.styles';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">🚀 M4Hub App</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">✨ Live Updates Working!</ThemedText>
-        <ThemedText>
-          You&apos;re seeing real-time changes from the development server! Edit files and watch them reload instantly.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">🎯 Check Out More Features</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('🎉 Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('📤 Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('🗑️ Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
+  const user = useAppSelector((state) => state.auth.user);
 
-        <ThemedText>
-          {`Tap the Explore tab to discover what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">💡 Ready to Build?</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const features = [
+    { id: 'music', title: 'Music', icon: 'musical-notes', description: 'Stream your favorite tracks', gradientColors: ['#5433ff', '#20bdff'] as const },
+    { id: 'messages', title: 'Messages', icon: 'chatbubble', description: 'Stay connected with friends', gradientColors: ['#20bdff', '#a5fecb'] as const },
+    { id: 'money', title: 'Money', icon: 'wallet', description: 'Manage your finances', gradientColors: ['#5433ff', '#a5fecb'] as const },
+    { id: 'news', title: 'News', icon: 'newspaper', description: 'Stay informed with latest updates', gradientColors: ['#20bdff', '#5433ff'] as const },
+  ];
+
+  return (
+    <ThemedView style={homeStyles.container}>
+      <LinearGradient
+        colors={['#5433ff', '#20bdff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={homeStyles.header}
+      >
+        <View style={homeStyles.headerContent}>
+          <ThemedText style={homeStyles.greeting}>Hello, {user?.firstName || 'User'}! 👋</ThemedText>
+          <ThemedText style={homeStyles.subtitle}>Welcome to M4Hub</ThemedText>
+        </View>
+      </LinearGradient>
+
+      <View style={homeStyles.content}>
+        <View style={homeStyles.featuresGrid}>
+          {features.map((feature) => (
+            <TouchableOpacity
+              key={feature.id}
+              style={homeStyles.featureCardContainer}
+              onPress={() => {
+                router.push(`/${feature.id}` as any);
+              }}
+            >
+              <LinearGradient
+                colors={feature.gradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={homeStyles.featureCard}
+              >
+                <Ionicons name={feature.icon as any} size={64} color="white" style={homeStyles.featureIcon} />
+                <View style={homeStyles.featureContent}>
+                  <ThemedText style={homeStyles.featureTitle}>{feature.title}</ThemedText>
+                  <ThemedText style={homeStyles.featureDescription}>{feature.description}</ThemedText>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});

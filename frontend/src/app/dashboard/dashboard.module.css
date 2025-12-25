@@ -1,0 +1,230 @@
+.container {
+    width: 100%;
+    min-height: 100%;
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.welcomeCard {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+    border: none;
+}
+
+.welcomeHeader {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.welcomeAvatar {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 900;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+}
+
+.welcomeText {
+    flex: 1;
+}
+
+.welcomeCard h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 10px 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.userDetails {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.userDetails p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.profileSection {
+    margin-top: 24px;
+}
+
+.sectionHeading {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 16px 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.profileGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.profileItem {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    background: var(--background);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.profileLabel {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.profileValue {
+    font-size: 16px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.featuresGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.featureCard {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.featureCard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.featureIcon {
+    font-size: 60px !important;
+    margin-bottom: 16px;
+    color: white;
+    width: 60px !important;
+    height: 60px !important;
+}
+
+.featureCard h3 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: #1A1A1A;
+    font-family: 'Poppins', sans-serif;
+}
+
+.featureCard p {
+    font-size: 14px;
+    color: #666666;
+    margin: 0;
+}
+
+.musicCard {
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
+    border-left: 4px solid white;
+}
+
+.musicCard h3,
+.musicCard p {
+    color: white;
+}
+
+.messageCard {
+    background: linear-gradient(135deg, #20bdff 0%, #a5fecb 100%);
+    border-left: 4px solid white;
+}
+
+.messageCard h3,
+.messageCard p {
+    color: white;
+}
+
+.moneyCard {
+    background: linear-gradient(135deg, #5433ff 0%, #a5fecb 100%);
+    border-left: 4px solid white;
+}
+
+.moneyCard h3,
+.moneyCard p {
+    color: white;
+}
+
+.newsCard {
+    background: linear-gradient(135deg, #20bdff 0%, #5433ff 100%);
+    border-left: 4px solid white;
+}
+
+.newsCard h3,
+.newsCard p {
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding: 16px;
+    }
+
+    .logo {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    .nav {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+
+    .main {
+        padding: 16px;
+    }
+
+    .header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .title {
+        font-size: 24px;
+    }
+
+    .featuresGrid {
+        grid-template-columns: 1fr;
+    }
+}

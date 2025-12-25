@@ -1,0 +1,114 @@
+.container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
+    padding: 16px 0;
+}
+
+.centerWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.card {
+    max-width: 400px;
+    width: 100%;
+    padding: 32px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #5433ff;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+.phoneInputContainer {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.countryCodeField {
+    width: 100px;
+}
+
+.countryCodeField :global(.MuiOutlinedInput-root) {
+    border-radius: 16px;
+    background-color: white;
+}
+
+.countryCodeField :global(.MuiOutlinedInput-root fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.countryCodeField :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.countryCodeField :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.phoneField :global(.MuiOutlinedInput-root) {
+    border-radius: 16px;
+    background-color: white;
+}
+
+.phoneField :global(.MuiOutlinedInput-root fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.phoneField :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.phoneField :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: black;
+    border-width: 2px;
+}
+
+.alert {
+    margin-bottom: 16px;
+    border-radius: 16px;
+}
+
+.continueButton {
+    padding: 12px 0;
+    background-color: black;
+    color: white;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.continueButton:hover {
+    background-color: #333;
+}
+
+.continueButton:disabled {
+    background-color: #ccc;
+    color: #666;
+}
+
+.infoText {
+    margin-top: 24px;
+}
