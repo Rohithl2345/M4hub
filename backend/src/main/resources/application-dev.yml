@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/m4hub_db
+    username: m4hub
+    password: m4hub_pass
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+
+server:
+  port: 8080
+
+# SMS Configuration (Development)
+sms:
+  enabled: false
+  provider: console
+
+# CORS Configuration (Development)
+app:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:19006,http://192.168.1.100:19006
+
+# Twilio Configuration (Not used in dev)
+twilio:
+  account:
+    sid: dev_account_sid
+  auth:
+    token: dev_auth_token
+  phone:
+    number: +1234567890
+
+# Firebase Configuration (Not used in dev)
+firebase:
+  credentials:
+    path: ""
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.m4hub: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG

@@ -1,0 +1,156 @@
+.container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
+    padding: 16px 0;
+}
+
+.centerWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.card {
+    max-width: 450px;
+    width: 100%;
+    padding: 32px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #5433ff;
+}
+
+.emailText {
+    margin-top: 8px;
+    color: #5433ff;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+.otpContainer {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.otpInput :global(.MuiOutlinedInput-root) {
+    width: 50px;
+    height: 60px;
+    border-radius: 12px;
+    background-color: white;
+}
+
+.otpInput :global(.MuiOutlinedInput-root fieldset) {
+    border-color: #ccc;
+    border-width: 2px;
+}
+
+.otpInput :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.otpInput :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.otpInputFilled :global(.MuiOutlinedInput-root) {
+    width: 50px;
+    height: 60px;
+    border-radius: 12px;
+    background-color: #f0ebff;
+}
+
+.otpInputFilled :global(.MuiOutlinedInput-root fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.otpInputFilled :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.otpInputFilled :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.alert {
+    margin-bottom: 16px;
+    border-radius: 16px;
+}
+
+.verifyButton {
+    padding: 12px 0;
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%) !important;
+    color: white;
+    border-radius: 16px !important;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: none;
+    margin-bottom: 16px;
+}
+
+.verifyButton:hover {
+    background: linear-gradient(135deg, #4025e0 0%, #1aa5e6 100%) !important;
+}
+
+.verifyButton:disabled {
+    background: linear-gradient(135deg, #9d8fff 0%, #80d4ff 100%) !important;
+    cursor: not-allowed;
+}
+
+.resendContainer {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.resendLink {
+    color: #5433ff;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.resendLink:hover {
+    text-decoration: underline;
+}
+
+.testingNote {
+    margin-bottom: 16px;
+    border-radius: 16px;
+    background-color: #fff4e5;
+}
+
+.backButtonContainer {
+    text-align: center;
+}
+
+.backLink {
+    color: #666;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.backLink:hover {
+    color: #333;
+    text-decoration: underline;
+}

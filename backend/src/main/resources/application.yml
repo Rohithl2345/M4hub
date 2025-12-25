@@ -1,14 +1,49 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  
   datasource:
-    url: jdbc:postgresql://${SPRING_DATASOURCE_HOST:localhost}:${SPRING_DATASOURCE_PORT:5433}/${SPRING_DATASOURCE_DB:m4hub_db}
+    url: jdbc:postgresql://${SPRING_DATASOURCE_HOST:db}:${SPRING_DATASOURCE_PORT:5432}/${SPRING_DATASOURCE_DB:m4hub_db}
     username: ${SPRING_DATASOURCE_USERNAME:m4hub}
     password: ${SPRING_DATASOURCE_PASSWORD:m4hub_pass}
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+  
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
     show-sql: true
+  
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+
 server:
   port: ${SERVER_PORT:8080}
+
+# SMS Configuration
+sms:
+  enabled: ${SMS_ENABLED:false}
+  provider: ${SMS_PROVIDER:console}
+
+# Twilio Configuration
+twilio:
+  account:
+    sid: ${TWILIO_ACCOUNT_SID:your_account_sid_here}
+  auth:
+    token: ${TWILIO_AUTH_TOKEN:your_auth_token_here}
+  phone:
+    number: ${TWILIO_PHONE_NUMBER:+1234567890}
+
+# Firebase Configuration
+firebase:
+  credentials:
+    path: ${FIREBASE_CREDENTIALS_PATH:}
+

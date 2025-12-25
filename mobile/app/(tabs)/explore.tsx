@@ -1,112 +1,400 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import { useRouter } from 'expo-router';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { logout, setCredentials, selectToken } from '@/store/slices/authSlice';
+import { COLORS } from '@/constants/colors';
+import axios from 'axios';
+import { APP_CONFIG } from '@/constants';
 
-export default function TabTwoScreen() {
+export default function ProfileScreen() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  const token = useAppSelector(selectToken);
+  const [email, setEmail] = useState(user?.email || '');
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Not set';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const handleUpdateEmail = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Email cannot be empty');
+      return;
+    }
+
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    setIsUpdating(true);
+
+    try {
+      const response = await axios.put(
+        `${APP_CONFIG.API_URL}/api/users/profile/update-email`,
+        { email: email.trim() },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.success && response.data.data) {
+        dispatch(setCredentials({
+          token: token!,
+          user: response.data.data,
+        }));
+        setIsEditingEmail(false);
+        Alert.alert('Success', 'Email updated successfully');
+      } else {
+        Alert.alert('Error', response.data.message || 'Failed to update email');
+      }
+    } catch (error: any) {
+      console.error('Update email error:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to update email');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => {
+            dispatch(logout());
+            router.replace('/auth/email-login');
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          🔍 Explore Features
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>📚 This app includes example code to help you get started with Expo and React Native!</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
+    <ThemedView style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatar}>
+            <ThemedText style={styles.avatarText}>
+              {user?.firstName?.charAt(0) || 'U'}
             </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+          </View>
+          <ThemedText style={styles.userName}>
+            {user?.firstName} {user?.lastName}
+          </ThemedText>
+          <ThemedText style={styles.userPhone}>{user?.phoneNumber}</ThemedText>
+        </View>
+      </View>
+
+      <ScrollView style={styles.content}>
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Personal Information</ThemedText>
+
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.infoLabel}>First Name</ThemedText>
+              <ThemedText style={styles.infoValue}>{user?.firstName || 'Not set'}</ThemedText>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.infoLabel}>Last Name</ThemedText>
+              <ThemedText style={styles.infoValue}>{user?.lastName || 'Not set'}</ThemedText>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.infoLabel}>Phone Number</ThemedText>
+              <ThemedText style={styles.infoValue}>{user?.phoneNumber}</ThemedText>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.infoLabel}>Date of Birth</ThemedText>
+              <ThemedText style={styles.infoValue}>{formatDate(user?.dateOfBirth)}</ThemedText>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.infoLabel}>Gender</ThemedText>
+              <ThemedText style={styles.infoValue}>
+                {user?.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : 'Not set'}
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Contact Information</ThemedText>
+
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <View style={styles.emailContainer}>
+                <ThemedText style={styles.infoLabel}>Email</ThemedText>
+                {!isEditingEmail && (
+                  <TouchableOpacity onPress={() => setIsEditingEmail(true)}>
+                    <ThemedText style={styles.editButton}>Edit</ThemedText>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {isEditingEmail ? (
+                <View style={styles.emailEditContainer}>
+                  <TextInput
+                    style={styles.emailInput}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Enter email"
+                    placeholderTextColor={COLORS.TEXT_TERTIARY}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                  <View style={styles.emailActions}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => {
+                        setEmail(user?.email || '');
+                        setIsEditingEmail(false);
+                      }}
+                    >
+                      <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]}
+                      onPress={handleUpdateEmail}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? (
+                        <ActivityIndicator color={COLORS.WHITE} size="small" />
+                      ) : (
+                        <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <ThemedText style={styles.infoValue}>{user?.email || 'Not set'}</ThemedText>
+              )}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Account</ThemedText>
+
+          <View style={styles.menuCard}>
+            <TouchableOpacity style={styles.menuItem}>
+              <ThemedText style={styles.menuText}>Settings</ThemedText>
+              <ThemedText style={styles.menuArrow}>→</ThemedText>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.menuItem}>
+              <ThemedText style={styles.menuText}>Privacy Policy</ThemedText>
+              <ThemedText style={styles.menuArrow}>→</ThemedText>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.menuItem}>
+              <ThemedText style={styles.menuText}>Terms of Service</ThemedText>
+              <ThemedText style={styles.menuArrow}>→</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <ThemedText style={styles.logoutText}>Logout</ThemedText>
+        </TouchableOpacity>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.BACKGROUND,
   },
-  titleContainer: {
+  header: {
+    paddingTop: 60,
+    paddingBottom: 40,
+    backgroundColor: COLORS.PRIMARY,
+    alignItems: 'center',
+  },
+  profileHeader: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.WHITE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: COLORS.PRIMARY,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.WHITE,
+  },
+  userPhone: {
+    fontSize: 16,
+    color: COLORS.WHITE,
+    opacity: 0.9,
+  },
+  content: {
+    flex: 1,
+    padding: 24,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: 12,
+  },
+  infoCard: {
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.BORDER,
+    padding: 16,
+  },
+  infoRow: {
+    paddingVertical: 12,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: 6,
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.TEXT_PRIMARY,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.BORDER,
+  },
+  emailContainer: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  editButton: {
+    fontSize: 14,
+    color: COLORS.PRIMARY,
+    fontWeight: '600',
+  },
+  emailEditContainer: {
+    gap: 12,
+  },
+  emailInput: {
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.BORDER,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: COLORS.TEXT_PRIMARY,
+  },
+  emailActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: COLORS.BORDER,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.TEXT_PRIMARY,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: COLORS.PRIMARY,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
+  },
+  saveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.WHITE,
+  },
+  menuCard: {
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.BORDER,
+    padding: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  menuText: {
+    fontSize: 16,
+    color: COLORS.TEXT_PRIMARY,
+  },
+  menuArrow: {
+    fontSize: 20,
+    color: COLORS.TEXT_TERTIARY,
+  },
+  logoutButton: {
+    backgroundColor: '#5433ff',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 32,
+  },
+  logoutText: {
+    color: COLORS.WHITE,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

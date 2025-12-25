@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: m4hub-db-dev
+    environment:
+      POSTGRES_DB: m4hub_db
+      POSTGRES_USER: m4hub
+      POSTGRES_PASSWORD: m4hub_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U m4hub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - m4hub-network
+
+volumes:
+  postgres_data_dev:
+
+networks:
+  m4hub-network:
+    driver: bridge

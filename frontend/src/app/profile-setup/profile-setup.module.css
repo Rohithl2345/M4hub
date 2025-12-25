@@ -1,0 +1,130 @@
+.container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
+    padding: 16px 0;
+}
+
+.centerWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.card {
+    max-width: 400px;
+    width: 100%;
+    padding: 32px;
+    background: white;
+    border-radius: 24px;
+    border: 2px solid #5433ff;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #5433ff;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.textField {
+    margin-bottom: 0;
+}
+
+.textField :global(.MuiOutlinedInput-root) {
+    border-radius: 16px;
+    background-color: white !important;
+}
+
+.textField :global(.MuiOutlinedInput-root input) {
+    background-color: white !important;
+    color: black !important;
+}
+
+.textField :global(.MuiOutlinedInput-root fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.textField :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.textField :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.textField :global(input[type="date"]::-webkit-calendar-picker-indicator) {
+    cursor: pointer;
+    opacity: 1;
+    filter: invert(0);
+}
+
+.formControl {
+    margin-bottom: 0;
+}
+
+.genderLabel {
+    margin-bottom: 12px;
+    text-align: left;
+    display: block;
+}
+
+.genderGroup :global(.MuiToggleButton-root) {
+    border-color: #5433ff;
+    border-width: 2px;
+    border-radius: 16px;
+    color: #5433ff;
+    font-weight: bold;
+}
+
+.genderGroup :global(.MuiToggleButton-root:hover) {
+    border-color: #5433ff;
+    border-width: 2px;
+    background-color: rgba(84, 51, 255, 0.1);
+}
+
+.genderGroup :global(.MuiToggleButton-root.Mui-selected) {
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
+    color: white;
+    border-color: #5433ff;
+}
+
+.genderGroup :global(.MuiToggleButton-root.Mui-selected:hover) {
+    background: linear-gradient(135deg, #4025e0 0%, #1aa5e6 100%);
+}
+
+.alert {
+    margin-bottom: 0;
+    border-radius: 16px;
+}
+
+.submitButton {
+    padding: 12px 0;
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
+    color: white;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.submitButton:hover {
+    background: linear-gradient(135deg, #4025e0 0%, #1aa5e6 100%);
+}
+
+.submitButton:disabled {
+    background: linear-gradient(135deg, #9d8fff 0%, #80d4ff 100%);
+    cursor: not-allowed;
+}

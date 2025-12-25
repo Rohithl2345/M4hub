@@ -1,0 +1,179 @@
+.container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
+    padding: 16px 0;
+}
+
+.centerWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.card {
+    max-width: 440px;
+    width: 100%;
+    padding: 32px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    transition: max-width 0.3s ease;
+}
+
+.passwordWrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.passwordValidationSide {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-top: 4px;
+    animation: slideDown 0.3s ease-out;
+}
+
+.checkItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.icon {
+    font-size: 72px;
+    margin-bottom: 20px;
+    color: #5433ff;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.emailField :global(.MuiOutlinedInput-root) {
+    border-radius: 16px;
+    background-color: white !important;
+}
+
+.emailField :global(.MuiOutlinedInput-root input) {
+    background-color: white !important;
+    color: black !important;
+}
+
+.emailField :global(.MuiOutlinedInput-root fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.emailField :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.emailField :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.passwordField :global(.MuiOutlinedInput-root) {
+    border-radius: 16px;
+    background-color: white !important;
+}
+
+.passwordField :global(.MuiOutlinedInput-root input) {
+    background-color: white !important;
+    color: black !important;
+}
+
+.passwordField :global(.MuiOutlinedInput-root fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.passwordField :global(.MuiOutlinedInput-root:hover fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.passwordField :global(.MuiOutlinedInput-root.Mui-focused fieldset) {
+    border-color: #5433ff;
+    border-width: 2px;
+}
+
+.alert {
+    margin-top: 8px;
+    border-radius: 16px;
+}
+
+.continueButton {
+    padding: 12px 0;
+    background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%) !important;
+    color: white;
+    border-radius: 16px !important;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: none;
+    margin-top: 8px;
+}
+
+.continueButton:hover {
+    background: linear-gradient(135deg, #4025e0 0%, #1aa5e6 100%) !important;
+}
+
+.continueButton:disabled {
+    background: linear-gradient(135deg, #9d8fff 0%, #80d4ff 100%) !important;
+    cursor: not-allowed;
+}
+
+.infoText {
+    margin-top: 16px;
+}
+
+.testingNote {
+    margin-top: 24px;
+    border-radius: 16px;
+    background-color: #e3f2fd;
+}
+
+.choiceWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px 0 0 0;
+}
+
+.choiceLoginButton {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 600px) {
+    .icon {
+        font-size: 56px;
+        margin-bottom: 14px;
+    }
+}

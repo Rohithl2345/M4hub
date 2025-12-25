@@ -1,0 +1,82 @@
+[
+    {
+        "title": "Good Luck, Babe!",
+        "artist": "Chappell Roan",
+        "album": "Single",
+        "duration": 218,
+        "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        "imageUrl": "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=400",
+        "genre": "Pop",
+        "externalId": "eng-1"
+    },
+    {
+        "title": "BIRDS OF A FEATHER",
+        "artist": "Billie Eilish",
+        "album": "HIT ME HARD AND SOFT",
+        "duration": 210,
+        "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        "imageUrl": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400",
+        "genre": "Alternative",
+        "externalId": "eng-2"
+    },
+    {
+        "title": "Tauba Tauba",
+        "artist": "Karan Aujla",
+        "album": "Bad Newz",
+        "duration": 208,
+        "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+        "imageUrl": "https://images.unsplash.com/photo-1514525253361-bee8a4874093?w=400",
+        "genre": "Hindi Pop",
+        "externalId": "hin-1"
+    },
+    {
+        "title": "Aaj Ki Raat",
+        "artist": "Madhubanti Bagchi",
+        "album": "Stree 2",
+        "duration": 225,
+        "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+        "imageUrl": "https://images.unsplash.com/photo-1459749411177-042180ce673c?w=400",
+        "genre": "Dance",
+        "externalId": "hin-2"
+    },
+    {
+        "title": "Kurchi Madathapetti",
+        "artist": "Mahesh Babu, Sahithi Chaganti",
+        "album": "Guntur Kaaram",
+        "duration": 212,
+        "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+        "imageUrl": "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=400",
+        "genre": "Telugu Folk",
+        "externalId": "tel-1"
+    },
+    {
+        "title": "Chuttamalle",
+        "artist": "Anirudh Ravichander, Shilpa Rao",
+        "album": "Devara",
+        "duration": 245,
+        "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+        "imageUrl": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
+        "genre": "Melody",
+        "externalId": "tel-2"
+    },
+    {
+        "title": "Dwapara",
+        "artist": "Jaskaran Singh",
+        "album": "Krishnam Pranaya Sakhi",
+        "duration": 198,
+        "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+        "imageUrl": "https://images.unsplash.com/photo-1514525253361-bee8a4874093?w=400",
+        "genre": "Kannada Pop",
+        "externalId": "kan-1"
+    },
+    {
+        "title": "Jeeva Neene",
+        "artist": "Sonu Nigam",
+        "album": "Martin",
+        "duration": 230,
+        "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+        "imageUrl": "https://images.unsplash.com/photo-1459749411177-042180ce673c?w=400",
+        "genre": "Romantic",
+        "externalId": "kan-2"
+    }
+]

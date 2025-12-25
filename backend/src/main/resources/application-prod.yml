@@ -1,0 +1,65 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/m4hub_prod}
+    username: ${DATABASE_USERNAME:m4hub_prod}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  ssl:
+
+# CORS Configuration (Production)
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:https://yourdomain.com}
+    enabled: ${SSL_ENABLED:false}
+    key-store: ${SSL_KEY_STORE:classpath:keystore.p12}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    key-store-type: PKCS12
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  http2:
+    enabled: true
+
+# SMS Configuration (Production)
+sms:
+  enabled: ${SMS_ENABLED:true}
+  provider: ${SMS_PROVIDER:firebase}
+
+# Twilio Configuration
+twilio:
+  account:
+    sid: ${TWILIO_ACCOUNT_SID}
+  auth:
+    token: ${TWILIO_AUTH_TOKEN}
+  phone:
+    number: ${TWILIO_PHONE_NUMBER}
+
+# Firebase Configuration
+firebase:
+  credentials:
+    path: ${FIREBASE_CREDENTIALS_PATH}
+
+# Logging (Production - Less verbose)
+logging:
+  level:
+    root: WARN
+    com.m4hub: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+  file:
+    name: logs/m4hub-backend.log
+    max-size: 10MB
+    max-history: 30
