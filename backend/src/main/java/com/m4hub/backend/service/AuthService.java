@@ -160,14 +160,14 @@ public class AuthService {
         // Set expiry time (5 minutes from now)
         Instant expiresAt = Instant.now().plus(5, ChronoUnit.MINUTES);
 
-        // Delete any existing OTPs for this email (flush to ensure it's committed)
+        logger.info("Database operations for send OTP: deleting existing for {}", email);
+        // Delete any existing OTPs for this email
         emailOtpRepository.deleteByEmail(email);
-        emailOtpRepository.flush();
 
+        logger.info("Saving new OTP for {}", email);
         // Save new OTP
         EmailOtpVerification emailOtp = new EmailOtpVerification(email, otpCode, passwordHash, expiresAt);
         emailOtpRepository.save(emailOtp);
-        emailOtpRepository.flush();
 
         // Log OTP prominently for development
         logger.info("╔════════════════════════════════════════════════════════════╗");
@@ -202,17 +202,21 @@ public class AuthService {
         String email = request.getEmail();
         String password = request.getPassword();
 
+        logger.info("Resend OTP initiated for email: {}", email);
+
         if (email != null) {
             email = email.toLowerCase().trim();
         }
 
         // Validate email format
         if (email == null || email.isEmpty() || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            logger.warn("Resend OTP failed: Invalid email format: {}", email);
             return new AuthResponse(false, "Invalid email format");
         }
 
         // Validate password complexity
         if (password == null || password.length() < 8) {
+            logger.warn("Resend OTP failed: Password too short for: {}", email);
             return new AuthResponse(false, "Password must be at least 8 characters");
         }
         if (!password.matches(".*[A-Z].*")) {
@@ -262,14 +266,26 @@ public class AuthService {
         // Set expiry time (5 minutes from now)
         Instant expiresAt = Instant.now().plus(5, ChronoUnit.MINUTES);
 
+        logger.info("Database operations for resend OTP: deleting existing for {}", email);
         // Delete any existing OTPs for this email
-        emailOtpRepository.deleteByEmail(email);
-        emailOtpRepository.flush();
+        try {
+            emailOtpRepository.deleteByEmail(email);
+            // emailOtpRepository.flush(); // Removed flush
+        } catch (Exception e) {
+            logger.error("Error deleting old OTPs for {}: {}", email, e.getMessage());
+            throw e;
+        }
 
+        logger.info("Saving new OTP for {}", email);
         // Save new OTP
-        EmailOtpVerification emailOtp = new EmailOtpVerification(email, otpCode, passwordHash, expiresAt);
-        emailOtpRepository.save(emailOtp);
-        emailOtpRepository.flush();
+        try {
+            EmailOtpVerification emailOtp = new EmailOtpVerification(email, otpCode, passwordHash, expiresAt);
+            emailOtpRepository.save(emailOtp);
+            // emailOtpRepository.flush(); // Removed flush
+        } catch (Exception e) {
+            logger.error("Error saving new OTP for {}: {}", email, e.getMessage());
+            throw e;
+        }
 
         // Log OTP prominently for development
         logger.info("╔════════════════════════════════════════════════════════════╗");

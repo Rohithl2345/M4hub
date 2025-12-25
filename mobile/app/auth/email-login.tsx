@@ -74,7 +74,7 @@ export default function EmailLoginScreen() {
                 if (response.ok && data.success) {
                     router.push({
                         pathname: '/auth/email-verification',
-                        params: { email, password }
+                        params: { email } // Don't pass password in params if it ends up in URL
                     });
                 } else {
                     Alert.alert('Signup Error', data.message || 'Failed to send OTP. Please try again.');

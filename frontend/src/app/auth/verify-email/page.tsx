@@ -23,9 +23,21 @@ import { env } from '@/utils/env';
 function VerifyEmailContent() {
     const router = useRouter();
     const dispatch = useAppDispatch();
-    const searchParams = useSearchParams();
-    const email = searchParams.get('email') || '';
-    const password = searchParams.get('password') || '';
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    useEffect(() => {
+        const storedEmail = sessionStorage.getItem('pendingEmail');
+        const storedPassword = sessionStorage.getItem('pendingPassword');
+
+        if (!storedEmail || !storedPassword) {
+            router.replace('/auth/email-login?mode=signup');
+            return;
+        }
+
+        setEmail(storedEmail);
+        setPassword(storedPassword);
+    }, [router]);
 
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);

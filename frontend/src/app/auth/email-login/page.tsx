@@ -130,7 +130,9 @@ function EmailLoginPageInner() {
 
                 const data = await response.json();
                 if (data.success) {
-                    router.push(`/auth/verify-email?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+                    sessionStorage.setItem('pendingEmail', email);
+                    sessionStorage.setItem('pendingPassword', password);
+                    router.push('/auth/verify-email');
                 } else {
                     setError(data.message || 'Failed to send OTP');
                 }
