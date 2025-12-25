@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,6 +29,7 @@ public class EmailService {
     /**
      * Send OTP to email address
      */
+    @Async
     public void sendOtp(String email, String otpCode) {
         try {
             if ("console".equals(emailProvider)) {
@@ -61,8 +63,6 @@ public class EmailService {
             logger.error("JavaMailSender is null. Check mail configuration.");
             throw new RuntimeException("Email configuration error");
         }
-
-        logger.info("Attempting to send email FROM: {} TO: {}", fromAddress, email);
 
         SimpleMailMessage message = new SimpleMailMessage();
         // Use the fromAddress directly to ensure maximum compatibility with SMTP relays
