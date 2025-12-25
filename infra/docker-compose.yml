@@ -6,13 +6,13 @@ services:
       POSTGRES_USER: m4hub
       POSTGRES_PASSWORD: m4hub_pass
       POSTGRES_DB: m4hub_db
-      TZ: Asia/Kolkata          # maps Windows 'Asia/Calcutta' to supported 'Asia/Kolkata'
+      TZ: Asia/Kolkata # maps Windows 'Asia/Calcutta' to supported 'Asia/Kolkata'
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U m4hub -d m4hub_db"]
+      test: [ "CMD-SHELL", "pg_isready -U m4hub -d m4hub_db" ]
       interval: 5s
       timeout: 5s
       retries: 5

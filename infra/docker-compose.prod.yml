@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: m4hub-db-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-m4hub_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-m4hub_prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-m4hub_prod}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - m4hub-network
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: m4hub-backend-prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-m4hub_prod}
+      DATABASE_USERNAME: ${POSTGRES_USER:-m4hub_prod}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      SERVER_PORT: 8080
+      SSL_ENABLED: ${SSL_ENABLED:-false}
+      SMS_ENABLED: ${SMS_ENABLED:-true}
+      SMS_PROVIDER: ${SMS_PROVIDER:-firebase}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - m4hub-network
+    volumes:
+      - backend_logs:/app/logs
+
+volumes:
+  postgres_data_prod:
+  backend_logs:
+
+networks:
+  m4hub-network:
+    driver: bridge
