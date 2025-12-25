@@ -171,31 +171,7 @@ public class ChatController {
             String messageType = payload.containsKey("messageType") ? (String) payload.get("messageType") : "TEXT";
             String mediaUrl = payload.containsKey("mediaUrl") ? (String) payload.get("mediaUrl") : null;
 
-            ChatMessage message = chatService.sendMessage(senderId, receiverId, content, messageType, mediaUrl);
-
-            // Send to receiver's personal queue
-            messagingTemplate.convertAndSend("/queue/messages/" + receiverId, Map.of(
-                    "id", message.getId(),
-                    "senderId", senderId,
-                    "receiverId", receiverId,
-                    "content", content,
-                    "messageType", messageType,
-                    "mediaUrl", mediaUrl != null ? mediaUrl : "",
-                    "createdAt", message.getCreatedAt().toString(),
-                    "isRead", false,
-                    "isDelivered", false));
-
-            // Also send confirmation to sender
-            messagingTemplate.convertAndSend("/queue/messages/" + senderId, Map.of(
-                    "id", message.getId(),
-                    "senderId", senderId,
-                    "receiverId", receiverId,
-                    "content", content,
-                    "messageType", messageType,
-                    "mediaUrl", mediaUrl != null ? mediaUrl : "",
-                    "createdAt", message.getCreatedAt().toString(),
-                    "isRead", false,
-                    "isDelivered", false));
+            chatService.sendMessage(senderId, receiverId, content, messageType, mediaUrl);
         } catch (Exception e) {
             logger.error("Error sending message via WebSocket", e);
         }

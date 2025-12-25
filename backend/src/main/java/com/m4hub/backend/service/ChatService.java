@@ -42,6 +42,9 @@ public class ChatService {
     @Autowired
     private GroupMessageRepository groupMessageRepository;
 
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
     // --- Friend Requests ---
 
     public FriendRequest sendFriendRequest(Long senderId, String receiverUsername) {
@@ -56,12 +59,8 @@ public class ChatService {
         User sender = userRepository.findById(senderId).orElseThrow(() -> new RuntimeException("Sender not found"));
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new RuntimeException("Receiver not found"));
-
         return createFriendRequest(sender, receiver);
     }
-
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
 
     private FriendRequest createFriendRequest(User sender, User receiver) {
         if (sender.getId().equals(receiver.getId())) {
@@ -153,7 +152,32 @@ public class ChatService {
         ChatMessage message = new ChatMessage(sender, receiver, content);
         message.setMessageType(messageType);
         message.setMediaUrl(mediaUrl);
-        return chatMessageRepository.save(message);
+        ChatMessage saved = chatMessageRepository.save(message);
+
+        // Broadcast real-time notifications
+        try {
+            Map<String, Object> payload = Map.of(
+                    "id", saved.getId(),
+                    "senderId", senderId,
+                    "receiverId", receiverId,
+                    "content", content,
+                    "messageType", messageType,
+                    "mediaUrl", mediaUrl != null ? mediaUrl : "",
+                    "createdAt", saved.getCreatedAt().toString(),
+                    "isRead", false,
+                    "isDelivered", false);
+
+            // Send to receiver
+            messagingTemplate.convertAndSend("/queue/messages/" + receiverId, payload);
+            // Send feedback to sender
+            messagingTemplate.convertAndSend("/queue/messages/" + senderId, payload);
+
+            logger.info("Broadcasted message from {} to {}", senderId, receiverId);
+        } catch (Exception e) {
+            logger.error("Failed to broadcast message via WebSocket", e);
+        }
+
+        return saved;
     }
 
     public List<ChatMessage> getConversation(Long userId, Long otherUserId) {
@@ -302,10 +326,32 @@ public class ChatService {
 
         com.m4hub.backend.model.GroupMessage message = new com.m4hub.backend.model.GroupMessage(group, sender, content);
         message.setMessageType(messageType);
-        groupMessageRepository.save(message);
+        com.m4hub.backend.model.GroupMessage saved = groupMessageRepository.save(message);
 
         group.setLastMessageAt(java.time.Instant.now());
         groupChatRepository.save(group);
+
+        // Broadcast to each member of the group
+        try {
+            Map<String, Object> payload = Map.of(
+                    "id", saved.getId(),
+                    "groupId", groupId, // Still include groupId for clarity
+                    "senderId", senderId,
+                    "receiverId", groupId, // IMPORTANT: Frontend uses receiverId to match active group
+                    "senderName", sender.getName() != null ? sender.getName() : sender.getUsername(),
+                    "content", content,
+                    "messageType", messageType,
+                    "createdAt", saved.getCreatedAt().toString(),
+                    "isGroup", true);
+
+            // Send to ALL members' private queues
+            for (User member : group.getMembers()) {
+                messagingTemplate.convertAndSend("/queue/messages/" + member.getId(), payload);
+            }
+            logger.info("Broadcasted group message to {} members of group {}", group.getMembers().size(), groupId);
+        } catch (Exception e) {
+            logger.error("Failed to broadcast group message", e);
+        }
     }
 
     public List<com.m4hub.backend.model.GroupMessage> getGroupMessages(Long groupId, Long userId) {

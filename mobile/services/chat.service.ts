@@ -65,6 +65,9 @@ class ChatService {
             reconnectDelay: 5000,
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000,
+            connectHeaders: {
+                userId: userId.toString()
+            }
         });
 
         this.stompClient.onConnect = () => {

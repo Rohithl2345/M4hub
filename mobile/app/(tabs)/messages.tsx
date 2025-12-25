@@ -165,17 +165,6 @@ export default function MessagesScreen() {
 
         if (selectedEntity?.type === 'friend') {
             chatService.sendMessage(user.id, selectedEntity.data.id, messageInput);
-            const newMessage: ChatMessage = {
-                id: Date.now(),
-                senderId: user.id,
-                receiverId: selectedEntity.data.id,
-                content: messageInput,
-                messageType: 'TEXT',
-                createdAt: new Date().toISOString(),
-                isDelivered: false,
-                isRead: false
-            };
-            setMessages((prev) => [...prev, newMessage]);
         } else if (selectedEntity?.type === 'group') {
             chatService.sendGroupMessage(user.id, selectedEntity.data.id, messageInput);
         }
