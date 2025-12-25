@@ -47,7 +47,7 @@ sms:
 email:
   provider: ${EMAIL_PROVIDER:smtp}
   from:
-    address: ${EMAIL_FROM_ADDRESS:${MAIL_USERNAME:noreply@m4hub.com}}
+    address: ${EMAIL_FROM:${MAIL_USERNAME:noreply@m4hub.com}}
     name: ${EMAIL_FROM_NAME:M4Hub}
 
 # Twilio Configuration
