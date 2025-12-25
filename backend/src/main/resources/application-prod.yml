@@ -15,7 +15,7 @@ server:
 # CORS Configuration (Production)
 app:
   cors:
-    allowed-origins: ${ALLOWED_ORIGINS:https://yourdomain.com}
+    allowed-origins: ${ALLOWED_ORIGINS:https://m4hub.vercel.app,https://m4hub-git-main-rohithl2345.vercel.app,https://m4hub-rohithl2345.vercel.app}
 
   compression:
     enabled: true
