@@ -572,16 +572,19 @@
 }
 
 .messageBubble {
-    padding: 14px 20px;
-    border-radius: 24px;
+    padding: 12px 18px;
+    border-radius: 20px;
     font-size: 15px;
     line-height: 1.5;
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: normal;
+    white-space: pre-wrap;
     font-weight: 500;
     position: relative;
     max-width: 100%;
+    width: fit-content;
+    display: inline-block;
 }
 
 .sent .messageBubble {

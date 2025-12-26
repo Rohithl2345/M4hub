@@ -636,7 +636,7 @@ export default function MessagesPage() {
                                                 gap: 1.5,
                                                 alignItems: 'flex-end',
                                                 flexDirection: isSent ? 'row-reverse' : 'row',
-                                                width: '100%',
+                                                maxWidth: '100%',
                                                 mb: 1
                                             }}>
                                                 <Avatar sx={{
@@ -646,7 +646,8 @@ export default function MessagesPage() {
                                                     bgcolor: isSent ? '#6366f1' : '#e2e8f0',
                                                     color: isSent ? '#fff' : '#64748b',
                                                     fontWeight: 700,
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                    flexShrink: 0
                                                 }}>
                                                     {isSent ? (user?.name || user?.username || 'M').charAt(0).toUpperCase() : (selectedEntity?.data?.name || selectedEntity?.data?.username || 'U').charAt(0).toUpperCase()}
                                                 </Avatar>
@@ -654,7 +655,8 @@ export default function MessagesPage() {
                                                     display: 'flex',
                                                     flexDirection: 'column',
                                                     alignItems: isSent ? 'flex-end' : 'flex-start',
-                                                    maxWidth: 'calc(100% - 48px)'
+                                                    maxWidth: 'calc(100% - 40px)',
+                                                    flexShrink: 1
                                                 }}>
                                                     {msg.messageType === 'IMAGE' && msg.mediaUrl ? (
                                                         <Box
