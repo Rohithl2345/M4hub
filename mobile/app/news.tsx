@@ -83,41 +83,43 @@ export default function NewsScreen() {
                     <ActivityIndicator size="large" color="#fa709a" style={styles.loader} />
                 ) : (
                     <View style={styles.section}>
-                        {newsArticles.map((article) => (
-                            <TouchableOpacity
-                                key={article.id}
-                                style={styles.newsCard}
-                                onPress={() => Linking.openURL(article.url)}
-                            >
-                                <View style={styles.newsImage}>
-                                    {article.urlToImage ? (
-                                        <Image
-                                            source={{ uri: article.urlToImage }}
-                                            style={{ width: '100%', height: '100%' }}
-                                            resizeMode="cover"
-                                        />
-                                    ) : (
-                                        <Ionicons name="image-outline" size={48} color="#cbd5e1" />
-                                    )}
-                                </View>
-                                <View style={styles.newsContent}>
-                                    <ThemedText style={styles.category}>{article.category || 'General'}</ThemedText>
-                                    <ThemedText style={styles.newsTitle}>{article.title}</ThemedText>
-                                    <ThemedText style={styles.newsExcerpt} numberOfLines={2}>
-                                        {article.description || 'Tap to read full article from source.'}
-                                    </ThemedText>
-                                    <View style={styles.newsFooter}>
-                                        <ThemedText style={styles.source} numberOfLines={1}>
-                                            {article.sourceName} • {dayjs(article.publishedAt).format('MMM D')}
+                        {newsArticles
+                            .filter(a => !a.externalId?.includes('mock'))
+                            .map((article) => (
+                                <TouchableOpacity
+                                    key={article.id}
+                                    style={styles.newsCard}
+                                    onPress={() => Linking.openURL(article.url)}
+                                >
+                                    <View style={styles.newsImage}>
+                                        {article.urlToImage ? (
+                                            <Image
+                                                source={{ uri: article.urlToImage }}
+                                                style={{ width: '100%', height: '100%' }}
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <Ionicons name="image-outline" size={48} color="#cbd5e1" />
+                                        )}
+                                    </View>
+                                    <View style={styles.newsContent}>
+                                        <ThemedText style={styles.category}>{article.category || 'General'}</ThemedText>
+                                        <ThemedText style={styles.newsTitle}>{article.title}</ThemedText>
+                                        <ThemedText style={styles.newsExcerpt} numberOfLines={2}>
+                                            {article.description || 'Tap to read full article from source.'}
                                         </ThemedText>
-                                        <View style={styles.readMore}>
-                                            <ThemedText style={styles.readMoreText}>Read</ThemedText>
-                                            <Ionicons name="arrow-forward" size={14} color="#fa709a" />
+                                        <View style={styles.newsFooter}>
+                                            <ThemedText style={styles.source} numberOfLines={1}>
+                                                {article.sourceName} • {dayjs(article.publishedAt).format('MMM D')}
+                                            </ThemedText>
+                                            <View style={styles.readMore}>
+                                                <ThemedText style={styles.readMoreText}>Read</ThemedText>
+                                                <Ionicons name="arrow-forward" size={14} color="#fa709a" />
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
+                                </TouchableOpacity>
+                            ))}
                     </View>
                 )}
             </ScrollView>

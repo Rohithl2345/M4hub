@@ -39,10 +39,13 @@ export default function NewsPage() {
         fetchNews();
     }, [category]);
 
-    // Ticker news from top stories
-    const tickerNews = newsArticles.slice(0, 5);
-    // Sidebar news
-    const sidebarNews = newsArticles.slice(-8);
+    // Filter out any residual mock data and handle splitting logic safely
+    const filteredArticles = newsArticles.filter(a => !a.externalId?.includes('mock'));
+
+    // Main feed gets the first 12 articles (after filtering)
+    const displayArticles = filteredArticles.slice(0, 12);
+    // Sidebar gets a different set to avoid duplicates
+    const sidebarNews = filteredArticles.length > 12 ? filteredArticles.slice(12, 20) : [];
 
     return (
         <DashboardLayout title="News">
@@ -59,7 +62,7 @@ export default function NewsPage() {
                 {/* News Ticker */}
                 <div className={styles.tickerWrap}>
                     <div className={styles.ticker}>
-                        {tickerNews.length > 0 ? tickerNews.map((article, idx) => (
+                        {displayArticles.length > 0 ? displayArticles.slice(0, 5).map((article, idx) => (
                             <div key={idx} className={styles.tickerItem}>
                                 <span>BREAKING</span> {article.title}
                             </div>
@@ -92,7 +95,7 @@ export default function NewsPage() {
                     <div className={styles.mainLayout}>
                         {/* Main Feed - Standard Cards */}
                         <div className={styles.newsGrid}>
-                            {newsArticles.length > 0 ? newsArticles.map((article) => (
+                            {displayArticles.length > 0 ? displayArticles.map((article) => (
                                 <div key={article.id} className={styles.newsCard}>
                                     <div className={styles.newsImage}>
                                         <img
@@ -132,7 +135,7 @@ export default function NewsPage() {
                                 <h4 className={styles.sidebarTitle}>
                                     <TrendingUpIcon /> Trending Briefs
                                 </h4>
-                                {sidebarNews.map((article) => (
+                                {sidebarNews.length > 0 ? sidebarNews.map((article) => (
                                     <div
                                         key={article.id}
                                         className={styles.sideItem}
@@ -143,7 +146,11 @@ export default function NewsPage() {
                                             {article.sourceName} • {dayjs(article.publishedAt).fromNow()}
                                         </div>
                                     </div>
-                                ))}
+                                )) : (
+                                    <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', padding: '10px 0' }}>
+                                        More stories moving into trends soon...
+                                    </p>
+                                )}
                             </div>
                         </aside>
                     </div>
