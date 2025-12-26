@@ -270,8 +270,6 @@ export default function MessagesPage() {
 
     const [searchError, setSearchError] = useState<string | null>(null);
 
-    // ... (existing layout code) ...
-
     const handleSearch = async () => {
         const query = searchQuery.trim();
         if (!query) {
@@ -279,6 +277,7 @@ export default function MessagesPage() {
             return;
         }
         setSearchError(null);
+
         if (query) {
             setIsSearching(true);
             setHasSearched(true);
@@ -422,244 +421,559 @@ export default function MessagesPage() {
                     </div>
                 )}
 
-
-                <Dialog
-                    open={searchDialogOpen}
-                    onClose={() => {
-                        setSearchDialogOpen(false);
-                        setHasSearched(false);
-                        setSearchResults([]);
-                        setSearchQuery('');
-                        setSearchError(null);
-                    }}
-                    maxWidth="sm"
-                    fullWidth
-                    PaperProps={{
-                        className: styles.dialogPaper,
-                        sx: { p: 1 }
-                    }}
-                >
-                    <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Search Friends</DialogTitle>
-                    <DialogContent>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Search for people by their name or username to start a conversation.
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            <TextField
-                                fullWidth
-                                label="User Identifier"
-                                placeholder="Enter username or name..."
-                                value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    if (e.target.value.trim()) setSearchError(null);
-                                }}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                variant="filled"
-                                error={!!searchError}
-                                helperText={searchError}
-                                sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
-                            />
-                        </Box>
-                        <List sx={{ mt: 3, minHeight: '100px' }}>
-                            {isSearching ? (
-                                <Typography color="textSecondary" sx={{ py: 4, textAlign: 'center', fontStyle: 'italic' }}>Searching...</Typography>
-                            ) : hasSearched && searchResults.length === 0 ? (
-                                <Typography color="textSecondary" sx={{ py: 4, textAlign: 'center', fontStyle: 'italic' }}>No users found for "{searchQuery}"</Typography>
-                            ) : (
-                                searchResults.map((result) => {
-                                    const isFriend = friends.some(f => f.id === result.id);
-                                    const isPending = pendingRequests.some(r => r.sender.id === result.id);
-                                    const isSent = sentRequests.some(r => r.receiver.id === result.id);
-                                    const isSelf = user?.id === result.id;
-
-                                    let statusText = '';
-                                    if (isFriend) statusText = 'Friend';
-                                    else if (isPending) statusText = 'Accept Request';
-                                    else if (isSent) statusText = 'Pending';
-                                    else if (isSelf) statusText = 'You';
-
-                                    return (
-                                        <Box
-                                            key={result.id}
-                                            className={styles.searchResultItem}
-                                        >
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                <Avatar sx={{ width: 48, height: 48, bgcolor: isSelf ? '#64748b' : '#6366f1', fontSize: '1.2rem', fontWeight: 800 }}>
-                                                    {(result.name || result.username || 'U').charAt(0).toUpperCase()}
-                                                </Avatar>
-                                                <Box>
-                                                    <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1 }}>
-                                                        {result.name || result.username}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.2 }}>
-                                                        @{result.username} {statusText ? `• ${statusText}` : ''}
-                                                    </Typography>
-                                                </Box>
+                <div className={styles.mainContent}>
+                    {!selectedEntity ? (
+                        <div className={styles.listView}>
+                            {tabValue === 0 && (
+                                <div className={styles.gridList}>
+                                    {friends.map((friend) => (
+                                        <div key={friend.id} className={styles.gridItem} onClick={() => handleSelectFriend(friend)}>
+                                            <Box sx={{ position: 'relative' }}>
+                                                <Badge
+                                                    color="primary"
+                                                    badgeContent={unreadCounts[`friend-${friend.id}`]}
+                                                    overlap="circular"
+                                                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                                >
+                                                    <Avatar sx={{ width: 56, height: 56, bgcolor: '#6366f1', fontSize: 24, fontWeight: 800 }}>
+                                                        {(friend.name || friend.username || 'U').charAt(0).toUpperCase()}
+                                                    </Avatar>
+                                                </Badge>
+                                                <Box sx={{
+                                                    position: 'absolute',
+                                                    bottom: 2,
+                                                    right: 2,
+                                                    width: 14,
+                                                    height: 14,
+                                                    bgcolor: friend.isActive ? '#10b981' : '#94a3b8',
+                                                    borderRadius: '50%',
+                                                    border: '2.5px solid #fff'
+                                                }} />
                                             </Box>
-
-                                            {!isSelf && (
-                                                <Box>
-                                                    {isFriend ? (
-                                                        <Chip label="Friend" color="success" size="small" sx={{ fontWeight: 700, color: '#fff' }} />
-                                                    ) : isPending ? (
-                                                        <Button
-                                                            variant="contained"
-                                                            size="small"
-                                                            onClick={() => handleAcceptRequest(result.id)}
-                                                            sx={{
-                                                                borderRadius: 2,
-                                                                textTransform: 'none',
-                                                                fontWeight: 700,
-                                                                background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-                                                                color: '#fff !important'
-                                                            }}
-                                                        >
-                                                            Accept
-                                                        </Button>
-                                                    ) : isSent ? (
-                                                        <Chip label="Pending" variant="outlined" size="small" sx={{ fontWeight: 700 }} />
-                                                    ) : (
-                                                        <Button
-                                                            variant="contained"
-                                                            size="small"
-                                                            startIcon={<PersonAddIcon />}
-                                                            onClick={async () => {
-                                                                try {
-                                                                    await chatService.sendFriendRequest(undefined, result.id);
-                                                                    loadPendingRequests();
-                                                                    // Refresh status
-                                                                    const updated = await chatService.searchUsers(searchQuery);
-                                                                    setSearchResults(updated);
-                                                                } catch (error) {
-                                                                    console.error('Add friend error:', error);
-                                                                }
-                                                            }}
-                                                            sx={{
-                                                                borderRadius: 2,
-                                                                textTransform: 'none',
-                                                                fontWeight: 700,
-                                                                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                                                                color: '#fff !important'
-                                                            }}
-                                                        >
-                                                            Add Friend
-                                                        </Button>
+                                            <div className={styles.gridItemText}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <Typography variant="subtitle1" fontWeight={800} color="#1e293b">
+                                                        {friend.name || friend.username}
+                                                    </Typography>
+                                                    {friend.lastMessageAt && (
+                                                        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                                                            {new Date(friend.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </Typography>
                                                     )}
                                                 </Box>
-                                            )}
-                                            {isSelf && <Chip label="You" size="small" variant="outlined" />}
-                                        </Box>
-                                    );
-                                })
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
+                                                    <Typography variant="body2" color="textSecondary" sx={{
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                        maxWidth: '200px',
+                                                        fontWeight: unreadCounts[`friend-${friend.id}`] ? 700 : 400,
+                                                        color: unreadCounts[`friend-${friend.id}`] ? '#1e293b' : '#64748b'
+                                                    }}>
+                                                        {friend.lastMessageContent || `@${friend.username}`}
+                                                    </Typography>
+                                                </Box>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {friends.length === 0 && renderEmptyState('friends')}
+                                </div>
                             )}
-                        </List>
-                    </DialogContent>
-                    <DialogActions sx={{ p: 3, gap: 1 }}>
-                        <Button
-                            onClick={() => {
-                                setSearchDialogOpen(false);
-                                setHasSearched(false);
-                                setSearchResults([]);
-                                setSearchQuery('');
-                            }}
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 700,
-                                px: 3,
-                                borderRadius: 2,
-                                color: 'text.secondary',
-                                '&:hover': { background: '#f1f5f9' }
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            onClick={handleSearch}
-                            disabled={isSearching}
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 700,
-                                px: 4,
-                                borderRadius: 2,
-                                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                                color: '#fff !important'
-                            }}
-                        >
-                            {isSearching ? '...' : 'Search'}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
 
-                <Dialog
-                    open={groupDialogOpen}
-                    onClose={() => setGroupDialogOpen(false)}
-                    maxWidth="sm"
-                    fullWidth
-                    PaperProps={{
-                        className: styles.dialogPaper,
-                        sx: { p: 1 }
-                    }}
-                >
-                    <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Create Group</DialogTitle>
-                    <DialogContent>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Create a group to chat with multiple friends at once.
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            <TextField
-                                label="Group Name"
-                                fullWidth
-                                value={newGroupName}
-                                onChange={(e) => setNewGroupName(e.target.value)}
-                                variant="filled"
-                                sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
+                            {tabValue === 1 && (
+                                <div className={styles.gridList}>
+                                    {groups.map((group) => (
+                                        <div key={group.id} className={styles.gridItem} onClick={() => handleSelectGroup(group)}>
+                                            <Avatar sx={{ width: 56, height: 56, bgcolor: '#8b5cf6' }}>
+                                                <GroupsIcon />
+                                            </Avatar>
+                                            <div className={styles.gridItemText}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <Typography variant="h6" fontWeight={800} color="#1e293b">{group.name}</Typography>
+                                                    {group.lastMessageAt && (
+                                                        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                                                            {new Date(group.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                                <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>{group.description || 'No description'}</Typography>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {groups.length === 0 && renderEmptyState('groups')}
+                                </div>
+                            )}
+
+                            {tabValue === 2 && (
+                                <div className={styles.gridList}>
+                                    {/* Incoming Friend Requests Section */}
+                                    <div style={{ width: '100%', marginBottom: '40px' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, pb: 2, borderBottom: '3px solid #e0e7ff' }}>
+                                            <Badge badgeContent={pendingRequests.length} color="primary" sx={{ mr: 2 }}>
+                                                <PersonAddIcon sx={{ fontSize: 28, color: '#6366f1' }} />
+                                            </Badge>
+                                            <Typography variant="h5" fontWeight={900} sx={{ color: '#1e293b', letterSpacing: '-0.5px' }}>Incoming Friend Requests</Typography>
+                                        </Box>
+
+                                        {pendingRequests.length > 0 ? (
+                                            pendingRequests.map((request) => (
+                                                <div key={request.id} className={styles.gridItem}>
+                                                    <Avatar sx={{ width: 80, height: 80, bgcolor: '#10b981', fontSize: 32, fontWeight: 800 }}>
+                                                        {(request.sender.name || request.sender.username || 'U').charAt(0).toUpperCase()}
+                                                    </Avatar>
+                                                    <div className={styles.gridItemText}>
+                                                        <Typography variant="h5" fontWeight={800}>{request.sender.name || (request.sender.username ? `@${request.sender.username}` : request.sender.email)}</Typography>
+                                                        <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>wants to connect with you</Typography>
+                                                    </div>
+                                                    <Button
+                                                        variant="contained"
+                                                        onClick={() => handleAcceptRequest(request.id)}
+                                                        sx={{
+                                                            textTransform: 'none',
+                                                            borderRadius: '16px',
+                                                            padding: '14px 32px',
+                                                            fontSize: '1.1rem',
+                                                            fontWeight: 800,
+                                                            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                                                            color: '#fff !important'
+                                                        }}
+                                                    >
+                                                        Accept
+                                                    </Button>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <Box sx={{ py: 6, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: '24px', border: '2px dashed #cbd5e1' }}>
+                                                <PersonAddIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
+                                                <Typography variant="h6" fontWeight={700} color="#64748b">No Incoming Friend Requests</Typography>
+                                                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>When people send you friend requests, they'll appear here</Typography>
+                                            </Box>
+                                        )}
+                                    </div>
+
+                                    {/* Outgoing Friend Requests Section */}
+                                    <div style={{ width: '100%' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, pb: 2, borderBottom: '3px solid #fef3c7' }}>
+                                            <Badge badgeContent={sentRequests.length} color="warning" sx={{ mr: 2 }}>
+                                                <SendIcon sx={{ fontSize: 28, color: '#f59e0b' }} />
+                                            </Badge>
+                                            <Typography variant="h5" fontWeight={900} sx={{ color: '#1e293b', letterSpacing: '-0.5px' }}>Outgoing Friend Requests</Typography>
+                                        </Box>
+
+                                        {sentRequests.length > 0 ? (
+                                            sentRequests.map((request) => (
+                                                <div key={request.id} className={styles.gridItem}>
+                                                    <Avatar sx={{ width: 80, height: 80, bgcolor: '#f59e0b', fontSize: 32, fontWeight: 800 }}>
+                                                        {(request.receiver.name || request.receiver.username || 'U').charAt(0).toUpperCase()}
+                                                    </Avatar>
+                                                    <div className={styles.gridItemText}>
+                                                        <Typography variant="h5" fontWeight={800}>{request.receiver.name || (request.receiver.username ? `@${request.receiver.username}` : request.receiver.email)}</Typography>
+                                                        <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>waiting for response</Typography>
+                                                    </div>
+                                                    <Chip
+                                                        label="Pending"
+                                                        variant="outlined"
+                                                        sx={{
+                                                            borderRadius: '12px',
+                                                            height: '48px',
+                                                            px: 2,
+                                                            fontWeight: 800,
+                                                            color: '#f59e0b',
+                                                            borderColor: '#fbbf24',
+                                                            bgcolor: '#fef3c7'
+                                                        }}
+                                                    />
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <Box sx={{ py: 6, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: '24px', border: '2px dashed #cbd5e1' }}>
+                                                <SendIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
+                                                <Typography variant="h6" fontWeight={700} color="#64748b">No Outgoing Friend Requests</Typography>
+                                                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>Friend requests you send will appear here</Typography>
+                                            </Box>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className={styles.chatContainer}>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                onChange={handleFileUpload}
                             />
-                            <TextField
-                                label="Description"
-                                fullWidth
-                                multiline
-                                rows={3}
-                                value={newGroupDesc}
-                                onChange={(e) => setNewGroupDesc(e.target.value)}
-                                variant="filled"
-                                sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
-                            />
-                        </Box>
-                    </DialogContent>
-                    <DialogActions sx={{ p: 3, gap: 1 }}>
-                        <Button
-                            onClick={() => setGroupDialogOpen(false)}
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 700,
-                                px: 3,
-                                borderRadius: 2,
-                                color: 'text.secondary',
-                                '&:hover': { background: '#f1f5f9' }
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            onClick={handleCreateGroup}
-                            disabled={!newGroupName.trim()}
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 700,
-                                px: 4,
-                                borderRadius: 2,
-                                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                                color: '#fff !important'
-                            }}
-                        >
-                            Create Group
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                            <div className={styles.messagesList} id="messages-container">
+                                {messages.map((msg, index) => {
+                                    const currentUserId = user?.id;
+                                    const messageSenderId = msg.senderId || msg.sender?.id;
+                                    const isSent = Number(messageSenderId) === Number(currentUserId);
+                                    return (
+                                        <div
+                                            key={msg.id ? `msg-${msg.id}` : `idx-${index}`}
+                                            className={`${styles.messageWrapper} ${isSent ? styles.sent : styles.received}`}
+                                        >
+                                            <Box sx={{
+                                                display: 'flex',
+                                                gap: 1.5,
+                                                alignItems: 'flex-end',
+                                                flexDirection: isSent ? 'row-reverse' : 'row',
+                                                width: '100%',
+                                                mb: 1
+                                            }}>
+                                                <Avatar sx={{
+                                                    width: 32,
+                                                    height: 32,
+                                                    fontSize: '0.75rem',
+                                                    bgcolor: isSent ? '#6366f1' : '#e2e8f0',
+                                                    color: isSent ? '#fff' : '#64748b',
+                                                    fontWeight: 700,
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                }}>
+                                                    {isSent ? (user?.name || user?.username || 'M').charAt(0).toUpperCase() : (selectedEntity?.data?.name || selectedEntity?.data?.username || 'U').charAt(0).toUpperCase()}
+                                                </Avatar>
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: isSent ? 'flex-end' : 'flex-start',
+                                                    maxWidth: 'calc(100% - 48px)'
+                                                }}>
+                                                    {msg.messageType === 'IMAGE' && msg.mediaUrl ? (
+                                                        <Box
+                                                            component="img"
+                                                            src={`${API_URL}${msg.mediaUrl}`}
+                                                            alt="shared image"
+                                                            sx={{
+                                                                maxWidth: '200px',
+                                                                borderRadius: '12px',
+                                                                cursor: 'pointer',
+                                                                mb: 0.5
+                                                            }}
+                                                            onClick={() => window.open(`${API_URL}${msg.mediaUrl}`, '_blank')}
+                                                        />
+                                                    ) : msg.messageType === 'FILE' && msg.mediaUrl ? (
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 1,
+                                                            bgcolor: 'rgba(0,0,0,0.05)',
+                                                            p: 1,
+                                                            borderRadius: '8px',
+                                                            mb: 0.5
+                                                        }}>
+                                                            <AttachFileIcon fontSize="small" />
+                                                            <a href={`${API_URL}${msg.mediaUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                                                                {msg.content}
+                                                            </a>
+                                                        </Box>
+                                                    ) : (
+                                                        <div className={styles.messageBubble}>{msg.content}</div>
+                                                    )}
+                                                    <span className={styles.messageTime}>
+                                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </Box>
+                                            </Box>
+                                        </div>
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            <div className={styles.inputArea}>
+                                <TextField
+                                    fullWidth
+                                    placeholder="Type your message..."
+                                    value={messageInput}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                    variant="outlined"
+                                    className={styles.inputField}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={handleMenuClick} sx={{ color: '#64748b', mr: 0.5 }}>
+                                                    <AttachFileIcon sx={{ fontSize: '1.4rem' }} />
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            '& fieldset': { border: 'none' },
+                                            paddingRight: '8px'
+                                        }
+                                    }}
+                                />
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={openMenu}
+                                    onClose={handleMenuClose}
+                                    PaperProps={{
+                                        sx: {
+                                            mb: 2,
+                                            borderRadius: 3,
+                                            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                                            minWidth: 180,
+                                            border: '1px solid #f1f5f9'
+                                        }
+                                    }}
+                                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                    transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                >
+                                    <MenuItem onClick={() => { fileInputRef.current?.click(); handleMenuClose(); }} sx={{ py: 1.5, gap: 1.5 }}>
+                                        <AttachFileIcon fontSize="small" color="primary" />
+                                        <Typography variant="body2" fontWeight={700}>Send File</Typography>
+                                    </MenuItem>
+                                    <MenuItem onClick={() => { fileInputRef.current?.click(); handleMenuClose(); }} sx={{ py: 1.5, gap: 1.5 }}>
+                                        <InsertPhotoIcon fontSize="small" color="secondary" />
+                                        <Typography variant="body2" fontWeight={700}>Send Photo</Typography>
+                                    </MenuItem>
+                                </Menu>
+                                <IconButton className={styles.sendBtn} onClick={handleSendMessage} disabled={!messageInput.trim()}>
+                                    <SendIcon sx={{ fontSize: '1.4rem' }} />
+                                </IconButton>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
-        </DashboardLayout>
+
+            <Dialog
+                open={searchDialogOpen}
+                onClose={() => {
+                    setSearchDialogOpen(false);
+                    setHasSearched(false);
+                    setSearchResults([]);
+                    setSearchQuery('');
+                    setSearchError(null);
+                }}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    className: styles.dialogPaper,
+                    sx: { p: 1 }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Search Friends</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Search for people by their name or username to start a conversation.
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <TextField
+                            fullWidth
+                            label="User Identifier"
+                            placeholder="Enter username or name..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                if (hasSearched) setHasSearched(false);
+                            }}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                            variant="filled"
+                            sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
+                        />
+                    </Box>
+                    <List sx={{ mt: 3, minHeight: '100px' }}>
+                        {isSearching ? (
+                            <Typography color="textSecondary" sx={{ py: 4, textAlign: 'center', fontStyle: 'italic' }}>Searching...</Typography>
+                        ) : hasSearched && searchResults.length === 0 ? (
+                            <Typography color="textSecondary" sx={{ py: 4, textAlign: 'center', fontStyle: 'italic' }}>No users found for "{searchQuery}"</Typography>
+                        ) : (
+                            searchResults.map((result) => {
+                                const isFriend = friends.some(f => f.id === result.id);
+                                const isPending = pendingRequests.some(r => r.sender.id === result.id);
+                                const isSent = sentRequests.some(r => r.receiver.id === result.id);
+                                const isSelf = user?.id === result.id;
+
+                                let statusText = '';
+                                if (isFriend) statusText = 'Friend';
+                                else if (isPending) statusText = 'Accept Request';
+                                else if (isSent) statusText = 'Pending';
+                                else if (isSelf) statusText = 'You';
+
+                                return (
+                                    <Box
+                                        key={result.id}
+                                        className={styles.searchResultItem}
+                                    >
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Avatar sx={{ width: 48, height: 48, bgcolor: isSelf ? '#64748b' : '#6366f1', fontSize: '1.2rem', fontWeight: 800 }}>
+                                                {(result.name || result.username || 'U').charAt(0).toUpperCase()}
+                                            </Avatar>
+                                            <Box>
+                                                <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1 }}>
+                                                    {result.name || result.username}
+                                                </Typography>
+                                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.2 }}>
+                                                    @{result.username} {statusText ? `• ${statusText}` : ''}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+
+                                        {!isSelf && (
+                                            <Box>
+                                                {isFriend ? (
+                                                    <Chip label="Friend" color="success" size="small" sx={{ fontWeight: 700, color: '#fff' }} />
+                                                ) : isPending ? (
+                                                    <Button
+                                                        variant="contained"
+                                                        size="small"
+                                                        onClick={() => handleAcceptRequest(result.id)}
+                                                        sx={{
+                                                            borderRadius: 2,
+                                                            textTransform: 'none',
+                                                            fontWeight: 700,
+                                                            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                                                            color: '#fff !important'
+                                                        }}
+                                                    >
+                                                        Accept
+                                                    </Button>
+                                                ) : isSent ? (
+                                                    <Chip label="Pending" variant="outlined" size="small" sx={{ fontWeight: 700 }} />
+                                                ) : (
+                                                    <Button
+                                                        variant="contained"
+                                                        size="small"
+                                                        startIcon={<PersonAddIcon />}
+                                                        onClick={async () => {
+                                                            try {
+                                                                await chatService.sendFriendRequest(undefined, result.id);
+                                                                loadPendingRequests();
+                                                                // Refresh status
+                                                                const updated = await chatService.searchUsers(searchQuery);
+                                                                setSearchResults(updated);
+                                                            } catch (error) {
+                                                                console.error('Add friend error:', error);
+                                                            }
+                                                        }}
+                                                        sx={{
+                                                            borderRadius: 2,
+                                                            textTransform: 'none',
+                                                            fontWeight: 700,
+                                                            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                                                            color: '#fff !important'
+                                                        }}
+                                                    >
+                                                        Add Friend
+                                                    </Button>
+                                                )}
+                                            </Box>
+                                        )}
+                                        {isSelf && <Chip label="You" size="small" variant="outlined" />}
+                                    </Box>
+                                );
+                            })
+                        )}
+                    </List>
+                </DialogContent>
+                <DialogActions sx={{ p: 3, gap: 1 }}>
+                    <Button
+                        onClick={() => {
+                            setSearchDialogOpen(false);
+                            setHasSearched(false);
+                            setSearchResults([]);
+                            setSearchQuery('');
+                        }}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 700,
+                            px: 3,
+                            borderRadius: 2,
+                            color: 'text.secondary',
+                            '&:hover': { background: '#f1f5f9' }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSearch}
+                        disabled={isSearching}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 700,
+                            px: 4,
+                            borderRadius: 2,
+                            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                            color: '#fff !important'
+                        }}
+                    >
+                        {isSearching ? '...' : 'Search'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={groupDialogOpen}
+                onClose={() => setGroupDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    className: styles.dialogPaper,
+                    sx: { p: 1 }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Create Group</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Create a group to chat with multiple friends at once.
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <TextField
+                            label="Group Name"
+                            fullWidth
+                            value={newGroupName}
+                            onChange={(e) => setNewGroupName(e.target.value)}
+                            variant="filled"
+                            sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
+                        />
+                        <TextField
+                            label="Description"
+                            fullWidth
+                            multiline
+                            rows={3}
+                            value={newGroupDesc}
+                            onChange={(e) => setNewGroupDesc(e.target.value)}
+                            variant="filled"
+                            sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 3, gap: 1 }}>
+                    <Button
+                        onClick={() => setGroupDialogOpen(false)}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 700,
+                            px: 3,
+                            borderRadius: 2,
+                            color: 'text.secondary',
+                            '&:hover': { background: '#f1f5f9' }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleCreateGroup}
+                        disabled={!newGroupName.trim()}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 700,
+                            px: 4,
+                            borderRadius: 2,
+                            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                            color: '#fff !important'
+                        }}
+                    >
+                        Create Group
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </DashboardLayout >
     );
 }

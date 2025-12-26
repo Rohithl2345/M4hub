@@ -21,6 +21,7 @@ import chatService, { ChatMessage, FriendRequest, UserSearchResult } from '../..
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
+import { useFocusEffect } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -35,7 +36,6 @@ export default function MessagesScreen() {
     const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
     const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
     const [activeTab, setActiveTab] = useState(0); // 0: Friends, 1: Groups, 2: Requests
-    const [error, setError] = useState<string | null>(null);
 
     // Dialog/Search states
     const [showSearch, setShowSearch] = useState(false);
@@ -49,6 +49,8 @@ export default function MessagesScreen() {
     const [showAttachMenu, setShowAttachMenu] = useState(false);
 
     const flatListRef = useRef<FlatList>(null);
+
+
 
     useEffect(() => {
         if (user?.id && token) {
@@ -106,13 +108,11 @@ export default function MessagesScreen() {
 
     const loadFriends = async () => {
         if (!token) return;
-        setError(null);
         try {
             const friendsList = await chatService.getFriends(token);
             setFriends(friendsList);
         } catch (error) {
             console.error('Error loading friends:', error);
-            setError("Failed to load friends");
         }
     };
 
@@ -123,7 +123,6 @@ export default function MessagesScreen() {
             setGroups(list);
         } catch (error) {
             console.error('Error loading groups:', error);
-            // Don't override main error if friends failed
         }
     };
 
@@ -185,6 +184,7 @@ export default function MessagesScreen() {
             return;
         }
         setSearchError(null);
+
         if (query) {
             setIsSearching(true);
             setHasSearched(true);
@@ -320,16 +320,6 @@ export default function MessagesScreen() {
                     <Text style={styles.headerTitle}>Messenger</Text>
                     <Text style={styles.headerSubtitle}>Connect with friends and groups</Text>
                 </LinearGradient>
-
-                {error && (
-                    <View style={{ backgroundColor: '#fee2e2', padding: 12, marginHorizontal: 16, marginTop: 16, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
-                        <Ionicons name="alert-circle" size={24} color="#ef4444" />
-                        <Text style={{ marginLeft: 8, color: '#b91c1c', fontWeight: '500', flex: 1 }}>{error}</Text>
-                        <TouchableOpacity onPress={loadFriends}>
-                            <Ionicons name="refresh" size={20} color="#b91c1c" />
-                        </TouchableOpacity>
-                    </View>
-                )}
 
                 {/* Tab Selection */}
                 <View style={styles.statsContainer}>
@@ -497,9 +487,12 @@ export default function MessagesScreen() {
                             </TouchableOpacity>
                         </View>
                         {searchError && (
-                            <Text style={{ color: '#ef4444', fontSize: 12, marginLeft: 24, marginTop: -8, marginBottom: 12 }}>
-                                {searchError}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fee2e2', padding: 8, marginHorizontal: 24, borderRadius: 8, marginBottom: 12 }}>
+                                <Ionicons name="alert-circle" size={16} color="#ef4444" style={{ marginRight: 6 }} />
+                                <Text style={{ color: '#b91c1c', fontSize: 12, fontWeight: '500' }}>
+                                    {searchError}
+                                </Text>
+                            </View>
                         )}
                         <FlatList
                             data={searchResults}
