@@ -27,7 +27,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const pathname = usePathname();
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.auth.user);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
 
     // Global Chat Connection and Presence
@@ -73,22 +72,14 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
     const handleNavigation = (path: string) => {
         router.push(path);
-        setIsSidebarOpen(false);
     };
 
     const isActive = (path: string) => pathname === path;
 
     return (
         <div className={styles.container}>
-            <button
-                className={styles.mobileMenuButton}
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                aria-label="Toggle menu"
-            >
-                {isSidebarOpen ? <CloseIcon /> : <MenuIcon />}
-            </button>
-
-            <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+            {/* Desktop Sidebar */}
+            <aside className={styles.sidebar}>
                 <div className={styles.logo} onClick={() => router.push('/dashboard')}>M4Hub</div>
                 {user?.username && (
                     <div className={styles.userInfo}>
@@ -165,7 +156,59 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                 </div>
             </aside>
 
-            {isSidebarOpen && <div className={styles.overlay} onClick={() => setIsSidebarOpen(false)} />}
+            {/* Mobile Header */}
+            <header className={styles.mobileHeader}>
+                <div className={styles.mobileLogo} onClick={() => router.push('/dashboard')}>M4Hub</div>
+                <div className={styles.mobileUserActions}>
+                    <div className={styles.mobileAvatar} onClick={() => router.push('/profile')}>
+                        {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <button onClick={handleLogout} className={styles.mobileLogoutIcon}>
+                        <LogoutIcon fontSize="small" />
+                    </button>
+                </div>
+            </header>
+
+            {/* Bottom Navigation for Mobile/Tablet */}
+            <nav className={styles.bottomNav}>
+                <div
+                    className={`${styles.bottomNavItem} ${isActive('/dashboard') ? styles.bottomNavItemActive : ''}`}
+                    onClick={() => handleNavigation('/dashboard')}
+                >
+                    <DashboardIcon />
+                    <span>Home</span>
+                </div>
+                <div
+                    className={`${styles.bottomNavItem} ${isActive('/music') ? styles.bottomNavItemActive : ''}`}
+                    onClick={() => handleNavigation('/music')}
+                >
+                    <MusicNoteIcon />
+                    <span>Music</span>
+                </div>
+                <div
+                    className={`${styles.bottomNavItem} ${isActive('/messages') ? styles.bottomNavItemActive : ''}`}
+                    onClick={() => handleNavigation('/messages')}
+                >
+                    <Badge badgeContent={pendingCount} color="error" max={9}>
+                        <ChatBubbleIcon />
+                    </Badge>
+                    <span>Chat</span>
+                </div>
+                <div
+                    className={`${styles.bottomNavItem} ${isActive('/money') ? styles.bottomNavItemActive : ''}`}
+                    onClick={() => handleNavigation('/money')}
+                >
+                    <AccountBalanceWalletIcon />
+                    <span>Money</span>
+                </div>
+                <div
+                    className={`${styles.bottomNavItem} ${isActive('/profile') ? styles.bottomNavItemActive : ''}`}
+                    onClick={() => handleNavigation('/profile')}
+                >
+                    <PersonIcon />
+                    <span>Profile</span>
+                </div>
+            </nav>
 
             <main className={styles.main}>
                 <div className={styles.pageHeader}>
