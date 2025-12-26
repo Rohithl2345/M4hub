@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import jakarta.annotation.PostConstruct;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -84,43 +83,8 @@ public class NewsService {
                 logger.info("Live News sync complete. Saved {} new articles.", savedCount);
             }
         } catch (Exception e) {
-            logger.error("Error during live news sync: {}. Falling back to mock data.", e.getMessage());
+            logger.error("Error during live news sync: {}", e.getMessage());
         }
-
-        // Fallback: If no news in DB, add mock news
-        if (newsArticleRepository.count() == 0) {
-            seedFallbackNews();
-        }
-    }
-
-    private void seedFallbackNews() {
-        logger.info("Clearing old news and seeding fresh fallback articles...");
-        newsArticleRepository.deleteAll();
-        List<NewsArticle> mocks = new ArrayList<>();
-
-        mocks.add(new NewsArticle(
-                "SpaceX Launches Next-Generation Starlink Satellites",
-                "The latest mission successfully deployed 23 Starlink satellites into low-Earth orbit, furthering global connectivity.",
-                "Space News", "BBC News", "https://www.bbc.com/news/technology",
-                "https://images.unsplash.com/photo-1517976487492-5750f3195933?w=800",
-                LocalDateTime.now().minusHours(2), "Technology", "mock-news-1"));
-
-        mocks.add(new NewsArticle(
-                "Global Stock Markets Settle After Volatile Week",
-                "Investors weigh latest inflation data as major indices remain resilient amid economic shifts.",
-                "Market Watch", "Reuters", "https://www.reuters.com/business/finance/",
-                "https://images.unsplash.com/photo-1611974714405-b0d80bb00278?w=800",
-                LocalDateTime.now().minusHours(5), "Business", "mock-news-2"));
-
-        mocks.add(new NewsArticle(
-                "Artificial Intelligence: The Future of Health Diagnostics",
-                "New AI models are demonstrating unprecedented accuracy in early disease detection through medical imaging.",
-                "Health Tech", "TechCrunch", "https://techcrunch.com/category/artificial-intelligence/",
-                "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800",
-                LocalDateTime.now().minusDays(1), "Science", "mock-news-3"));
-
-        newsArticleRepository.saveAll(mocks);
-        logger.info("Successfully seeded 3 mock news articles.");
     }
 
     public List<NewsArticle> getAllNews() {
