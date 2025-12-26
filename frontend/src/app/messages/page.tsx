@@ -742,7 +742,10 @@ export default function MessagesPage() {
                 }}
                 maxWidth="sm"
                 fullWidth
-                PaperProps={{ sx: { borderRadius: 4, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', p: 1 } }}
+                PaperProps={{
+                    className: styles.dialogPaper,
+                    sx: { p: 1 }
+                }}
             >
                 <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Search Friends</DialogTitle>
                 <DialogContent>
@@ -785,32 +788,18 @@ export default function MessagesPage() {
                                 return (
                                     <Box
                                         key={result.id}
-                                        sx={{
-                                            p: 2,
-                                            mb: 2,
-                                            borderRadius: 4,
-                                            border: '1px solid #eef2f6',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            background: '#fff',
-                                            transition: 'all 0.2s',
-                                            '&:hover': {
-                                                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                                                borderColor: '#6366f1'
-                                            }
-                                        }}
+                                        className={styles.searchResultItem}
                                     >
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Avatar sx={{ width: 48, height: 48, bgcolor: isSelf ? '#6366f1' : '#f1f5f9', color: isSelf ? '#fff' : '#64748b' }}>
-                                                {(result.name || result.username || 'U')[0].toUpperCase()}
+                                            <Avatar sx={{ width: 48, height: 48, bgcolor: isSelf ? '#64748b' : '#6366f1', fontSize: '1.2rem', fontWeight: 800 }}>
+                                                {(result.name || result.username || 'U').charAt(0).toUpperCase()}
                                             </Avatar>
                                             <Box>
-                                                <Typography variant="subtitle1" fontWeight={700}>
+                                                <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1 }}>
                                                     {result.name || result.username}
                                                 </Typography>
-                                                <Typography variant="caption" color="textSecondary">
-                                                    @{result.username}
+                                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.2 }}>
+                                                    @{result.username} {statusText ? `• ${statusText}` : ''}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -915,11 +904,8 @@ export default function MessagesPage() {
                 maxWidth="sm"
                 fullWidth
                 PaperProps={{
-                    sx: {
-                        borderRadius: 4,
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        p: 1
-                    }
+                    className: styles.dialogPaper,
+                    sx: { p: 1 }
                 }}
             >
                 <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Create Group</DialogTitle>

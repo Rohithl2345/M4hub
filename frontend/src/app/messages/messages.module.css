@@ -10,6 +10,14 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+        border-radius: 0;
+        /* Full width edge-to-edge feel */
+    }
+}
+
 .header {
     margin-bottom: 24px;
     padding: 24px;
@@ -22,7 +30,9 @@
 
 @media (max-width: 768px) {
     .header {
-        padding: 20px 16px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border-radius: 12px;
     }
 }
 
@@ -36,10 +46,11 @@
 
 @media (max-width: 768px) {
     .headerContent {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
         align-items: center;
-        text-align: center;
-        gap: 20px;
+        justify-content: space-between;
+        gap: 12px;
     }
 }
 
@@ -55,14 +66,21 @@
     gap: 20px;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .headerInfo {
-        flex-direction: column;
-        gap: 8px;
+        gap: 12px;
     }
 
     .headerIcon {
-        font-size: 36px !important;
+        display: none !important;
+    }
+
+    .subtitle {
+        display: none;
+    }
+
+    .title {
+        font-size: 20px;
     }
 }
 
@@ -97,10 +115,12 @@
 
 @media (max-width: 768px) {
     .headerTabsRow {
-        margin: 0;
+        margin: 12px 0 0 0;
         width: 100%;
         justify-content: center;
         order: 3;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 12px;
     }
 }
 
@@ -116,6 +136,14 @@
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
     flex-shrink: 0;
     min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .chatHeader {
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+    }
 }
 
 .navLeft {
@@ -215,11 +243,10 @@
 @media (max-width: 768px) {
     .navActions {
         display: flex;
-        justify-content: center;
-        width: 100%;
-        gap: 16px;
+        justify-content: flex-end;
+        width: auto;
+        gap: 8px;
         order: 2;
-        /* Put buttons between info and tabs on mobile */
     }
 }
 
@@ -243,10 +270,13 @@
 @media (max-width: 768px) {
     .actionBtn {
         background: rgba(255, 255, 255, 0.1) !important;
-        border-radius: 50% !important;
-        /* Circular icons on mobile for cleaner look */
-        width: 48px;
-        height: 48px;
+        border-radius: 12px !important;
+        width: 40px;
+        height: 40px;
+    }
+
+    .actionBtn svg {
+        font-size: 20px !important;
     }
 }
 
@@ -557,6 +587,50 @@
 @media (max-width: 1024px) {
     .tabsWrapper {
         display: none;
+    }
+}
+
+/* Modal Custom Styles */
+.dialogPaper {
+    border-radius: 20px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+@media (max-width: 768px) {
+    .dialogPaper {
+        margin: 12px !important;
+        width: calc(100% - 24px) !important;
+        border-radius: 16px !important;
+    }
+}
+
+.searchResultItem {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+    border: 1px solid #eef2f6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    transition: all 0.2s;
+}
+
+.searchResultItem:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #6366f1;
+}
+
+@media (max-width: 480px) {
+    .searchResultItem {
+        padding: 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .searchResultItem .MuiButton-root {
+        width: 100%;
     }
 }
 
