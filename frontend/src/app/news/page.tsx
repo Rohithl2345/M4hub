@@ -145,25 +145,6 @@ export default function NewsPage() {
                                     </div>
                                 ))}
                             </div>
-
-                            <div className={styles.sidebarSection} style={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white', border: 'none' }}>
-                                <h4 className={styles.sidebarTitle} style={{ color: 'white' }}>Weekly Digest</h4>
-                                <p style={{ fontSize: '13px', opacity: 0.9, lineHeight: 1.5 }}>
-                                    Subscribe to receive the most important stories directly in your dashboard.
-                                </p>
-                                <button style={{
-                                    marginTop: '20px',
-                                    padding: '12px 20px',
-                                    borderRadius: '12px',
-                                    border: 'none',
-                                    background: 'white',
-                                    color: '#fa709a',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    width: '100%',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                                }}>Early Access</button>
-                            </div>
                         </aside>
                     </div>
                 )}
