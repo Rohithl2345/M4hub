@@ -382,17 +382,44 @@
     }
 }
 
+@media (max-width: 600px) {
+    .searchContainer {
+        border-radius: 12px;
+        flex-wrap: wrap;
+    }
+
+    .searchButton {
+        width: 100%;
+        margin-top: 8px;
+    }
+}
+
 @media (max-width: 480px) {
     .tabs {
-        flex-wrap: wrap;
         gap: 8px;
     }
 
     .tab {
-        flex: 1;
-        min-width: calc(50% - 4px);
-        padding: 8px 12px;
-        text-align: center;
+        flex-shrink: 0;
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+
+    .trackCard {
+        flex-wrap: wrap;
+    }
+
+    .trackInfo {
+        min-width: 150px;
+    }
+
+    .trackDuration {
+        order: 3;
+        margin-left: 60px;
+    }
+
+    .trackActions {
+        order: 4;
     }
 }
 
@@ -401,6 +428,15 @@
     display: flex;
     gap: 12px;
     margin-bottom: 32px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.tabs::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Opera */
 }
 
 .tab {

@@ -27,6 +27,14 @@
     width: 100%;
 }
 
+@media (max-width: 768px) {
+    .headerContent {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+}
+
 .headerMain {
     display: flex;
     justify-content: space-between;
@@ -62,6 +70,20 @@
     margin: 0 40px;
 }
 
+@media (max-width: 1024px) {
+    .headerTabsRow {
+        margin: 0 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .headerTabsRow {
+        margin: 0;
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
 .chatHeader {
     padding: 12px 20px;
     background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
@@ -73,6 +95,7 @@
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
     flex-shrink: 0;
+    min-width: 0;
 }
 
 .navLeft {
@@ -99,6 +122,17 @@
     font-weight: 800;
     line-height: 1.2;
     letter-spacing: -0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+@media (max-width: 480px) {
+    .navTitle {
+        max-width: 120px;
+        font-size: 16px;
+    }
 }
 
 .statusWrapper {
@@ -156,6 +190,14 @@
 .navActions {
     display: flex;
     gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .navActions {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+    }
 }
 
 .actionBtn {
@@ -471,5 +513,26 @@
 @media (max-width: 1024px) {
     .tabsWrapper {
         display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .headerTab {
+        padding: 0 12px !important;
+        min-width: unset !important;
+    }
+
+    .listView {
+        padding: 8px;
+    }
+
+    .gridItem {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .emptyState {
+        min-height: 300px;
+        padding: 20px;
     }
 }

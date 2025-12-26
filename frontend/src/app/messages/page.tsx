@@ -351,6 +351,9 @@ export default function MessagesPage() {
                                     value={tabValue}
                                     onChange={(_, v) => setTabValue(v)}
                                     textColor="inherit"
+                                    variant="scrollable"
+                                    scrollButtons="auto"
+                                    allowScrollButtonsMobile
                                     className={styles.tabs}
                                     TabIndicatorProps={{
                                         style: { backgroundColor: '#ffffff', height: '3px', borderRadius: '3px' }
