@@ -15,10 +15,10 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           time_zone: UTC
     show-sql: true
+    open-in-view: false
   
   jackson:
     time-zone: UTC
