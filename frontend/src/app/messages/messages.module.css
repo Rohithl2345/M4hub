@@ -18,7 +18,12 @@
     color: white;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
     position: relative;
-    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 20px 16px;
+    }
 }
 
 .headerContent {
@@ -32,8 +37,9 @@
 @media (max-width: 768px) {
     .headerContent {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
+        align-items: center;
+        text-align: center;
+        gap: 20px;
     }
 }
 
@@ -51,13 +57,12 @@
 
 @media (max-width: 480px) {
     .headerInfo {
-        gap: 12px;
-        padding-right: 80px;
-        /* Leave space for absolute top-right buttons */
+        flex-direction: column;
+        gap: 8px;
     }
 
     .headerIcon {
-        font-size: 32px !important;
+        font-size: 36px !important;
     }
 }
 
@@ -94,7 +99,8 @@
     .headerTabsRow {
         margin: 0;
         width: 100%;
-        justify-content: flex-start;
+        justify-content: center;
+        order: 3;
     }
 }
 
@@ -208,21 +214,33 @@
 
 @media (max-width: 768px) {
     .navActions {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        z-index: 10;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 4px;
-        border-radius: 12px;
-        backdrop-filter: blur(4px);
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        gap: 16px;
+        order: 2;
+        /* Put buttons between info and tabs on mobile */
     }
 }
 
 .actionBtn {
     color: white !important;
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    padding: 10px !important;
+    transition: all 0.3s ease !important;
+}
+
+.actionBtn:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 480px) {
+    .actionBtn {
+        flex: 1;
+        max-width: 120px;
+    }
 }
 
 .mainContent {
