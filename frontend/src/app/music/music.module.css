@@ -324,23 +324,74 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+@media (max-width: 1024px) {
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
+    .container {
+        padding: 16px;
+    }
+
     .header {
         flex-direction: column;
         text-align: center;
-        padding: 24px;
+        padding: 30px 20px;
+        gap: 15px;
+    }
+
+    .headerIcon {
+        font-size: 36px !important;
     }
 
     .title {
-        font-size: 24px;
+        font-size: 20px;
     }
 
     .statsGrid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .statCard {
+        padding: 16px;
+    }
+
+    .searchContainer {
+        padding: 8px 16px;
+    }
+
+    .searchButton {
+        padding: 8px 16px;
+        font-size: 14px;
     }
 
     .trackCard {
-        flex-direction: column;
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .trackInfo h4 {
+        font-size: 14px;
+    }
+
+    .trackInfo p {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tabs {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .tab {
+        flex: 1;
+        min-width: calc(50% - 4px);
+        padding: 8px 12px;
         text-align: center;
     }
 }

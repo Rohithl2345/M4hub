@@ -190,41 +190,52 @@
     color: white;
 }
 
+@media (max-width: 1024px) {
+    .featuresGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .container {
-        flex-direction: column;
-    }
-
-    .sidebar {
-        width: 100%;
         padding: 16px;
     }
 
-    .logo {
+    .welcomeCard {
+        padding: 20px;
+    }
+
+    .welcomeCard h2 {
         font-size: 20px;
-        margin-bottom: 16px;
-    }
-
-    .nav {
-        flex-direction: row;
-        overflow-x: auto;
-    }
-
-    .main {
-        padding: 16px;
-    }
-
-    .header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-    }
-
-    .title {
-        font-size: 24px;
     }
 
     .featuresGrid {
         grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .featureCard {
+        padding: 24px;
+    }
+
+    .featureIcon {
+        font-size: 48px !important;
+        width: 48px !important;
+        height: 48px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .welcomeHeader {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .userDetails {
+        justify-content: center;
+    }
+
+    .featureCard {
+        padding: 20px;
     }
 }

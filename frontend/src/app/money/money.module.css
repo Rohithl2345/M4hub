@@ -247,28 +247,78 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+@media (max-width: 1024px) {
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
+    .container {
+        padding: 16px;
+    }
+
     .header {
         flex-direction: column;
         text-align: center;
-        padding: 24px;
+        padding: 30px 20px;
+        gap: 15px;
+    }
+
+    .headerIcon {
+        font-size: 36px !important;
     }
 
     .title {
-        font-size: 24px;
+        font-size: 20px;
     }
 
     .balanceCard {
         flex-direction: column;
         text-align: center;
-        gap: 24px;
+        padding: 24px;
+        gap: 20px;
     }
 
     .balanceAmount {
-        font-size: 36px;
+        font-size: 32px;
+    }
+
+    .addMoneyBtn {
+        width: 100%;
+        padding: 12px 24px;
     }
 
     .statsGrid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .statCard {
+        padding: 16px;
+    }
+
+    .transactionCard {
+        padding: 12px;
+    }
+
+    .transactionInfo h4 {
+        font-size: 14px;
+    }
+
+    .amount {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .transactionCard {
+        gap: 10px;
+    }
+
+    .transactionIcon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
     }
 }
