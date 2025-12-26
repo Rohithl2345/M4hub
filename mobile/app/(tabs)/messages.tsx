@@ -35,6 +35,7 @@ export default function MessagesScreen() {
     const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
     const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
     const [activeTab, setActiveTab] = useState(0); // 0: Friends, 1: Groups, 2: Requests
+    const [error, setError] = useState<string | null>(null);
 
     // Dialog/Search states
     const [showSearch, setShowSearch] = useState(false);
@@ -48,8 +49,6 @@ export default function MessagesScreen() {
     const [showAttachMenu, setShowAttachMenu] = useState(false);
 
     const flatListRef = useRef<FlatList>(null);
-
-
 
     useEffect(() => {
         if (user?.id && token) {
@@ -107,11 +106,13 @@ export default function MessagesScreen() {
 
     const loadFriends = async () => {
         if (!token) return;
+        setError(null);
         try {
             const friendsList = await chatService.getFriends(token);
             setFriends(friendsList);
         } catch (error) {
             console.error('Error loading friends:', error);
+            setError("Failed to load friends");
         }
     };
 
@@ -122,6 +123,7 @@ export default function MessagesScreen() {
             setGroups(list);
         } catch (error) {
             console.error('Error loading groups:', error);
+            // Don't override main error if friends failed
         }
     };
 
@@ -173,9 +175,16 @@ export default function MessagesScreen() {
         setMessageInput('');
     };
 
+    const [searchError, setSearchError] = useState<string | null>(null);
+
     const handleSearch = async () => {
         if (!token) return;
         const query = searchQuery.trim();
+        if (!query) {
+            setSearchError('Please enter a username or name');
+            return;
+        }
+        setSearchError(null);
         if (query) {
             setIsSearching(true);
             setHasSearched(true);
@@ -311,6 +320,16 @@ export default function MessagesScreen() {
                     <Text style={styles.headerTitle}>Messenger</Text>
                     <Text style={styles.headerSubtitle}>Connect with friends and groups</Text>
                 </LinearGradient>
+
+                {error && (
+                    <View style={{ backgroundColor: '#fee2e2', padding: 12, marginHorizontal: 16, marginTop: 16, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name="alert-circle" size={24} color="#ef4444" />
+                        <Text style={{ marginLeft: 8, color: '#b91c1c', fontWeight: '500', flex: 1 }}>{error}</Text>
+                        <TouchableOpacity onPress={loadFriends}>
+                            <Ionicons name="refresh" size={20} color="#b91c1c" />
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {/* Tab Selection */}
                 <View style={styles.statsContainer}>
@@ -450,6 +469,7 @@ export default function MessagesScreen() {
                         setHasSearched(false);
                         setSearchResults([]);
                         setSearchQuery('');
+                        setSearchError(null);
                     }}
                 >
                     <View style={styles.modalBody}>
@@ -466,13 +486,21 @@ export default function MessagesScreen() {
                                 style={styles.searchInput}
                                 placeholder="Search username..."
                                 value={searchQuery}
-                                onChangeText={setSearchQuery}
+                                onChangeText={(text) => {
+                                    setSearchQuery(text);
+                                    if (text.trim()) setSearchError(null);
+                                }}
                                 onSubmitEditing={handleSearch}
                             />
                             <TouchableOpacity onPress={handleSearch}>
                                 <Text style={styles.searchBtnText}>Go</Text>
                             </TouchableOpacity>
                         </View>
+                        {searchError && (
+                            <Text style={{ color: '#ef4444', fontSize: 12, marginLeft: 24, marginTop: -8, marginBottom: 12 }}>
+                                {searchError}
+                            </Text>
+                        )}
                         <FlatList
                             data={searchResults}
                             keyExtractor={(item) => item.id.toString()}

@@ -30,7 +30,7 @@ public class NewsController {
 
     @PostMapping("/sync")
     public ResponseEntity<String> syncNews() {
-        newsService.syncNewsFromExternalSource();
+        newsService.syncNews();
         return ResponseEntity.ok("Sync initiated successfully");
     }
 }

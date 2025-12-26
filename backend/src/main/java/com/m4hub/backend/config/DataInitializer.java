@@ -19,7 +19,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         try {
             logger.info("Starting initial news synchronization...");
-            newsService.syncNewsFromExternalSource();
+            newsService.syncNews();
         } catch (Exception e) {
             logger.error("Failed to perform initial news synchronization: {}", e.getMessage());
         }

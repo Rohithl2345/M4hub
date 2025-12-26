@@ -446,12 +446,21 @@ class ChatService {
         return response.data;
     }
 
-    async getGroups(): Promise<any[]> {
-        const token = localStorage.getItem('authToken');
-        const response = await axios.get(`${API_URL}/api/chat/groups`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        return response.data;
+    async getGroups(token?: string): Promise<any[]> {
+        if (!token && typeof window !== 'undefined') {
+            token = localStorage.getItem('authToken') || undefined;
+        }
+        if (!token) return [];
+
+        try {
+            const response = await axios.get(`${API_URL}/api/chat/groups`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.warn('Failed to fetch groups:', error);
+            return [];
+        }
     }
 
     // Get relationship status with a user

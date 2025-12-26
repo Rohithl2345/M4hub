@@ -4,13 +4,11 @@ import com.m4hub.backend.model.NewsArticle;
 import com.m4hub.backend.repository.NewsArticleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
-
-import jakarta.annotation.PostConstruct;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,22 +21,38 @@ public class NewsService {
     private final NewsArticleRepository newsArticleRepository;
     private final RestTemplate restTemplate;
 
-    @Value("${news.api.key:pub_631980327f7a2f5f1345d4c795267e1a3b118}") // Example public key or placeholder
-    private String apiKey;
+    private static final String url = "https://ok.surf/api/v1/cors/news-feed";
 
     public NewsService(NewsArticleRepository newsArticleRepository, RestTemplate restTemplate) {
         this.newsArticleRepository = newsArticleRepository;
         this.restTemplate = restTemplate;
     }
 
+    @Scheduled(fixedRate = 7200000) // 2 hours
+
+    public void scheduledSync() {
+        try {
+            syncNews();
+        } catch (Exception e) {
+            logger.error("Error during scheduled news sync: {}", e.getMessage());
+        }
+    }
+
     @Transactional
     @SuppressWarnings("unchecked")
-    @Scheduled(fixedRate = 7200000) // 2 hours
-    @PostConstruct
-    public void syncNewsFromExternalSource() {
-        logger.info("Starting sync of news from open live API (ok.surf)...");
-
-        String url = "https://ok.surf/api/v1/cors/news-feed";
+    public void syncNews() {
+        // One-time cleanup: Remove legacy mock data if it exists
+        long mockCount = newsArticleRepository.count();
+        if (mockCount > 0) {
+            List<NewsArticle> allArticles = newsArticleRepository.findAll();
+            List<NewsArticle> mocks = allArticles.stream()
+                    .filter(a -> a.getExternalId() != null && a.getExternalId().contains("mock"))
+                    .toList();
+            if (!mocks.isEmpty()) {
+                logger.info("Cleaning up {} legacy mock articles...", mocks.size());
+                newsArticleRepository.deleteAll(mocks);
+            }
+        }
 
         try {
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
@@ -83,7 +97,8 @@ public class NewsService {
                 logger.info("Live News sync complete. Saved {} new articles.", savedCount);
             }
         } catch (Exception e) {
-            logger.error("Error during live news sync: {}", e.getMessage());
+            logger.error("Error fetching news from external source: {}", e.getMessage());
+            throw new RuntimeException("Failed to fetch news from external source", e);
         }
     }
 

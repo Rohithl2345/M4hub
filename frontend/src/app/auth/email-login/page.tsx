@@ -79,24 +79,40 @@ function EmailLoginPageInner() {
         return id.length >= 3;
     };
 
+    const [touched, setTouched] = useState({ email: false, password: false });
+
+    // Computed errors
+    const errors = {
+        email: (() => {
+            if (!email) return '';
+            if (mode === 'login' && !validateIdentifier(email)) return 'Please enter a valid email or username';
+            if (mode === 'signup' && !validateEmail(email)) return 'Please enter a valid email address';
+            return '';
+        })(),
+        password: (() => {
+            if (!password) return '';
+            if (password.length < 6) return 'Password must be at least 6 characters';
+            return '';
+        })()
+    };
+
+    const handleBlur = (field: 'email' | 'password') => {
+        setTouched(prev => ({ ...prev, [field]: true }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (mode === 'login') {
-            if (!validateIdentifier(email)) {
-                setError('Please enter a valid email address or username');
-                return;
-            }
-        } else {
-            if (!validateEmail(email)) {
-                setError('Please enter a valid email address');
-                return;
-            }
-        }
+        // Mark all as touched on submit
+        setTouched({ email: true, password: true });
 
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters');
+        // Check for errors
+        if (errors.email || errors.password) {
+            return;
+        }
+        if (mode === 'signup' && !isPasswordValid) {
+            setError('Please meet all password requirements');
             return;
         }
 
@@ -192,6 +208,9 @@ function EmailLoginPageInner() {
                                     placeholder={mode === 'login' ? "Username or Email" : "your@email.com"}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    onBlur={() => handleBlur('email')}
+                                    error={touched.email && !!errors.email}
+                                    helperText={touched.email && errors.email}
                                     autoFocus
                                     autoComplete="off"
                                     className={styles.emailField}
@@ -216,6 +235,9 @@ function EmailLoginPageInner() {
                                         placeholder="Password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
+                                        onBlur={() => handleBlur('password')}
+                                        error={touched.password && !!errors.password}
+                                        helperText={touched.password && errors.password}
                                         className={styles.passwordField}
                                         required
                                         autoComplete="new-password"

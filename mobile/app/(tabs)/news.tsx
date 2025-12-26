@@ -17,6 +17,7 @@ export default function NewsScreen() {
     const [newsArticles, setNewsArticles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('All');
+    const [error, setError] = useState<string | null>(null);
 
     const categories = ['All', 'Technology', 'Business', 'Science', 'Sports', 'Entertainment', 'World'];
 
@@ -26,6 +27,7 @@ export default function NewsScreen() {
 
     const fetchNews = async () => {
         setLoading(true);
+        setError(null);
         try {
             const baseUrl = `${APP_CONFIG.API_URL}/api/news`;
             const url = category === 'All' ? `${baseUrl}/latest` : `${baseUrl}/category/${category}`;
@@ -33,6 +35,7 @@ export default function NewsScreen() {
             setNewsArticles(response.data);
         } catch (error) {
             console.error("Error fetching news:", error);
+            setError("Failed to load news. Please check your connection.");
         } finally {
             setLoading(false);
         }
@@ -66,108 +69,129 @@ export default function NewsScreen() {
                     <Ionicons name="newspaper-outline" size={32} color="white" />
                 </LinearGradient>
 
-                {/* Top Highlight / Ticker Replacement */}
-                {firstArticle && (
-                    <TouchableOpacity
-                        style={styles.tickerContainer}
-                        onPress={() => Linking.openURL(firstArticle.url)}
-                    >
-                        <View style={styles.tickerLabel}>
-                            <ThemedText style={styles.tickerLabelText}>BREAKING</ThemedText>
-                        </View>
-                        <ThemedText style={styles.tickerText} numberOfLines={1}>
-                            {firstArticle.title}
-                        </ThemedText>
-                        <Ionicons name="chevron-forward" size={16} color="#fa709a" style={{ marginRight: 12 }} />
-                    </TouchableOpacity>
-                )}
-
-                {/* Category Filtering Tabs */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.tabsContainer}
-                >
-                    {categories.map((cat) => (
+                {error ? (
+                    <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 50, padding: 20 }}>
+                        <Ionicons name="cloud-offline-outline" size={64} color="#ef4444" />
+                        <ThemedText style={{ fontSize: 18, marginTop: 16, color: '#ef4444' }}>{error}</ThemedText>
                         <TouchableOpacity
-                            key={cat}
-                            style={[styles.tab, category === cat && styles.tabActive]}
-                            onPress={() => setCategory(cat)}
+                            style={{
+                                marginTop: 20,
+                                paddingVertical: 10,
+                                paddingHorizontal: 24,
+                                backgroundColor: '#fa709a',
+                                borderRadius: 20
+                            }}
+                            onPress={fetchNews}
                         >
-                            <ThemedText style={[styles.tabText, category === cat && styles.tabTextActive]}>
-                                {cat}
-                            </ThemedText>
+                            <ThemedText style={{ color: 'white', fontWeight: 'bold' }}>Try Again</ThemedText>
                         </TouchableOpacity>
-                    ))}
-                </ScrollView>
-
-                {loading ? (
-                    <ActivityIndicator size="large" color="#fa709a" style={styles.loader} />
+                    </View>
                 ) : (
                     <>
-                        {/* Main Feed */}
-                        <View style={styles.section}>
-                            <ThemedText style={styles.sectionTitle}>Featured Stories</ThemedText>
-                            {restArticles.length > 0 ? restArticles.map((article) => (
-                                <TouchableOpacity
-                                    key={article.id}
-                                    style={styles.newsCard}
-                                    onPress={() => Linking.openURL(article.url)}
-                                >
-                                    <View style={styles.newsImage}>
-                                        {article.urlToImage ? (
-                                            <Image
-                                                source={{ uri: article.urlToImage }}
-                                                style={{ width: '100%', height: '100%' }}
-                                                resizeMode="cover"
-                                            />
-                                        ) : (
-                                            <Ionicons name="image-outline" size={48} color="#cbd5e1" />
-                                        )}
-                                    </View>
-                                    <View style={styles.newsContent}>
-                                        <ThemedText style={styles.category}>{article.category || 'General'}</ThemedText>
-                                        <ThemedText style={styles.newsTitle}>{article.title}</ThemedText>
-                                        <ThemedText style={styles.newsExcerpt} numberOfLines={2}>
-                                            {article.description || 'Tap to read full article from source.'}
-                                        </ThemedText>
-                                        <View style={styles.newsFooter}>
-                                            <ThemedText style={styles.source} numberOfLines={1}>
-                                                {article.sourceName} • {dayjs(article.publishedAt).format('MMM D')}
-                                            </ThemedText>
-                                            <View style={styles.readMore}>
-                                                <ThemedText style={styles.readMoreText}>Read</ThemedText>
-                                                <Ionicons name="arrow-forward" size={14} color="#fa709a" />
-                                            </View>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                            )) : (
-                                <ThemedText style={{ textAlign: 'center', color: '#64748b', marginTop: 20 }}>
-                                    No stories found in this category.
+                        {/* Top Highlight / Ticker Replacement */}
+                        {firstArticle && (
+                            <TouchableOpacity
+                                style={styles.tickerContainer}
+                                onPress={() => Linking.openURL(firstArticle.url)}
+                            >
+                                <View style={styles.tickerLabel}>
+                                    <ThemedText style={styles.tickerLabelText}>BREAKING</ThemedText>
+                                </View>
+                                <ThemedText style={styles.tickerText} numberOfLines={1}>
+                                    {firstArticle.title}
                                 </ThemedText>
-                            )}
-                        </View>
+                                <Ionicons name="chevron-forward" size={16} color="#fa709a" style={{ marginRight: 12 }} />
+                            </TouchableOpacity>
+                        )}
 
-                        {/* Side Briefs Section */}
-                        {sideBriefs.length > 0 && (
-                            <View style={styles.briefsSection}>
-                                <ThemedText style={styles.sectionTitle}>Trending Briefs</ThemedText>
-                                {sideBriefs.map((article) => (
-                                    <TouchableOpacity
-                                        key={article.id}
-                                        style={styles.briefItem}
-                                        onPress={() => Linking.openURL(article.url)}
-                                    >
-                                        <ThemedText style={styles.briefTitle} numberOfLines={2}>
-                                            {article.title}
+                        {/* Category Filtering Tabs */}
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.tabsContainer}
+                        >
+                            {categories.map((cat) => (
+                                <TouchableOpacity
+                                    key={cat}
+                                    style={[styles.tab, category === cat && styles.tabActive]}
+                                    onPress={() => setCategory(cat)}
+                                >
+                                    <ThemedText style={[styles.tabText, category === cat && styles.tabTextActive]}>
+                                        {cat}
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {loading ? (
+                            <ActivityIndicator size="large" color="#fa709a" style={styles.loader} />
+                        ) : (
+                            <>
+                                {/* Main Feed */}
+                                <View style={styles.section}>
+                                    <ThemedText style={styles.sectionTitle}>Featured Stories</ThemedText>
+                                    {restArticles.length > 0 ? restArticles.map((article) => (
+                                        <TouchableOpacity
+                                            key={article.id}
+                                            style={styles.newsCard}
+                                            onPress={() => Linking.openURL(article.url)}
+                                        >
+                                            <View style={styles.newsImage}>
+                                                {article.urlToImage ? (
+                                                    <Image
+                                                        source={{ uri: article.urlToImage }}
+                                                        style={{ width: '100%', height: '100%' }}
+                                                        resizeMode="cover"
+                                                    />
+                                                ) : (
+                                                    <Ionicons name="image-outline" size={48} color="#cbd5e1" />
+                                                )}
+                                            </View>
+                                            <View style={styles.newsContent}>
+                                                <ThemedText style={styles.category}>{article.category || 'General'}</ThemedText>
+                                                <ThemedText style={styles.newsTitle}>{article.title}</ThemedText>
+                                                <ThemedText style={styles.newsExcerpt} numberOfLines={2}>
+                                                    {article.description || 'Tap to read full article from source.'}
+                                                </ThemedText>
+                                                <View style={styles.newsFooter}>
+                                                    <ThemedText style={styles.source} numberOfLines={1}>
+                                                        {article.sourceName} • {dayjs(article.publishedAt).format('MMM D')}
+                                                    </ThemedText>
+                                                    <View style={styles.readMore}>
+                                                        <ThemedText style={styles.readMoreText}>Read</ThemedText>
+                                                        <Ionicons name="arrow-forward" size={14} color="#fa709a" />
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    )) : (
+                                        <ThemedText style={{ textAlign: 'center', color: '#64748b', marginTop: 20 }}>
+                                            No stories found in this category.
                                         </ThemedText>
-                                        <ThemedText style={styles.briefMeta}>
-                                            {article.sourceName} • {dayjs(article.publishedAt).fromNow()}
-                                        </ThemedText>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                                    )}
+                                </View>
+
+                                {/* Side Briefs Section */}
+                                {sideBriefs.length > 0 && (
+                                    <View style={styles.briefsSection}>
+                                        <ThemedText style={styles.sectionTitle}>Trending Briefs</ThemedText>
+                                        {sideBriefs.map((article) => (
+                                            <TouchableOpacity
+                                                key={article.id}
+                                                style={styles.briefItem}
+                                                onPress={() => Linking.openURL(article.url)}
+                                            >
+                                                <ThemedText style={styles.briefTitle} numberOfLines={2}>
+                                                    {article.title}
+                                                </ThemedText>
+                                                <ThemedText style={styles.briefMeta}>
+                                                    {article.sourceName} • {dayjs(article.publishedAt).fromNow()}
+                                                </ThemedText>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+                            </>
                         )}
                     </>
                 )}

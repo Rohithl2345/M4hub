@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { ScrollView, View, TouchableOpacity, TextInput, ActivityIndicator, Linking } from 'react-native';
-import { Stack } from 'expo-router';
+import { useState, useEffect, useCallback } from 'react';
+import { ScrollView, View, TouchableOpacity, TextInput, ActivityIndicator, Linking, Alert } from 'react-native';
+import { Stack, useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import MobileAudioPlayer from '@/components/MobileAudioPlayer';
@@ -15,12 +15,30 @@ export default function MusicScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
     const [currentTrackIndex, setCurrentTrackIndex] = useState(-1);
+    const [error, setError] = useState<string | null>(null);
+    const [searchError, setSearchError] = useState<string | null>(null);
+
+    useFocusEffect(
+        useCallback(() => {
+            // Clear error when screen comes into focus
+            return () => {
+                setSearchError(null);
+            };
+        }, [])
+    );
 
     const loadPopularTracks = async () => {
         setLoading(true);
-        const popularTracks = await musicService.getPopularTracks(20);
-        setTracks(popularTracks);
-        setLoading(false);
+        setError(null);
+        try {
+            const popularTracks = await musicService.getPopularTracks(20);
+            setTracks(popularTracks);
+        } catch (error) {
+            console.error("Error loading music:", error);
+            setError("Failed to load music. Please check your connection.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -29,13 +47,21 @@ export default function MusicScreen() {
 
     const handleSearch = async () => {
         if (!searchQuery.trim()) {
-            loadPopularTracks();
+            setSearchError('Please enter a song or artist name');
             return;
         }
+        setSearchError(null);
         setLoading(true);
-        const results = await musicService.searchTracks(searchQuery, 20);
-        setTracks(results);
-        setLoading(false);
+        setError(null);
+        try {
+            const results = await musicService.searchTracks(searchQuery, 20);
+            setTracks(results);
+        } catch (error) {
+            console.error("Error searching tracks:", error);
+            setError("Search failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const playTrack = (track: Track, index: number) => {
@@ -81,105 +107,137 @@ export default function MusicScreen() {
 
                 {/* Search */}
                 <View style={styles.searchContainer}>
-                    <View style={styles.searchBox}>
+                    <View style={[styles.searchBox, searchError ? { borderColor: '#ef4444', borderWidth: 1 } : {}]}>
                         <Ionicons name="search" size={20} color="#666" />
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search for songs, artists..."
                             value={searchQuery}
-                            onChangeText={setSearchQuery}
+                            onChangeText={(text) => {
+                                setSearchQuery(text);
+                                if (text.trim()) setSearchError(null);
+                            }}
                             onSubmitEditing={handleSearch}
                             returnKeyType="search"
                         />
                         {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => { setSearchQuery(''); loadPopularTracks(); }}>
+                            <TouchableOpacity onPress={() => { setSearchQuery(''); loadPopularTracks(); setSearchError(null); }}>
                                 <Ionicons name="close-circle" size={20} color="#666" />
                             </TouchableOpacity>
                         )}
                     </View>
+                    {searchError && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fee2e2', padding: 8, borderRadius: 8, marginTop: 8 }}>
+                            <Ionicons name="alert-circle" size={16} color="#ef4444" style={{ marginRight: 6 }} />
+                            <ThemedText style={{ color: '#b91c1c', fontSize: 12, fontWeight: '500' }}>
+                                {searchError}
+                            </ThemedText>
+                        </View>
+                    )}
                     <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
                         <ThemedText style={styles.searchButtonText}>Search</ThemedText>
                     </TouchableOpacity>
                 </View>
 
-                {/* Stats */}
-                <View style={styles.statsContainer}>
-                    <View style={styles.statCard}>
-                        <Ionicons name="play-circle-outline" size={32} color="#667eea" />
-                        <ThemedText style={styles.statValue}>{tracks.length}</ThemedText>
-                        <ThemedText style={styles.statLabel}>Tracks</ThemedText>
+                {error ? (
+                    <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 50, padding: 20 }}>
+                        <Ionicons name="cloud-offline-outline" size={64} color="#ef4444" />
+                        <ThemedText style={{ fontSize: 18, marginTop: 16, color: '#ef4444' }}>{error}</ThemedText>
+                        <TouchableOpacity
+                            style={{
+                                marginTop: 20,
+                                paddingVertical: 10,
+                                paddingHorizontal: 24,
+                                backgroundColor: '#667eea',
+                                borderRadius: 20
+                            }}
+                            onPress={searchQuery ? handleSearch : loadPopularTracks}
+                        >
+                            <ThemedText style={{ color: 'white', fontWeight: 'bold' }}>Try Again</ThemedText>
+                        </TouchableOpacity>
                     </View>
-                    <View style={styles.statCard}>
-                        <Ionicons name="list" size={32} color="#667eea" />
-                        <ThemedText style={styles.statValue}>Free</ThemedText>
-                        <ThemedText style={styles.statLabel}>Music</ThemedText>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Ionicons name="library" size={32} color="#667eea" />
-                        <ThemedText style={styles.statValue}>600K+</ThemedText>
-                        <ThemedText style={styles.statLabel}>Library</ThemedText>
-                    </View>
-                </View>
+                ) : (
+                    <>
+                        {/* Stats */}
+                        <View style={styles.statsContainer}>
+                            <View style={styles.statCard}>
+                                <Ionicons name="play-circle-outline" size={32} color="#667eea" />
+                                <ThemedText style={styles.statValue}>{tracks.length}</ThemedText>
+                                <ThemedText style={styles.statLabel}>Tracks</ThemedText>
+                            </View>
+                            <View style={styles.statCard}>
+                                <Ionicons name="list" size={32} color="#667eea" />
+                                <ThemedText style={styles.statValue}>Free</ThemedText>
+                                <ThemedText style={styles.statLabel}>Music</ThemedText>
+                            </View>
+                            <View style={styles.statCard}>
+                                <Ionicons name="library" size={32} color="#667eea" />
+                                <ThemedText style={styles.statValue}>600K+</ThemedText>
+                                <ThemedText style={styles.statLabel}>Library</ThemedText>
+                            </View>
+                        </View>
 
-                {/* Tracks */}
-                <View style={styles.section}>
-                    <ThemedText style={styles.sectionTitle}>
-                        {searchQuery ? 'Search Results' : 'Popular Tracks'}
-                    </ThemedText>
-                    {loading ? (
-                        <ActivityIndicator size="large" color="#667eea" style={{ marginTop: 32 }} />
-                    ) : tracks.length === 0 ? (
-                        <ThemedText style={styles.noResults}>No tracks found</ThemedText>
-                    ) : (
-                        tracks.map((track, index) => (
-                            <TouchableOpacity
-                                key={track.id}
-                                style={[
-                                    styles.trackCard,
-                                    currentTrackIndex === index && styles.trackCardActive
-                                ]}
-                                onPress={() => playTrack(track, index)}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.trackIconContainer}>
-                                    <LinearGradient
-                                        colors={['#667eea', '#764ba2']}
-                                        style={styles.trackIcon}
+                        {/* Tracks */}
+                        <View style={styles.section}>
+                            <ThemedText style={styles.sectionTitle}>
+                                {searchQuery ? 'Search Results' : 'Popular Tracks'}
+                            </ThemedText>
+                            {loading ? (
+                                <ActivityIndicator size="large" color="#667eea" style={{ marginTop: 32 }} />
+                            ) : tracks.length === 0 ? (
+                                <ThemedText style={styles.noResults}>No tracks found</ThemedText>
+                            ) : (
+                                tracks.map((track, index) => (
+                                    <TouchableOpacity
+                                        key={track.id}
+                                        style={[
+                                            styles.trackCard,
+                                            currentTrackIndex === index && styles.trackCardActive
+                                        ]}
+                                        onPress={() => playTrack(track, index)}
+                                        activeOpacity={0.7}
                                     >
-                                        <Ionicons name="musical-note" size={24} color="white" />
-                                    </LinearGradient>
-                                </View>
-                                <View style={styles.trackInfo}>
-                                    <ThemedText style={styles.trackTitle} numberOfLines={1}>
-                                        {track.name}
-                                    </ThemedText>
-                                    <ThemedText style={styles.trackArtist} numberOfLines={1}>
-                                        {track.artist_name}
-                                    </ThemedText>
-                                </View>
-                                <View style={styles.trackActions}>
-                                    <ThemedText style={styles.trackDuration}>
-                                        {musicService.formatDuration(track.duration)}
-                                    </ThemedText>
-                                    {track.spotifyUrl && (
-                                        <TouchableOpacity
-                                            onPress={() => musicService.openInSpotify(track.spotifyUrl!)}
-                                            style={styles.spotifyButton}
-                                        >
-                                            <Ionicons name="logo-spotify" size={20} color="#1DB954" />
-                                        </TouchableOpacity>
-                                    )}
-                                    <Ionicons
-                                        name={currentTrackIndex === index && currentTrack ? "pause-circle" : "play-circle"}
-                                        size={44}
-                                        color="#667eea"
-                                        style={styles.playButton}
-                                    />
-                                </View>
-                            </TouchableOpacity>
-                        ))
-                    )}
-                </View>
+                                        <View style={styles.trackIconContainer}>
+                                            <LinearGradient
+                                                colors={['#667eea', '#764ba2']}
+                                                style={styles.trackIcon}
+                                            >
+                                                <Ionicons name="musical-note" size={24} color="white" />
+                                            </LinearGradient>
+                                        </View>
+                                        <View style={styles.trackInfo}>
+                                            <ThemedText style={styles.trackTitle} numberOfLines={1}>
+                                                {track.name}
+                                            </ThemedText>
+                                            <ThemedText style={styles.trackArtist} numberOfLines={1}>
+                                                {track.artist_name}
+                                            </ThemedText>
+                                        </View>
+                                        <View style={styles.trackActions}>
+                                            <ThemedText style={styles.trackDuration}>
+                                                {musicService.formatDuration(track.duration)}
+                                            </ThemedText>
+                                            {track.spotifyUrl && (
+                                                <TouchableOpacity
+                                                    onPress={() => musicService.openInSpotify(track.spotifyUrl!)}
+                                                    style={styles.spotifyButton}
+                                                >
+                                                    <Ionicons name="open-outline" size={20} color="#1DB954" />
+                                                </TouchableOpacity>
+                                            )}
+                                            <Ionicons
+                                                name={currentTrackIndex === index && currentTrack ? "pause-circle" : "play-circle"}
+                                                size={44}
+                                                color="#667eea"
+                                                style={styles.playButton}
+                                            />
+                                        </View>
+                                    </TouchableOpacity>
+                                ))
+                            )}
+                        </View>
+                    </>
+                )}
             </ScrollView>
 
             {/* Audio Player */}

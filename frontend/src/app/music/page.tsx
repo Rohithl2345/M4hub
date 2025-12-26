@@ -28,6 +28,14 @@ export default function MusicPage() {
     const [currentTrackIndex, setCurrentTrackIndex] = useState(-1);
     const [filter, setFilter] = useState<FilterType>('all');
 
+    const [searchError, setSearchError] = useState<string | null>(null);
+
+    // Clear error on mount/unmount to prevent persistence across navigation
+    useEffect(() => {
+        setSearchError(null);
+        return () => setSearchError(null);
+    }, []);
+
     const loadTracks = async () => {
         setLoading(true);
         let results: Track[] = [];
@@ -46,14 +54,16 @@ export default function MusicPage() {
 
     useEffect(() => {
         loadTracks();
+        setSearchError(null); // Clear error when filter changes
     }, [filter]);
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!searchQuery.trim()) {
-            loadTracks();
+            setSearchError('Please enter a song or artist name');
             return;
         }
+        setSearchError(null);
         setLoading(true);
         const results = await musicService.searchTracks(searchQuery, 100);
         setTracks(results);
@@ -62,6 +72,7 @@ export default function MusicPage() {
 
     const handleResetSearch = () => {
         setSearchQuery('');
+        setSearchError(null);
         loadTracks();
     };
 
@@ -104,6 +115,8 @@ export default function MusicPage() {
         }
     };
 
+    // ... (rest of component code until render)
+
     return (
         <DashboardLayout title="Music">
             <div className={styles.container}>
@@ -122,8 +135,12 @@ export default function MusicPage() {
                             type="text"
                             placeholder="Search among 500+ songs..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className={styles.searchInput}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                if (e.target.value.trim()) setSearchError(null);
+                            }}
+                            className={`${styles.searchInput} ${searchError ? styles.inputError : ''}`}
+                            style={searchError ? { border: '1px solid #ef4444' } : {}}
                         />
                         {searchQuery && (
                             <button type="button" onClick={handleResetSearch} className={styles.resetButton}>
@@ -132,6 +149,23 @@ export default function MusicPage() {
                         )}
                         <button type="submit" className={styles.searchButton}>Search</button>
                     </div>
+                    {searchError && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            backgroundColor: '#fee2e2',
+                            color: '#b91c1c',
+                            fontSize: '13px',
+                            marginTop: '10px',
+                            marginLeft: '4px',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            fontWeight: '500'
+                        }}>
+                            <span style={{ marginRight: '6px', fontSize: '16px', display: 'flex' }}>⚠️</span>
+                            {searchError}
+                        </div>
+                    )}
                 </form>
 
                 <div className={styles.tabs}>

@@ -29,27 +29,40 @@ export default function EmailLoginScreen() {
         return id.length >= 3;
     };
 
+    const [touched, setTouched] = useState({ email: false, password: false });
+
+    const errors = {
+        email: (() => {
+            if (!email) return '';
+            if (mode === 'login' && !validateIdentifier(email)) return 'Invalid email or username';
+            if (mode === 'signup' && !validateEmail(email)) return 'Invalid email address';
+            return '';
+        })(),
+        password: (() => {
+            if (!password) return '';
+            if (password.length < 6) return 'Password must be at least 6 characters';
+            if (mode === 'signup') {
+                const passValidation = authService.validatePassword(password);
+                if (!passValidation.valid) return 'Weak password (see requirements)';
+            }
+            return '';
+        })()
+    };
+
     const handleContinue = async () => {
-        if (mode === 'login') {
-            if (!validateIdentifier(email)) {
-                Alert.alert('Invalid ID', 'Please enter a valid email address or username');
-                return;
-            }
-        } else {
-            if (!validateEmail(email)) {
-                Alert.alert('Invalid Email', 'Please enter a valid email address');
-                return;
-            }
+        // Mark all as touched
+        setTouched({ email: true, password: true });
+
+        if (errors.email || errors.password) {
+            return;
+        }
+
+        if (mode === 'signup') {
             const passValidation = authService.validatePassword(password);
             if (!passValidation.valid) {
                 Alert.alert('Weak Password', passValidation.message);
                 return;
             }
-        }
-
-        if (password.length < 6) {
-            Alert.alert('Invalid Password', 'Password must be at least 6 characters');
-            return;
         }
 
         setIsLoading(true);
@@ -125,25 +138,30 @@ export default function EmailLoginScreen() {
                         {mode === 'login' ? 'Username or Email' : 'Email Address'}
                     </ThemedText>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, touched.email && !!errors.email && styles.inputError]}
                         placeholder={mode === 'login' ? "Enter your username or email" : "Enter your email"}
                         placeholderTextColor="#999"
                         value={email}
                         onChangeText={setEmail}
+                        onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
                         autoCapitalize="none"
                         keyboardType={mode === 'login' ? "default" : "email-address"}
                     />
+                    {touched.email && !!errors.email && (
+                        <ThemedText style={styles.errorText}>{errors.email}</ThemedText>
+                    )}
                 </View>
 
                 <View style={styles.inputWrapper}>
                     <ThemedText style={styles.label}>Password</ThemedText>
-                    <View style={styles.passwordContainer}>
+                    <View style={[styles.passwordContainer, touched.password && !!errors.password && styles.inputError]}>
                         <TextInput
                             style={styles.passwordInput}
                             placeholder="Enter your password"
                             placeholderTextColor="#999"
                             value={password}
                             onChangeText={setPassword}
+                            onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
                             secureTextEntry={!showPassword}
                         />
                         <TouchableOpacity
@@ -157,6 +175,9 @@ export default function EmailLoginScreen() {
                             />
                         </TouchableOpacity>
                     </View>
+                    {touched.password && !!errors.password && (
+                        <ThemedText style={styles.errorText}>{errors.password}</ThemedText>
+                    )}
                 </View>
 
                 {mode === 'login' && (
@@ -168,10 +189,10 @@ export default function EmailLoginScreen() {
                 <TouchableOpacity
                     style={[
                         styles.submitButton,
-                        (!email || !password) && styles.submitButtonDisabled
+                        (isLoading) && styles.submitButtonDisabled
                     ]}
                     onPress={handleContinue}
-                    disabled={isLoading || !email || !password}
+                    disabled={isLoading}
                 >
                     {isLoading ? (
                         <ActivityIndicator color="white" />
@@ -283,6 +304,16 @@ const styles = StyleSheet.create({
         color: '#333',
         borderWidth: 1,
         borderColor: '#e1e4e8',
+    },
+    inputError: {
+        borderColor: '#ef4444',
+        borderWidth: 1,
+    },
+    errorText: {
+        color: '#ef4444',
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
     },
     passwordContainer: {
         flexDirection: 'row',
