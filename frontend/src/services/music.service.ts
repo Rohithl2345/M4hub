@@ -40,7 +40,7 @@ class MusicService {
     }
 
     private getHeaders() {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         return {
             'Content-Type': 'application/json',
             'Authorization': token ? `Bearer ${token}` : ''

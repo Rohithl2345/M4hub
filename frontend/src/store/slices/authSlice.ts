@@ -44,8 +44,8 @@ const authSlice = createSlice({
 
             // Persist to localStorage
             if (typeof window !== 'undefined') {
-                localStorage.setItem('authToken', action.payload.token);
-                localStorage.setItem('user', JSON.stringify(action.payload.user));
+                sessionStorage.setItem('authToken', action.payload.token);
+                sessionStorage.setItem('user', JSON.stringify(action.payload.user));
             }
         },
         logout: (state) => {
@@ -54,10 +54,10 @@ const authSlice = createSlice({
             state.isAuthenticated = false;
             state.isLoading = false;
 
-            // Clear from localStorage
+            // Clear from sessionStorage
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('user');
+                sessionStorage.removeItem('authToken');
+                sessionStorage.removeItem('user');
             }
         },
         setLoading: (state, action: PayloadAction<boolean>) => {
@@ -83,18 +83,18 @@ const authSlice = createSlice({
         updateUsername: (state, action: PayloadAction<string>) => {
             if (state.user) {
                 state.user.username = action.payload;
-                // Update localStorage
+                // Update sessionStorage
                 if (typeof window !== 'undefined') {
-                    localStorage.setItem('user', JSON.stringify(state.user));
+                    sessionStorage.setItem('user', JSON.stringify(state.user));
                 }
             }
         },
         updateUserPhone: (state, action: PayloadAction<string>) => {
             if (state.user) {
                 state.user.phoneNumber = action.payload;
-                // Update localStorage
+                // Update sessionStorage
                 if (typeof window !== 'undefined') {
-                    localStorage.setItem('user', JSON.stringify(state.user));
+                    sessionStorage.setItem('user', JSON.stringify(state.user));
                 }
             }
         },

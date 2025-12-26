@@ -259,7 +259,7 @@ class ChatService {
     async sendFriendRequest(username?: string, userId?: number): Promise<any> {
         let token = null;
         if (typeof window !== 'undefined') {
-            token = localStorage.getItem('authToken');
+            token = sessionStorage.getItem('authToken');
         }
         if (!token) return Promise.reject('No auth token');
 
@@ -283,7 +283,7 @@ class ChatService {
     async getPendingRequests(): Promise<FriendRequest[]> {
         let token = null;
         if (typeof window !== 'undefined') {
-            token = localStorage.getItem('authToken');
+            token = sessionStorage.getItem('authToken');
         }
 
         if (!token) {
@@ -304,7 +304,7 @@ class ChatService {
     async getSentRequests(): Promise<FriendRequest[]> {
         let token = null;
         if (typeof window !== 'undefined') {
-            token = localStorage.getItem('authToken');
+            token = sessionStorage.getItem('authToken');
         }
         if (!token) return [];
 
@@ -322,7 +322,7 @@ class ChatService {
     async acceptRequest(requestId: number): Promise<any> {
         let token = null;
         if (typeof window !== 'undefined') {
-            token = localStorage.getItem('authToken');
+            token = sessionStorage.getItem('authToken');
         }
         if (!token) return Promise.reject('No auth token');
 
@@ -342,7 +342,7 @@ class ChatService {
     async rejectRequest(requestId: number): Promise<any> {
         let token = null;
         if (typeof window !== 'undefined') {
-            token = localStorage.getItem('authToken');
+            token = sessionStorage.getItem('authToken');
         }
         if (!token) return Promise.reject('No auth token');
 
@@ -362,7 +362,7 @@ class ChatService {
     async getFriends(): Promise<UserSearchResult[]> {
         let token = null;
         if (typeof window !== 'undefined') {
-            token = localStorage.getItem('authToken');
+            token = sessionStorage.getItem('authToken');
         }
         if (!token) {
             return [];
@@ -380,7 +380,10 @@ class ChatService {
     }
 
     async getConversation(otherUserId: number): Promise<ChatMessage[]> {
-        const token = localStorage.getItem('authToken');
+        if (!otherUserId) return [];
+        const token = sessionStorage.getItem('authToken');
+        if (!token) return [];
+
         const response = await axios.get(`${API_URL}/api/chat/conversation/${otherUserId}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -388,7 +391,7 @@ class ChatService {
     }
 
     async searchUsers(query: string): Promise<UserSearchResult[]> {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         const response = await axios.get(`${API_URL}/api/chat/search`, {
             params: { query },
             headers: { Authorization: `Bearer ${token}` }
@@ -398,7 +401,7 @@ class ChatService {
 
     // Reactions
     async addReaction(messageId: number, emoji: string): Promise<any> {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         const response = await axios.post(
             `${API_URL}/api/chat/message/${messageId}/reaction`,
             { emoji },
@@ -408,7 +411,7 @@ class ChatService {
     }
 
     async removeReaction(messageId: number): Promise<any> {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         const response = await axios.delete(
             `${API_URL}/api/chat/message/${messageId}/reaction`,
             { headers: { Authorization: `Bearer ${token}` } }
@@ -417,7 +420,7 @@ class ChatService {
     }
 
     async getReactions(messageId: number): Promise<any[]> {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         const response = await axios.get(
             `${API_URL}/api/chat/message/${messageId}/reactions`,
             { headers: { Authorization: `Bearer ${token}` } }
@@ -427,7 +430,7 @@ class ChatService {
 
     // Group Chat
     async createGroup(name: string, description: string): Promise<any> {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         const response = await axios.post(
             `${API_URL}/api/chat/group/create`,
             { name, description },
@@ -437,7 +440,7 @@ class ChatService {
     }
 
     async addGroupMember(groupId: number, userId: number): Promise<any> {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         const response = await axios.post(
             `${API_URL}/api/chat/group/${groupId}/members`,
             { userId },
@@ -448,7 +451,7 @@ class ChatService {
 
     async getGroups(token?: string): Promise<any[]> {
         if (!token && typeof window !== 'undefined') {
-            token = localStorage.getItem('authToken') || undefined;
+            token = sessionStorage.getItem('authToken') || undefined;
         }
         if (!token) return [];
 
@@ -489,7 +492,7 @@ class ChatService {
     async uploadFile(file: File): Promise<{ url: string; fileName: string; type: string }> {
         let token = null;
         if (typeof window !== 'undefined') {
-            token = localStorage.getItem('authToken');
+            token = sessionStorage.getItem('authToken');
         }
 
         const formData = new FormData();

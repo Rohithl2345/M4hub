@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { logout } from '@/store/slices/authSlice';
+import { logout, selectIsLoading } from '@/store/slices/authSlice';
 import { Badge } from '@mui/material';
 import chatService from '@/services/chat.service';
 import styles from './DashboardLayout.module.css';
@@ -27,11 +27,18 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const pathname = usePathname();
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.auth.user);
+    const isLoading = useAppSelector((state) => state.auth.isLoading);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
 
     // Global Chat Connection and Presence
     useEffect(() => {
+        // Protect the route
+        const token = typeof window !== 'undefined' ? sessionStorage.getItem('authToken') : null;
+        if (!token && !isLoading) {
+            router.push('/auth/email-login');
+        }
+
         if (user?.id) {
             chatService.connect(user.id, () => {
                 console.log('Global presence established');
@@ -45,7 +52,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                 // For now, let's keep it connected as long as user is logged in.
             };
         }
-    }, [user?.id]);
+    }, [user?.id, isLoading, router]);
 
     // Load pending requests count
     useEffect(() => {

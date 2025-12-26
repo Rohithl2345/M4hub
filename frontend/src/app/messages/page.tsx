@@ -184,6 +184,22 @@ export default function MessagesPage() {
         scrollToBottom();
     }, [messages]);
 
+    // Refresh data on window focus (handle tab switching)
+    useEffect(() => {
+        const handleFocus = () => {
+            if (user?.id) {
+                loadFriends();
+                loadPendingRequests();
+                if (selectedEntity?.type === 'friend' && selectedEntity.data?.id) {
+                    chatService.getConversation(selectedEntity.data.id).then(setMessages);
+                }
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, [user?.id, selectedEntity]);
+
     const loadFriends = async () => {
         try {
             const friendsList = await chatService.getFriends();
