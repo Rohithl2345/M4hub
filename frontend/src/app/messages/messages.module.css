@@ -299,11 +299,11 @@
     }
 
     .headerTabsRow {
-        margin: 8px 0 0 0;
+        margin: 6px 0 0 0;
         width: 100%;
         justify-content: center;
         order: 3;
-        padding-top: 8px;
+        padding-top: 6px;
     }
 
     .navActions {
@@ -337,11 +337,12 @@
     }
 
     .headerInfo {
-        gap: 8px;
+        gap: 10px;
     }
 
     .headerIcon {
-        display: none !important;
+        display: block !important;
+        font-size: 22px !important;
     }
 
     .title {
@@ -349,8 +350,8 @@
     }
 
     .subtitle {
-        font-size: 11px;
-        max-width: 150px;
+        font-size: 10.5px;
+        max-width: 140px;
         line-height: 1.2;
     }
 
@@ -359,13 +360,23 @@
     }
 
     .actionBtn {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px !important;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px !important;
     }
 
     .actionBtn svg {
-        font-size: 17px !important;
+        font-size: 16px !important;
+    }
+
+    .headerTab {
+        padding: 0 10px !important;
+        font-size: 12px !important;
+        min-height: 32px !important;
+    }
+
+    .tabs {
+        min-height: 32px !important;
     }
 }
 
@@ -725,8 +736,14 @@
 
 @media (max-width: 768px) {
     .headerTab {
-        padding: 0 12px !important;
+        padding: 0 10px !important;
         min-width: unset !important;
+        min-height: 36px !important;
+        font-size: 13px !important;
+    }
+
+    .tabs {
+        min-height: 36px !important;
     }
 
     .listView {
