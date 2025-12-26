@@ -1,119 +1,154 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
 
 export const newsStyles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#f8f9fa',
     },
     header: {
-        paddingTop: 50,
-        paddingBottom: 16,
-        paddingHorizontal: 20,
+        paddingTop: 60,
+        paddingBottom: 24,
+        paddingHorizontal: 24,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
     },
     headerTextContainer: {
         flex: 1,
     },
     headerTitle: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: 'bold',
         color: 'white',
     },
     headerSubtitle: {
-        fontSize: 12,
-        color: 'rgba(255, 255, 255, 0.85)',
-        marginTop: 2,
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.9)',
+        marginTop: 4,
     },
-    statsContainer: {
+
+    /* Ticker */
+    tickerContainer: {
+        backgroundColor: '#fff',
+        marginHorizontal: 16,
+        marginTop: -16,
+        borderRadius: 12,
+        paddingVertical: 12,
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 12,
-        marginBottom: 16,
-        marginTop: 16,
-    },
-    statCard: {
-        flex: 1,
-        backgroundColor: 'white',
-        padding: 12,
-        borderRadius: 16,
         alignItems: 'center',
-        marginHorizontal: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowRadius: 12,
+        elevation: 5,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.05)',
+        borderColor: '#eee',
     },
-    statValue: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginTop: 8,
+    tickerLabel: {
+        backgroundColor: 'rgba(250, 112, 154, 0.1)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+        marginLeft: 12,
+        marginRight: 8,
     },
-    statLabel: {
+    tickerLabelText: {
+        color: '#fa709a',
         fontSize: 11,
-        color: '#666',
-        marginTop: 4,
-        textAlign: 'center',
+        fontWeight: '800',
     },
+    tickerText: {
+        fontSize: 13,
+        color: '#444',
+        fontWeight: '500',
+        flex: 1,
+    },
+
+    /* Category Tabs */
+    tabsContainer: {
+        marginTop: 24,
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+    },
+    tab: {
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
+        marginRight: 10,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+    },
+    tabActive: {
+        backgroundColor: '#fa709a',
+        borderColor: '#fa709a',
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#666',
+    },
+    tabTextActive: {
+        color: 'white',
+    },
+
+    /* News Grid */
     section: {
         paddingHorizontal: 16,
-        marginBottom: 24,
+        paddingBottom: 32,
     },
     sectionTitle: {
-        fontSize: 22,
-        fontWeight: '600',
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1a1b1e',
         marginBottom: 16,
+        marginTop: 8,
     },
     newsCard: {
         backgroundColor: 'white',
-        borderRadius: 12,
-        marginBottom: 16,
+        borderRadius: 16,
+        marginBottom: 20,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: '#eff2f5',
     },
     newsImage: {
-        height: 180,
-        backgroundColor: '#4c669f',
-        alignItems: 'center',
+        width: '100%',
+        height: 200,
+        backgroundColor: '#f1f5f9',
         justifyContent: 'center',
-    },
-    newsEmoji: {
-        fontSize: 64,
+        alignItems: 'center',
     },
     newsContent: {
-        padding: 16,
+        padding: 20,
     },
-    categoryBadge: {
-        alignSelf: 'flex-start',
-        backgroundColor: '#4c669f',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        marginBottom: 12,
-    },
-    categoryText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
+    category: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#fa709a',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 8,
     },
     newsTitle: {
         fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
+        fontWeight: '700',
+        color: '#1a1b1e',
         lineHeight: 24,
+        marginBottom: 8,
     },
     newsExcerpt: {
         fontSize: 14,
-        color: '#666',
+        color: '#64748b',
         lineHeight: 20,
         marginBottom: 16,
     },
@@ -123,63 +158,54 @@ export const newsStyles = StyleSheet.create({
         alignItems: 'center',
         paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#f1f5f9',
     },
-    time: {
+    source: {
         fontSize: 12,
-        color: '#999',
+        fontWeight: '600',
+        color: '#94a3b8',
+        flex: 1,
     },
-    readMoreBtn: {
-        borderWidth: 1,
-        borderColor: '#fa709a',
-        paddingHorizontal: 20,
-        paddingVertical: 8,
-        borderRadius: 20,
+    readMore: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     readMoreText: {
         color: '#fa709a',
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 13,
+        fontWeight: '700',
+        marginRight: 4,
     },
-    comingSoon: {
-        backgroundColor: '#f5f7fa',
-        padding: 24,
-        margin: 16,
-        borderRadius: 16,
-        alignItems: 'center',
-    },
-    comingSoonTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    comingSoonText: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 16,
-    },
-    featuresList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: 8,
-    },
-    featureItem: {
+
+    /* Side Briefs Section (Mobile Style) */
+    briefsSection: {
         backgroundColor: 'white',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-        elevation: 2,
+        marginHorizontal: 16,
+        padding: 20,
+        borderRadius: 16,
+        marginBottom: 24,
+        borderWidth: 1,
+        borderColor: '#eff2f5',
     },
-    featureText: {
-        fontSize: 12,
-        color: '#fa709a',
-        fontWeight: '500',
+    briefItem: {
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
     },
+    briefTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#334155',
+        lineHeight: 20,
+    },
+    briefMeta: {
+        fontSize: 11,
+        color: '#94a3b8',
+        marginTop: 4,
+    },
+
+    loader: {
+        marginTop: 50,
+        marginBottom: 50,
+    }
 });

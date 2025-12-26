@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Scheduled;
+
+import jakarta.annotation.PostConstruct;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,62 +34,57 @@ public class NewsService {
 
     @Transactional
     @SuppressWarnings("unchecked")
+    @Scheduled(fixedRate = 7200000) // 2 hours
+    @PostConstruct
     public void syncNewsFromExternalSource() {
-        logger.info("Starting sync of news from external API...");
+        logger.info("Starting sync of news from open live API (ok.surf)...");
 
-        // Using NewsData.io format as an example (more generous free tier)
-        String url = String.format(
-                "https://newsdata.io/api/1/news?apikey=%s&language=en&category=technology,business,sports,entertainment",
-                apiKey);
+        String url = "https://ok.surf/api/v1/cors/news-feed";
 
         try {
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            if (response != null && "success".equals(response.get("status"))) {
-                List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
-
+            if (response != null) {
                 int savedCount = 0;
-                for (Map<String, Object> articleData : results) {
-                    String externalId = (String) articleData.get("article_id");
 
-                    if (newsArticleRepository.findByExternalId(externalId).isEmpty()) {
-                        NewsArticle article = new NewsArticle();
-                        article.setExternalId(externalId);
-                        article.setTitle((String) articleData.get("title"));
-                        article.setDescription((String) articleData.get("description"));
-                        article.setContent((String) articleData.get("content"));
-                        article.setAuthor((String) articleData.get("creator"));
-                        article.setSourceName((String) articleData.get("source_id"));
-                        article.setUrl((String) articleData.get("link"));
-                        article.setUrlToImage((String) articleData.get("image_url"));
+                // ok.surf returns news grouped by categories: Business, Entertainment, Health,
+                // Science, Sports, Technology, World
+                String[] categories = { "Business", "Entertainment", "Health", "Science", "Sports", "Technology",
+                        "World" };
 
-                        String pubDate = (String) articleData.get("pubDate");
-                        if (pubDate != null) {
-                            try {
-                                // NewsData.io format: 2024-12-26 06:14:12
-                                String tidiedDate = pubDate.replace(" ", "T");
-                                article.setPublishedAt(LocalDateTime.parse(tidiedDate));
-                            } catch (Exception dateEx) {
-                                article.setPublishedAt(LocalDateTime.now());
+                for (String category : categories) {
+                    if (response.containsKey(category)) {
+                        List<Map<String, Object>> articles = (List<Map<String, Object>>) response.get(category);
+
+                        for (Map<String, Object> articleData : articles) {
+                            String title = (String) articleData.get("title");
+                            String link = (String) articleData.get("link");
+                            String imageUrl = (String) articleData.get("og");
+                            String sourceName = (String) articleData.get("source");
+
+                            // Use a hash of the link as externalId to avoid length issues in DB
+                            String externalId = String.valueOf(link.hashCode());
+                            if (newsArticleRepository.findByExternalId(externalId).isEmpty()) {
+                                NewsArticle article = new NewsArticle();
+                                article.setExternalId(externalId);
+                                article.setTitle(title);
+                                article.setDescription(title); // This API doesn't provide excerpt, use title or
+                                                               // generate
+                                article.setSourceName(sourceName);
+                                article.setUrl(link);
+                                article.setUrlToImage(imageUrl);
+                                article.setPublishedAt(LocalDateTime.now()); // API doesn't provide date, use current
+                                article.setCategory(category);
+
+                                newsArticleRepository.save(article);
+                                savedCount++;
                             }
-                        } else {
-                            article.setPublishedAt(LocalDateTime.now());
                         }
-
-                        List<String> categories = (List<String>) articleData.get("category");
-                        if (categories != null && !categories.isEmpty()) {
-                            article.setCategory(categories.get(0));
-                        } else {
-                            article.setCategory("General");
-                        }
-
-                        newsArticleRepository.save(article);
-                        savedCount++;
                     }
                 }
-                logger.info("News sync complete. Saved {} new articles.", savedCount);
+                logger.info("Live News sync complete. Saved {} new articles.", savedCount);
             }
         } catch (Exception e) {
-            logger.error("Error during news sync: {}. Falling back to mock data.", e.getMessage());
+            logger.error("Error during live news sync: {}. Falling back to mock data.", e.getMessage());
         }
 
         // Fallback: If no news in DB, add mock news
@@ -96,29 +94,30 @@ public class NewsService {
     }
 
     private void seedFallbackNews() {
-        logger.info("Seeding fallback mock news articles...");
+        logger.info("Clearing old news and seeding fresh fallback articles...");
+        newsArticleRepository.deleteAll();
         List<NewsArticle> mocks = new ArrayList<>();
 
         mocks.add(new NewsArticle(
-                "AI Breakthrough in Quantum Computing",
-                "Researchers have achieved a new milestone in combining AI with quantum processors.",
-                "Tech Daily", "M4 News", "https://example.com/news1",
-                "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800",
+                "SpaceX Launches Next-Generation Starlink Satellites",
+                "The latest mission successfully deployed 23 Starlink satellites into low-Earth orbit, furthering global connectivity.",
+                "Space News", "BBC News", "https://www.bbc.com/news/technology",
+                "https://images.unsplash.com/photo-1517976487492-5750f3195933?w=800",
                 LocalDateTime.now().minusHours(2), "Technology", "mock-news-1"));
 
         mocks.add(new NewsArticle(
-                "Global Markets React to New Economic Policy",
-                "Stock indexes showed mixed results following the announcement of early trade figures.",
-                "Finance Week", "M4 Finance", "https://example.com/news2",
+                "Global Stock Markets Settle After Volatile Week",
+                "Investors weigh latest inflation data as major indices remain resilient amid economic shifts.",
+                "Market Watch", "Reuters", "https://www.reuters.com/business/finance/",
                 "https://images.unsplash.com/photo-1611974714405-b0d80bb00278?w=800",
                 LocalDateTime.now().minusHours(5), "Business", "mock-news-2"));
 
         mocks.add(new NewsArticle(
-                "M4hub v2.0 Launch Announced",
-                "The upcoming version of M4hub promises a revamped messaging experience and integrated news.",
-                "Team M4", "Official Blog", "https://example.com/news3",
-                "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=800",
-                LocalDateTime.now().minusDays(1), "Company", "mock-news-3"));
+                "Artificial Intelligence: The Future of Health Diagnostics",
+                "New AI models are demonstrating unprecedented accuracy in early disease detection through medical imaging.",
+                "Health Tech", "TechCrunch", "https://techcrunch.com/category/artificial-intelligence/",
+                "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800",
+                LocalDateTime.now().minusDays(1), "Science", "mock-news-3"));
 
         newsArticleRepository.saveAll(mocks);
         logger.info("Successfully seeded 3 mock news articles.");

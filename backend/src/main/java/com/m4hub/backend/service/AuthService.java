@@ -178,15 +178,6 @@ public class AuthService {
         logger.info("║  Expires: 5 minutes                                        ║");
         logger.info("╚════════════════════════════════════════════════════════════╝");
 
-        // ALWAYS print to System.out for visibility in terminal
-        System.out.println("\n" + "=".repeat(70));
-        System.out.println("🔐 EMAIL OTP GENERATED - TERMINAL OUTPUT");
-        System.out.println("=".repeat(70));
-        System.out.println("Email:     " + email);
-        System.out.println("OTP Code:  " + otpCode);
-        System.out.println("Expires:   5 minutes");
-        System.out.println("=".repeat(70) + "\n");
-
         // Send OTP via email
         emailService.sendOtp(email, otpCode);
 
@@ -295,15 +286,6 @@ public class AuthService {
         logger.info("║  OTP Code: {}", String.format("%-42s", otpCode) + "║");
         logger.info("║  Expires: 5 minutes                                        ║");
         logger.info("╚════════════════════════════════════════════════════════════╝");
-
-        // ALWAYS print to System.out for visibility in terminal
-        System.out.println("\n" + "=".repeat(70));
-        System.out.println("🔄 EMAIL OTP RESENT - TERMINAL OUTPUT");
-        System.out.println("=".repeat(70));
-        System.out.println("Email:     " + email);
-        System.out.println("OTP Code:  " + otpCode);
-        System.out.println("Expires:   5 minutes");
-        System.out.println("=".repeat(70) + "\n");
 
         // Send OTP via email
         emailService.sendOtp(email, otpCode);

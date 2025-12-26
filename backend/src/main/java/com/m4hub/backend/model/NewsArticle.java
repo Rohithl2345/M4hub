@@ -18,7 +18,7 @@ public class NewsArticle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -29,6 +29,7 @@ public class NewsArticle {
 
     private String author;
 
+    @Column(columnDefinition = "TEXT")
     private String sourceName;
 
     @Column(columnDefinition = "TEXT")
@@ -41,7 +42,7 @@ public class NewsArticle {
 
     private String category;
 
-    @Column(unique = true)
+    @Column(unique = true, columnDefinition = "TEXT")
     private String externalId;
 
     public NewsArticle(String title, String description, String author, String sourceName, String url,

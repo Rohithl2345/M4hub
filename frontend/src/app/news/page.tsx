@@ -5,22 +5,30 @@ import axios from 'axios';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './news.module.css';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import PublicIcon from '@mui/icons-material/Public';
 import { CircularProgress, Box } from '@mui/material';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { env } from '@/utils/env';
 
 dayjs.extend(relativeTime);
 
 export default function NewsPage() {
     const [newsArticles, setNewsArticles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [category, setCategory] = useState('All');
+
+    const categories = ['All', 'Technology', 'Business', 'Science', 'Sports', 'Entertainment', 'World'];
 
     useEffect(() => {
         const fetchNews = async () => {
+            setLoading(true);
             try {
-                const response = await axios.get('http://localhost:8080/api/news/latest');
+                const url = category === 'All'
+                    ? `${env.apiUrl}/api/news/latest`
+                    : `${env.apiUrl}/api/news/category/${category}`;
+                const response = await axios.get(url);
                 setNewsArticles(response.data);
             } catch (error) {
                 console.error("Error fetching news:", error);
@@ -29,12 +37,17 @@ export default function NewsPage() {
             }
         };
         fetchNews();
-    }, []);
+    }, [category]);
+
+    // Ticker news from top stories
+    const tickerNews = newsArticles.slice(0, 5);
+    // Sidebar news
+    const sidebarNews = newsArticles.slice(-8);
 
     return (
         <DashboardLayout title="News">
             <div className={styles.container}>
-                {/* Header */}
+                {/* Header - Standard Tab Style */}
                 <div className={styles.header}>
                     <NewspaperIcon className={styles.headerIcon} />
                     <div>
@@ -43,86 +56,117 @@ export default function NewsPage() {
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className={styles.statsGrid}>
-                    <div className={styles.statCard}>
-                        <TrendingUpIcon className={styles.statIcon} />
-                        <div>
-                            <h3>12</h3>
-                            <p>Trending Stories</p>
-                        </div>
-                    </div>
-                    <div className={styles.statCard}>
-                        <PublicIcon className={styles.statIcon} />
-                        <div>
-                            <h3>8</h3>
-                            <p>Categories</p>
-                        </div>
-                    </div>
-                    <div className={styles.statCard}>
-                        <NewspaperIcon className={styles.statIcon} />
-                        <div>
-                            <h3>156</h3>
-                            <p>Daily Articles</p>
-                        </div>
+                {/* News Ticker */}
+                <div className={styles.tickerWrap}>
+                    <div className={styles.ticker}>
+                        {tickerNews.length > 0 ? tickerNews.map((article, idx) => (
+                            <div key={idx} className={styles.tickerItem}>
+                                <span>BREAKING</span> {article.title}
+                            </div>
+                        )) : (
+                            <div className={styles.tickerItem}>
+                                <span>LATEST</span> Global news synchronization in progress...
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* News Feed */}
-                <div className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Top Stories</h2>
+                {/* Category Tabs - Beautiful Filter */}
+                <div className={styles.tabs}>
+                    {categories.map((cat) => (
+                        <button
+                            key={cat}
+                            className={`${styles.tab} ${category === cat ? styles.tabActive : ''}`}
+                            onClick={() => setCategory(cat)}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
 
-                    {loading ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
-                            <CircularProgress color="inherit" sx={{ color: '#fa709a' }} />
-                        </Box>
-                    ) : (
+                {loading ? (
+                    <div className={styles.loadingContainer}>
+                        <CircularProgress sx={{ color: '#fa709a' }} />
+                    </div>
+                ) : (
+                    <div className={styles.mainLayout}>
+                        {/* Main Feed - Standard Cards */}
                         <div className={styles.newsGrid}>
-                            {newsArticles.map((article) => (
+                            {newsArticles.length > 0 ? newsArticles.map((article) => (
                                 <div key={article.id} className={styles.newsCard}>
                                     <div className={styles.newsImage}>
-                                        {article.urlToImage ? (
-                                            <img src={article.urlToImage} alt={article.title} />
-                                        ) : (
-                                            <NewspaperIcon sx={{ fontSize: 64, opacity: 0.3 }} />
-                                        )}
+                                        <img
+                                            src={article.urlToImage || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800'}
+                                            alt={article.title}
+                                        />
                                     </div>
-                                    <div className={styles.newsContent}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                                            <span className={styles.category}>{article.category || 'General'}</span>
-                                            <span className={styles.source}>{article.sourceName}</span>
-                                        </div>
+                                    <div className={styles.cardContent}>
+                                        <span className={styles.category}>{article.category || 'General'}</span>
                                         <h3 className={styles.newsTitle}>{article.title}</h3>
                                         <p className={styles.newsExcerpt}>
-                                            {article.description || 'No description available for this article.'}
+                                            {article.description || 'No additional details available for this story.'}
                                         </p>
                                         <div className={styles.newsFooter}>
-                                            <span className={styles.time}>{dayjs(article.publishedAt).fromNow()}</span>
+                                            <span className={styles.source}>
+                                                {article.sourceName} • {dayjs(article.publishedAt).fromNow()}
+                                            </span>
                                             <button
                                                 className={styles.readMore}
                                                 onClick={() => window.open(article.url, '_blank')}
                                             >
-                                                Read Source
+                                                Read <ArrowForwardIcon sx={{ fontSize: 16 }} />
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <Box sx={{ p: 4, textAlign: 'center', gridColumn: '1 / -1' }}>
+                                    <p style={{ color: '#64748b' }}>No news articles found in this category.</p>
+                                </Box>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                {/* Coming Soon */}
-                <div className={styles.comingSoon}>
-                    <h3>📰 More Features Coming Soon!</h3>
-                    <p>Building a comprehensive news experience for you</p>
-                    <ul>
-                        <li>Personalized news feed</li>
-                        <li>Category filters</li>
-                        <li>Bookmark articles</li>
-                        <li>Share stories</li>
-                    </ul>
-                </div>
+                        {/* Sidebar */}
+                        <aside className={styles.sidebar}>
+                            <div className={styles.sidebarSection}>
+                                <h4 className={styles.sidebarTitle}>
+                                    <TrendingUpIcon /> Trending Briefs
+                                </h4>
+                                {sidebarNews.map((article) => (
+                                    <div
+                                        key={article.id}
+                                        className={styles.sideItem}
+                                        onClick={() => window.open(article.url, '_blank')}
+                                    >
+                                        <h5 className={styles.sideTitle}>{article.title}</h5>
+                                        <div className={styles.sideMeta}>
+                                            {article.sourceName} • {dayjs(article.publishedAt).fromNow()}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className={styles.sidebarSection} style={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white', border: 'none' }}>
+                                <h4 className={styles.sidebarTitle} style={{ color: 'white' }}>Weekly Digest</h4>
+                                <p style={{ fontSize: '13px', opacity: 0.9, lineHeight: 1.5 }}>
+                                    Subscribe to receive the most important stories directly in your dashboard.
+                                </p>
+                                <button style={{
+                                    marginTop: '20px',
+                                    padding: '12px 20px',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: 'white',
+                                    color: '#fa709a',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    width: '100%',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                }}>Early Access</button>
+                            </div>
+                        </aside>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );
