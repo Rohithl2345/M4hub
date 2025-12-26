@@ -38,14 +38,9 @@ export default function NewsScreen() {
         }
     };
 
-    // Filter out residual mocks and safely partition the articles
-    const filteredArticles = newsArticles.filter(a => !a.externalId?.includes('mock'));
-
-    const firstArticle = filteredArticles[0];
-    // Main feed: articles 2-11
-    const featuredStories = filteredArticles.slice(1, 11);
-    // Briefs: articles 12-17
-    const sideBriefs = filteredArticles.slice(11, 17);
+    const firstArticle = newsArticles[0];
+    const restArticles = newsArticles.slice(1, -5);
+    const sideBriefs = newsArticles.slice(-5);
 
     return (
         <ThemedView style={styles.container}>
@@ -113,7 +108,7 @@ export default function NewsScreen() {
                         {/* Main Feed */}
                         <View style={styles.section}>
                             <ThemedText style={styles.sectionTitle}>Featured Stories</ThemedText>
-                            {featuredStories.length > 0 ? featuredStories.map((article) => (
+                            {restArticles.length > 0 ? restArticles.map((article) => (
                                 <TouchableOpacity
                                     key={article.id}
                                     style={styles.newsCard}
