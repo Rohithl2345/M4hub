@@ -380,7 +380,7 @@ class ChatService {
     }
 
     async getConversation(otherUserId: number): Promise<ChatMessage[]> {
-        if (!otherUserId) return [];
+        if (!otherUserId || isNaN(Number(otherUserId)) || Number(otherUserId) === 0) return [];
         const token = sessionStorage.getItem('authToken');
         if (!token) return [];
 

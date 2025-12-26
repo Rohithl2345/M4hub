@@ -232,6 +232,7 @@ export default function MessagesPage() {
     };
 
     const handleSelectFriend = async (friend: UserSearchResult) => {
+        if (!friend || !friend.id) return;
         setSelectedEntity({ type: 'friend', data: friend });
         // Clear unread count
         setUnreadCounts(prev => {
