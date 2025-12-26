@@ -158,9 +158,11 @@ function VerifyOTPContent() {
                                     <TextField
                                         key={index}
                                         inputRef={(ref) => { inputRefs.current[index] = ref; }}
-                                        type="text"
+                                        type="tel"
+                                        inputMode="numeric"
                                         inputProps={{
                                             maxLength: 1,
+                                            pattern: '[0-9]*',
                                             style: { textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }
                                         }}
                                         value={digit}

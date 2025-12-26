@@ -434,7 +434,11 @@ export default function MessagesPage() {
                                 })()}
                             </div>
                         </div>
-                        <div className={styles.navActions} />
+                        <div className={styles.navActions}>
+                            <IconButton onClick={handleMenuClick} className={styles.actionBtn}>
+                                <MoreVertIcon />
+                            </IconButton>
+                        </div>
                     </div>
                 )}
 
