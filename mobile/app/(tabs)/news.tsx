@@ -1,46 +1,36 @@
-import { ScrollView, View, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { ScrollView, View, TouchableOpacity, Image, ActivityIndicator, Linking } from 'react-native';
 import { Stack } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { newsStyles as styles } from '../_styles/news.styles';
+import axios from 'axios';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 export default function NewsScreen() {
-    const newsArticles = [
-        {
-            id: 1,
-            category: 'Technology',
-            title: 'AI Revolution: New Breakthrough in Machine Learning',
-            excerpt: 'Researchers announce major advancement in artificial intelligence capabilities...',
-            time: '2 hours ago',
-            emoji: '🤖'
-        },
-        {
-            id: 2,
-            category: 'Business',
-            title: 'Global Markets Reach New Heights',
-            excerpt: 'Stock markets worldwide show strong performance as economic indicators improve...',
-            time: '4 hours ago',
-            emoji: '📈'
-        },
-        {
-            id: 3,
-            category: 'Sports',
-            title: 'Championship Finals Set Records',
-            excerpt: 'Historic match draws millions of viewers as teams battle for the title...',
-            time: '6 hours ago',
-            emoji: '⚽'
-        },
-        {
-            id: 4,
-            category: 'Entertainment',
-            title: 'New Movie Breaks Box Office Records',
-            excerpt: 'Latest blockbuster surpasses expectations with incredible opening weekend...',
-            time: '8 hours ago',
-            emoji: '🎬'
-        },
-    ];
+    const [newsArticles, setNewsArticles] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchNews();
+    }, []);
+
+    const fetchNews = async () => {
+        try {
+            // Using placeholder IP for local development, should be env variable
+            const response = await axios.get('http://192.168.1.2:8080/api/news/latest');
+            setNewsArticles(response.data);
+        } catch (error) {
+            console.error("Error fetching news:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const stats = [
         { label: 'Trending Stories', value: '12', icon: 'trending-up' },
@@ -65,9 +55,11 @@ export default function NewsScreen() {
                     end={{ x: 1, y: 1 }}
                     style={styles.header}
                 >
-                    <Ionicons name="newspaper" size={64} color="white" />
-                    <ThemedText style={styles.headerTitle}>Latest News</ThemedText>
-                    <ThemedText style={styles.headerSubtitle}>Stay updated with what&apos;s happening around the world</ThemedText>
+                    <View style={styles.headerTextContainer}>
+                        <ThemedText style={styles.headerTitle}>Latest News</ThemedText>
+                        <ThemedText style={styles.headerSubtitle}>Stay updated with world events</ThemedText>
+                    </View>
+                    <Ionicons name="newspaper" size={40} color="white" />
                 </LinearGradient>
 
                 {/* Stats */}
@@ -84,26 +76,53 @@ export default function NewsScreen() {
                 {/* News Feed */}
                 <View style={styles.section}>
                     <ThemedText style={styles.sectionTitle}>Top Stories</ThemedText>
-                    {newsArticles.map((article) => (
-                        <TouchableOpacity key={article.id} style={styles.newsCard}>
-                            <View style={styles.newsImage}>
-                                <ThemedText style={styles.newsEmoji}>{article.emoji}</ThemedText>
-                            </View>
-                            <View style={styles.newsContent}>
-                                <View style={styles.categoryBadge}>
-                                    <ThemedText style={styles.categoryText}>{article.category}</ThemedText>
+
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#fa709a" style={{ marginTop: 40 }} />
+                    ) : (
+                        newsArticles.map((article) => (
+                            <TouchableOpacity
+                                key={article.id}
+                                style={styles.newsCard}
+                                onPress={() => Linking.openURL(article.url)}
+                            >
+                                <View style={styles.newsImage}>
+                                    {article.urlToImage ? (
+                                        <Image
+                                            source={{ uri: article.urlToImage }}
+                                            style={{ width: '100%', height: '100%' }}
+                                            resizeMode="cover"
+                                        />
+                                    ) : (
+                                        <Ionicons name="newspaper" size={64} color="white" style={{ opacity: 0.3 }} />
+                                    )}
                                 </View>
-                                <ThemedText style={styles.newsTitle}>{article.title}</ThemedText>
-                                <ThemedText style={styles.newsExcerpt}>{article.excerpt}</ThemedText>
-                                <View style={styles.newsFooter}>
-                                    <ThemedText style={styles.time}>{article.time}</ThemedText>
-                                    <TouchableOpacity style={styles.readMoreBtn}>
-                                        <ThemedText style={styles.readMoreText}>Read More</ThemedText>
-                                    </TouchableOpacity>
+                                <View style={styles.newsContent}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                        <View style={styles.categoryBadge}>
+                                            <ThemedText style={styles.categoryText}>{article.category || 'General'}</ThemedText>
+                                        </View>
+                                        <ThemedText style={{ fontSize: 12, fontWeight: '600', color: '#666' }}>
+                                            {article.sourceName}
+                                        </ThemedText>
+                                    </View>
+                                    <ThemedText style={styles.newsTitle}>{article.title}</ThemedText>
+                                    <ThemedText style={styles.newsExcerpt} numberOfLines={3}>
+                                        {article.description || 'No description available for this article.'}
+                                    </ThemedText>
+                                    <View style={styles.newsFooter}>
+                                        <ThemedText style={styles.time}>{dayjs(article.publishedAt).fromNow()}</ThemedText>
+                                        <TouchableOpacity
+                                            style={styles.readMoreBtn}
+                                            onPress={() => Linking.openURL(article.url)}
+                                        >
+                                            <ThemedText style={styles.readMoreText}>Read Source</ThemedText>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                            </TouchableOpacity>
+                        ))
+                    )}
                 </View>
 
                 {/* Coming Soon */}

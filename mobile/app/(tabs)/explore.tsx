@@ -8,6 +8,8 @@ import { logout, setCredentials, selectToken } from '@/store/slices/authSlice';
 import { COLORS } from '@/constants/colors';
 import axios from 'axios';
 import { APP_CONFIG } from '@/constants';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -87,19 +89,26 @@ export default function ProfileScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#4c669f', '#3b5998', '#192f6a']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <View style={styles.profileHeader}>
           <View style={styles.avatar}>
             <ThemedText style={styles.avatarText}>
               {user?.firstName?.charAt(0) || 'U'}
             </ThemedText>
           </View>
-          <ThemedText style={styles.userName}>
-            {user?.firstName} {user?.lastName}
-          </ThemedText>
-          <ThemedText style={styles.userPhone}>{user?.phoneNumber}</ThemedText>
+          <View style={styles.headerInfo}>
+            <ThemedText style={styles.userName}>
+              {user?.firstName} {user?.lastName}
+            </ThemedText>
+            <ThemedText style={styles.userPhone}>{user?.phoneNumber}</ThemedText>
+          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
@@ -234,79 +243,91 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: '#f8f9fa',
   },
   header: {
     paddingTop: 60,
-    paddingBottom: 40,
-    backgroundColor: COLORS.PRIMARY,
-    alignItems: 'center',
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
   },
   profileHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    width: '100%',
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: COLORS.WHITE,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: COLORS.PRIMARY,
+    color: 'white',
+  },
+  headerInfo: {
+    marginLeft: 20,
+    flex: 1,
   },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.WHITE,
+    color: 'white',
   },
   userPhone: {
     fontSize: 16,
-    color: COLORS.WHITE,
-    opacity: 0.9,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 4,
   },
   content: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 20,
+    marginTop: 24,
   },
   section: {
     marginBottom: 24,
+    marginTop: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: 12,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#333',
+    marginLeft: 4,
   },
   infoCard: {
-    backgroundColor: COLORS.WHITE,
+    backgroundColor: 'white',
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.BORDER,
-    padding: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   infoRow: {
-    paddingVertical: 12,
+    marginBottom: 12,
   },
   infoLabel: {
-    fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
-    marginBottom: 6,
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
   },
   infoValue: {
     fontSize: 16,
     fontWeight: '500',
-    color: COLORS.TEXT_PRIMARY,
+    color: '#1a1a1a',
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.BORDER,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 12,
   },
   emailContainer: {
     flexDirection: 'row',
@@ -316,21 +337,21 @@ const styles = StyleSheet.create({
   },
   editButton: {
     fontSize: 14,
-    color: COLORS.PRIMARY,
+    color: '#396afc',
     fontWeight: '600',
   },
   emailEditContainer: {
     gap: 12,
   },
   emailInput: {
-    backgroundColor: COLORS.WHITE,
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.BORDER,
+    borderWidth: 1,
+    borderColor: '#e1e4e8',
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: COLORS.TEXT_PRIMARY,
+    color: '#1a1a1a',
   },
   emailActions: {
     flexDirection: 'row',
@@ -338,7 +359,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: COLORS.BORDER,
+    backgroundColor: '#f0f0f0',
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
@@ -346,11 +367,11 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.TEXT_PRIMARY,
+    color: '#666',
   },
   saveButton: {
     flex: 1,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: '#396afc',
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
@@ -361,14 +382,17 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.WHITE,
+    color: 'white',
   },
   menuCard: {
-    backgroundColor: COLORS.WHITE,
+    backgroundColor: 'white',
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.BORDER,
     padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   menuItem: {
     flexDirection: 'row',
@@ -378,23 +402,28 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
-    color: COLORS.TEXT_PRIMARY,
+    color: '#1a1a1a',
   },
   menuArrow: {
     fontSize: 20,
-    color: COLORS.TEXT_TERTIARY,
+    color: '#ccc',
   },
   logoutButton: {
-    backgroundColor: '#5433ff',
+    backgroundColor: '#ef4444',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 32,
+    marginTop: 24,
+    marginBottom: 40,
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
   },
   logoutText: {
-    color: COLORS.WHITE,
+    color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
 });

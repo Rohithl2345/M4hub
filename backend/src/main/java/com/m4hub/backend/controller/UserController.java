@@ -106,6 +106,11 @@ public class UserController {
                 }
             }
 
+            // Update phone number if provided
+            if (request.getPhoneNumber() != null && !request.getPhoneNumber().isEmpty()) {
+                user.setPhoneNumber(request.getPhoneNumber());
+            }
+
             userRepository.save(user);
 
             UserDto userDto = new UserDto(
@@ -169,6 +174,10 @@ public class UserController {
 
             if (request.getEmail() != null && !request.getEmail().isEmpty()) {
                 user.setEmail(request.getEmail());
+            }
+
+            if (request.getPhoneNumber() != null && !request.getPhoneNumber().isEmpty()) {
+                user.setPhoneNumber(request.getPhoneNumber());
             }
 
             userRepository.save(user);

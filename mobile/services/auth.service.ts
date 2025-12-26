@@ -6,33 +6,11 @@
 import { APP_CONFIG, API_ENDPOINTS } from '../constants';
 import { config } from '../config';
 
-export interface SendOtpRequest {
-    phoneNumber: string;
-}
-
-export interface SendOtpResponse {
+export interface AuthResponse {
     success: boolean;
     message: string;
     token?: string;
-}
-
-export interface VerifyOtpRequest {
-    phoneNumber: string;
-    otpCode: string;
-}
-
-export interface VerifyOtpResponse {
-    success: boolean;
-    message: string;
-    token?: string;
-    user?: {
-        id: number;
-        phoneNumber: string;
-        name?: string;
-        email?: string;
-        isVerified: boolean;
-        isActive: boolean;
-    };
+    user?: any;
 }
 
 class AuthService {
@@ -44,14 +22,14 @@ class AuthService {
     }
 
     /**
-     * Send OTP to phone number
+     * Send OTP to email for signup
      */
-    async sendOtp(phoneNumber: string): Promise<SendOtpResponse> {
+    async sendEmailOtp(email: string, password?: string): Promise<AuthResponse> {
         try {
-            config.log('Sending OTP to:', phoneNumber);
+            config.log('Sending Email OTP to:', email);
 
-            const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.SEND_OTP}`;
-            const payload: SendOtpRequest = { phoneNumber };
+            const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.SEND_EMAIL_OTP}`;
+            const payload = { email, password };
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -61,7 +39,7 @@ class AuthService {
                 body: JSON.stringify(payload),
             });
 
-            const data: SendOtpResponse = await response.json();
+            const data: AuthResponse = await response.json();
 
             if (!response.ok) {
                 throw new Error(data.message || 'Failed to send OTP');
@@ -76,17 +54,14 @@ class AuthService {
     }
 
     /**
-     * Verify OTP code
+     * Verify Email OTP
      */
-    async verifyOtp(
-        phoneNumber: string,
-        otpCode: string
-    ): Promise<VerifyOtpResponse> {
+    async verifyEmailOtp(email: string, otpCode: string, password?: string): Promise<AuthResponse> {
         try {
-            config.log('Verifying OTP for:', phoneNumber);
+            config.log('Verifying Email OTP for:', email);
 
-            const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.VERIFY_OTP}`;
-            const payload: VerifyOtpRequest = { phoneNumber, otpCode };
+            const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.VERIFY_EMAIL_OTP}`;
+            const payload = { email, otpCode, password };
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -96,88 +71,144 @@ class AuthService {
                 body: JSON.stringify(payload),
             });
 
-            const data: VerifyOtpResponse = await response.json();
+            const data: AuthResponse = await response.json();
 
             if (!response.ok) {
                 throw new Error(data.message || 'Failed to verify OTP');
             }
 
-            config.log('OTP verified successfully');
+            config.log('Email verified successfully');
             return data;
         } catch (err) {
-            config.error('Error verifying OTP:', err);
+            config.error('Error verifying Email OTP:', err);
             throw err;
         }
     }
 
     /**
-     * Validate phone number format
+     * Login with Email/Username and Password
      */
-    validatePhoneNumber(phoneNumber: string): {
-        valid: boolean;
-        message?: string;
-    } {
-        if (!phoneNumber || phoneNumber.trim().length === 0) {
-            return { valid: false, message: 'Phone number is required' };
+    async login(identifier: string, password: string): Promise<AuthResponse> {
+        try {
+            config.log('Logging in user:', identifier);
+
+            const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.LOGIN_EMAIL}`;
+            const payload = { email: identifier, password }; // Backend uses 'email' field for both email and username
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data: AuthResponse = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            config.log('Login successful');
+            return data;
+        } catch (err) {
+            config.error('Error during login:', err);
+            throw err;
         }
-
-        // Remove spaces and hyphens
-        const cleaned = phoneNumber.replace(/[\s-]/g, '');
-
-        // Check if it starts with country code
-        if (!cleaned.startsWith('+')) {
-            return {
-                valid: false,
-                message: 'Phone number must start with country code (e.g., +91)',
-            };
-        }
-
-        // E.164 format validation: +[country code][number]
-        const e164Regex = /^\+[1-9]\d{1,14}$/;
-        if (!e164Regex.test(cleaned)) {
-            return {
-                valid: false,
-                message: 'Invalid phone number format. Use +[country code][number]',
-            };
-        }
-
-        return { valid: true };
     }
 
     /**
-     * Validate OTP code format
+     * Resend Email OTP
      */
-    validateOtpCode(otpCode: string): { valid: boolean; message?: string } {
-        if (!otpCode || otpCode.trim().length === 0) {
-            return { valid: false, message: 'OTP code is required' };
-        }
+    async resendEmailOtp(email: string, password?: string): Promise<AuthResponse> {
+        try {
+            config.log('Resending Email OTP to:', email);
 
-        if (otpCode.length !== 6) {
-            return { valid: false, message: 'OTP must be 6 digits' };
-        }
+            const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.RESEND_EMAIL_OTP}`;
+            const payload = { email, password };
 
-        if (!/^\d{6}$/.test(otpCode)) {
-            return { valid: false, message: 'OTP must contain only numbers' };
-        }
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
 
-        return { valid: true };
+            const data: AuthResponse = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to resend OTP');
+            }
+
+            config.log('OTP resent successfully');
+            return data;
+        } catch (err) {
+            config.error('Error resending OTP:', err);
+            throw err;
+        }
     }
 
     /**
-     * Format phone number to E.164
+     * Forgot Password
      */
-    formatPhoneNumber(phoneNumber: string, countryCode: string = '+91'): string {
-        // Remove all non-numeric characters except +
-        let cleaned = phoneNumber.replace(/[^\d+]/g, '');
+    async forgotPassword(email: string, newPassword: string, confirmPassword: string): Promise<AuthResponse> {
+        try {
+            config.log('Resetting password for:', email);
 
-        // If it doesn't start with +, add country code
-        if (!cleaned.startsWith('+')) {
-            // Remove leading zeros
-            cleaned = cleaned.replace(/^0+/, '');
-            cleaned = `${countryCode}${cleaned}`;
+            const url = `${this.baseUrl}/api/auth/forgot-password`;
+            const payload = { email, newPassword, confirmPassword };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data: AuthResponse = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to reset password');
+            }
+
+            return data;
+        } catch (err) {
+            config.error('Error resetting password:', err);
+            throw err;
         }
+    }
 
-        return cleaned;
+    /**
+     * Validate email format
+     */
+    validateEmail(email: string): boolean {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    /**
+     * Validate password complexity
+     * Matches backend requirements:
+     * - At least 8 characters
+     * - One uppercase letter
+     * - One number
+     * - One special character
+     */
+    validatePassword(password: string): { valid: boolean; message?: string } {
+        if (!password || password.length < 8) {
+            return { valid: false, message: 'Password must be at least 8 characters' };
+        }
+        if (!/[A-Z]/.test(password)) {
+            return { valid: false, message: 'Password must contain at least one uppercase letter' };
+        }
+        if (!/[0-9]/.test(password)) {
+            return { valid: false, message: 'Password must contain at least one number' };
+        }
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+            return { valid: false, message: 'Password must contain at least one special character' };
+        }
+        return { valid: true };
     }
 }
 

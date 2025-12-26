@@ -5,11 +5,10 @@ export const musicStyles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        padding: 32,
+        paddingTop: 60,
+        paddingBottom: 24,
+        paddingHorizontal: 24,
         alignItems: 'center',
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
-        marginBottom: 24,
     },
     headerTitle: {
         fontSize: 28,
@@ -27,6 +26,7 @@ export const musicStyles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 16,
         marginBottom: 24,
+        marginTop: 24,
         gap: 8,
     },
     searchBox: {
@@ -40,7 +40,7 @@ export const musicStyles = StyleSheet.create({
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
         elevation: 3,
         gap: 8,
     },
@@ -50,7 +50,7 @@ export const musicStyles = StyleSheet.create({
         color: '#333',
     },
     searchButton: {
-        backgroundColor: '#667eea',
+        backgroundColor: '#4c669f',
         paddingHorizontal: 24,
         paddingVertical: 12,
         borderRadius: 12,
@@ -88,7 +88,7 @@ export const musicStyles = StyleSheet.create({
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
         elevation: 3,
     },
     statValue: {
@@ -118,9 +118,9 @@ export const musicStyles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
         elevation: 2,
     },
     trackIconContainer: {
@@ -129,7 +129,7 @@ export const musicStyles = StyleSheet.create({
     trackIcon: {
         width: 48,
         height: 48,
-        borderRadius: 8,
+        borderRadius: 0,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -174,7 +174,19 @@ export const musicStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        marginLeft: 8,
+    },
+    trackDuration: {
+        fontSize: 12,
+        color: '#666',
+    },
+    spotifyButton: {
+        padding: 4,
+    },
+    playButton: {
+        marginLeft: 4,
+    },
+    wishlistButton: {
+        padding: 4,
     },
     actionButton: {
         padding: 8,

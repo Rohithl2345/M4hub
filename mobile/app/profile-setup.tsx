@@ -20,6 +20,7 @@ export default function ProfileSetupScreen() {
     const [username, setUsername] = useState('');
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [email, setEmail] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [dateOfBirth, setDateOfBirth] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
@@ -91,6 +92,7 @@ export default function ProfileSetupScreen() {
                     dateOfBirth: formatDate(dateOfBirth),
                     gender: gender,
                     email: email.trim() || null,
+                    phoneNumber: phoneNumber.trim() || null,
                 },
                 {
                     headers: {
@@ -246,6 +248,18 @@ export default function ProfileSetupScreen() {
                             onChangeText={setEmail}
                             keyboardType="email-address"
                             autoCapitalize="none"
+                        />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <ThemedText style={styles.label}>Mobile Number (Optional)</ThemedText>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter mobile number"
+                            placeholderTextColor={COLORS.TEXT_TERTIARY}
+                            value={phoneNumber}
+                            onChangeText={setPhoneNumber}
+                            keyboardType="phone-pad"
                         />
                     </View>
 

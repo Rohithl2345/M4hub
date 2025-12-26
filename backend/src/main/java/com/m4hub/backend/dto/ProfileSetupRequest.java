@@ -26,6 +26,8 @@ public class ProfileSetupRequest {
     @Pattern(regexp = "^[a-zA-Z0-9_]{3,20}$", message = "Username must be 3-20 alphanumeric characters or underscores")
     private String username;
 
+    private String phoneNumber;
+
     // Getters and Setters
     public String getFirstName() {
         return firstName;
@@ -73,5 +75,13 @@ public class ProfileSetupRequest {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

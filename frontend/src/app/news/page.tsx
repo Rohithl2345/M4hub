@@ -1,46 +1,35 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './news.module.css';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PublicIcon from '@mui/icons-material/Public';
+import { CircularProgress, Box } from '@mui/material';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 export default function NewsPage() {
-    const newsArticles = [
-        {
-            id: 1,
-            category: 'Technology',
-            title: 'AI Revolution: New Breakthrough in Machine Learning',
-            excerpt: 'Researchers announce major advancement in artificial intelligence capabilities...',
-            time: '2 hours ago',
-            image: '🤖'
-        },
-        {
-            id: 2,
-            category: 'Business',
-            title: 'Global Markets Reach New Heights',
-            excerpt: 'Stock markets worldwide show strong performance as economic indicators improve...',
-            time: '4 hours ago',
-            image: '📈'
-        },
-        {
-            id: 3,
-            category: 'Sports',
-            title: 'Championship Finals Set Records',
-            excerpt: 'Historic match draws millions of viewers as teams battle for the title...',
-            time: '6 hours ago',
-            image: '⚽'
-        },
-        {
-            id: 4,
-            category: 'Entertainment',
-            title: 'New Movie Breaks Box Office Records',
-            excerpt: 'Latest blockbuster surpasses expectations with incredible opening weekend...',
-            time: '8 hours ago',
-            image: '🎬'
-        },
-    ];
+    const [newsArticles, setNewsArticles] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchNews = async () => {
+            try {
+                const response = await axios.get('http://localhost:8080/api/news/latest');
+                setNewsArticles(response.data);
+            } catch (error) {
+                console.error("Error fetching news:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchNews();
+    }, []);
 
     return (
         <DashboardLayout title="News">
@@ -82,22 +71,45 @@ export default function NewsPage() {
                 {/* News Feed */}
                 <div className={styles.section}>
                     <h2 className={styles.sectionTitle}>Top Stories</h2>
-                    <div className={styles.newsGrid}>
-                        {newsArticles.map((article) => (
-                            <div key={article.id} className={styles.newsCard}>
-                                <div className={styles.newsImage}>{article.image}</div>
-                                <div className={styles.newsContent}>
-                                    <span className={styles.category}>{article.category}</span>
-                                    <h3 className={styles.newsTitle}>{article.title}</h3>
-                                    <p className={styles.newsExcerpt}>{article.excerpt}</p>
-                                    <div className={styles.newsFooter}>
-                                        <span className={styles.time}>{article.time}</span>
-                                        <button className={styles.readMore}>Read More</button>
+
+                    {loading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+                            <CircularProgress color="inherit" sx={{ color: '#fa709a' }} />
+                        </Box>
+                    ) : (
+                        <div className={styles.newsGrid}>
+                            {newsArticles.map((article) => (
+                                <div key={article.id} className={styles.newsCard}>
+                                    <div className={styles.newsImage}>
+                                        {article.urlToImage ? (
+                                            <img src={article.urlToImage} alt={article.title} />
+                                        ) : (
+                                            <NewspaperIcon sx={{ fontSize: 64, opacity: 0.3 }} />
+                                        )}
+                                    </div>
+                                    <div className={styles.newsContent}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                            <span className={styles.category}>{article.category || 'General'}</span>
+                                            <span className={styles.source}>{article.sourceName}</span>
+                                        </div>
+                                        <h3 className={styles.newsTitle}>{article.title}</h3>
+                                        <p className={styles.newsExcerpt}>
+                                            {article.description || 'No description available for this article.'}
+                                        </p>
+                                        <div className={styles.newsFooter}>
+                                            <span className={styles.time}>{dayjs(article.publishedAt).fromNow()}</span>
+                                            <button
+                                                className={styles.readMore}
+                                                onClick={() => window.open(article.url, '_blank')}
+                                            >
+                                                Read Source
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Coming Soon */}

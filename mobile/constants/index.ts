@@ -1,13 +1,12 @@
-/**
- * Application-wide constants
- */
+import { Platform } from 'react-native';
 
 export const APP_CONFIG = {
     NAME: process.env.EXPO_PUBLIC_APP_NAME || 'M4Hub',
     VERSION: '1.0.0',
     ENVIRONMENT: process.env.EXPO_PUBLIC_ENVIRONMENT || 'development',
-    // For Android emulator, use 10.0.2.2 to access host machine's localhost
-    API_URL: process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8080',
+    // For Android emulator, use 10.0.2.2; for Web/iOS, use localhost
+    API_URL: process.env.EXPO_PUBLIC_API_URL ||
+        (Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080'),
     ENABLE_LOGGING: process.env.EXPO_PUBLIC_ENABLE_LOGGING === 'true',
 } as const;
 
@@ -41,6 +40,7 @@ export const API_ENDPOINTS = {
 export const STORAGE_KEYS = {
     AUTH_TOKEN: '@m4hub:auth_token',
     USER_DATA: '@m4hub:user_data',
+    PHONE_NUMBER: '@m4hub:phone_number',
     THEME_PREFERENCE: '@m4hub:theme',
     LANGUAGE: '@m4hub:language',
 } as const;

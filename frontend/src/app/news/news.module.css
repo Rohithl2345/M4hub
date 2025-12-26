@@ -11,11 +11,23 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     padding: 24px;
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     border-radius: 16px;
     color: white;
+    box-shadow: 0 4px 12px rgba(250, 112, 154, 0.2);
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 16px;
+        margin-bottom: 16px;
+        gap: 12px;
+        flex-direction: row !important;
+        text-align: left !important;
+        border-radius: 12px;
+    }
 }
 
 .headerIcon {
@@ -30,8 +42,25 @@
 
 .subtitle {
     font-size: 14px;
-    margin: 8px 0 0 0;
+    margin: 4px 0 0 0;
     opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .title {
+        font-size: 19px;
+    }
+
+    .subtitle {
+        font-size: 11px;
+        margin-top: 2px;
+        line-height: 1.2;
+        max-width: 200px;
+    }
+
+    .headerIcon {
+        font-size: 28px !important;
+    }
 }
 
 .statsGrid {
@@ -104,11 +133,22 @@
 .newsImage {
     width: 100%;
     height: 180px;
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    background: linear-gradient(135deg, #fa709a 10%, #fee140 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 64px;
+    overflow: hidden;
+}
+
+.newsImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.newsCard:hover .newsImage img {
+    transform: scale(1.1);
 }
 
 .newsContent {
@@ -119,11 +159,19 @@
     display: inline-block;
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.source {
     font-size: 12px;
     font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 16px;
-    margin-bottom: 12px;
+    color: #64748b;
+    text-transform: capitalize;
 }
 
 .newsTitle {
@@ -222,7 +270,8 @@
 
 @media (max-width: 768px) {
     .container {
-        padding: 16px;
+        padding: 12px;
+        border-radius: 0;
     }
 
     .header {
@@ -237,7 +286,7 @@
     }
 
     .title {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .statsGrid {

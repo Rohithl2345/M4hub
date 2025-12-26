@@ -1,70 +1,138 @@
-import { StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/styles';
+import { StyleSheet, Dimensions } from 'react-native';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '@/styles';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - SPACING.lg * 3) / 2;
 
 export const homeStyles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#f8f9fa',
     },
     header: {
         paddingTop: 60,
-        paddingBottom: 30,
-        paddingHorizontal: SPACING['2xl'],
+        paddingBottom: 24,
+        paddingHorizontal: 24,
+        justifyContent: 'center',
     },
     headerContent: {
-        gap: SPACING.sm,
+        gap: 8,
     },
     greeting: {
-        fontSize: TYPOGRAPHY.fontSize['5xl'],
-        fontWeight: TYPOGRAPHY.fontWeight.bold,
-        color: COLORS.textWhite,
+        fontSize: 32,
+        fontWeight: '800',
+        color: '#ffffff',
+        letterSpacing: -0.5,
     },
     subtitle: {
-        fontSize: TYPOGRAPHY.fontSize.lg,
-        color: COLORS.textWhite,
-        opacity: 0.9,
+        fontSize: 16,
+        color: 'rgba(255, 255, 255, 0.9)',
+        fontWeight: '500',
     },
     content: {
         flex: 1,
-        paddingHorizontal: SPACING.lg,
-        paddingTop: SPACING.lg,
-        paddingBottom: SPACING.lg,
+        paddingHorizontal: 20,
+        paddingTop: 24,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+        marginTop: 24,
+    },
+    sectionTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#1a1a1a',
+    },
+    sectionLink: {
+        fontSize: 14,
+        color: '#5433ff',
+        fontWeight: '600',
+    },
+    recentList: {
+        gap: 12,
+        paddingBottom: 40,
+    },
+    recentItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+        padding: 16,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    recentIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    recentText: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    recentTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1a1a1a',
+        marginBottom: 4,
+    },
+    recentTime: {
+        fontSize: 13,
+        color: '#6b7280',
     },
     featuresGrid: {
-        flexDirection: 'column',
-        flexWrap: 'nowrap',
-        gap: SPACING.lg,
-        marginBottom: 0,
-        flex: 1,
+        gap: 16,
     },
     featureCardContainer: {
         width: '100%',
-        borderRadius: SPACING.md,
+        height: 100,
+        borderRadius: 12,
         overflow: 'hidden',
-        flex: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 4,
     },
     featureCard: {
-        padding: SPACING['2xl'],
+        flex: 1,
+        padding: 20,
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
-        borderBottomWidth: 0,
-        borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+        justifyContent: 'space-between',
+    },
+    featureIconContainer: {
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     featureIcon: {
-        marginRight: SPACING['2xl'],
+        // Controlled by icon size prop in component
     },
     featureContent: {
         flex: 1,
+        marginLeft: 16,
     },
     featureTitle: {
-        fontSize: TYPOGRAPHY.fontSize['3xl'],
-        fontWeight: TYPOGRAPHY.fontWeight.semibold,
-        marginBottom: SPACING.xs,
+        fontSize: 20,
+        fontWeight: '700',
         color: 'white',
+        marginBottom: 4,
     },
     featureDescription: {
-        fontSize: TYPOGRAPHY.fontSize.lg,
-        color: 'white',
-        opacity: 0.9,
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.85)',
+        fontWeight: '500',
     },
 });

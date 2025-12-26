@@ -5,24 +5,80 @@ export const messagesStyles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        padding: 32,
+        paddingTop: 60,
+        paddingBottom: 24,
+        paddingHorizontal: 20,
         alignItems: 'center',
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
-        marginBottom: 24,
     },
     headerTitle: {
-        fontSize: 28,
+        fontSize: 32,
         fontWeight: 'bold',
         color: 'white',
         marginTop: 16,
+        textAlign: 'center',
     },
     headerSubtitle: {
-        fontSize: 16,
-        color: 'rgba(255, 255, 255, 0.9)',
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.85)',
         marginTop: 8,
         textAlign: 'center',
     },
+    headerActions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    iconButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    segmentContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#e5e7eb',
+        borderRadius: 12,
+        padding: 4,
+        marginHorizontal: 20,
+        marginTop: 20,
+        marginBottom: 12,
+    },
+    segmentButton: {
+        flex: 1,
+        paddingVertical: 8,
+        alignItems: 'center',
+        borderRadius: 10,
+        justifyContent: 'center',
+    },
+    segmentButtonActive: {
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    segmentText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#6b7280',
+    },
+    segmentTextActive: {
+        color: '#111827',
+    },
+    badge: {
+        position: 'absolute',
+        top: 8,
+        right: 20,
+    },
+    badgeDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#ef4444',
+    },
+
     statsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -39,7 +95,7 @@ export const messagesStyles = StyleSheet.create({
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
         elevation: 3,
     },
     statValue: {
@@ -52,9 +108,18 @@ export const messagesStyles = StyleSheet.create({
         color: '#666',
         marginTop: 4,
     },
+    activeStatCard: {
+        borderWidth: 2,
+        borderColor: '#4c669f',
+        backgroundColor: '#f0f4ff',
+    },
+    activeStatValue: {
+        color: '#4c669f',
+    },
     section: {
         paddingHorizontal: 16,
         marginBottom: 24,
+        marginTop: 24,
     },
     sectionTitle: {
         fontSize: 22,
@@ -70,8 +135,8 @@ export const messagesStyles = StyleSheet.create({
         marginBottom: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
         elevation: 2,
     },
     avatar: {
@@ -103,7 +168,7 @@ export const messagesStyles = StyleSheet.create({
         color: '#999',
         marginBottom: 8,
     },
-    badge: {
+    chatListBadge: {
         backgroundColor: '#11998e',
         paddingHorizontal: 8,
         paddingVertical: 4,
@@ -111,7 +176,7 @@ export const messagesStyles = StyleSheet.create({
         minWidth: 24,
         alignItems: 'center',
     },
-    badgeText: {
+    chatListBadgeText: {
         color: 'white',
         fontSize: 12,
         fontWeight: '600',
@@ -156,5 +221,73 @@ export const messagesStyles = StyleSheet.create({
         fontSize: 12,
         color: '#11998e',
         fontWeight: '500',
+    },
+    controlBar: {
+        flexDirection: 'row',
+        backgroundColor: 'white',
+        marginHorizontal: 16,
+        marginTop: 16,
+        marginBottom: 16,
+        borderRadius: 12,
+        padding: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        alignItems: 'center',
+    },
+    tabContainer: {
+        flex: 1,
+        flexDirection: 'row',
+    },
+    tabItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        borderRadius: 8,
+        flexDirection: 'row',
+        gap: 6,
+    },
+    activeTabItem: {
+        backgroundColor: 'rgba(76, 102, 159, 0.1)',
+    },
+    tabText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#999',
+    },
+    activeTabText: {
+        color: '#4c669f',
+    },
+    tabBadge: {
+        backgroundColor: '#ff4b4b',
+        borderRadius: 8,
+        minWidth: 16,
+        height: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 4,
+    },
+    tabBadgeText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    actionDivider: {
+        width: 1,
+        height: 24,
+        backgroundColor: '#eee',
+        marginHorizontal: 4,
+    },
+    actionButtons: {
+        flexDirection: 'row',
+        gap: 4,
+        paddingRight: 4,
+    },
+    actionIconButton: {
+        padding: 8,
+        borderRadius: 8,
     },
 });

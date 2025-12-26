@@ -8,7 +8,8 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
     show-sql: true
 
 server:
@@ -22,7 +23,7 @@ sms:
 # CORS Configuration (Development)
 app:
   cors:
-    allowed-origins: http://localhost:3000,http://localhost:19006,http://192.168.1.100:19006
+    allowed-origins: http://localhost:3000,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:19006,http://192.168.1.100:19006
 
 # Twilio Configuration (Not used in dev)
 twilio:

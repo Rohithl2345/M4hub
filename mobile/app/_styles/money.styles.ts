@@ -5,11 +5,10 @@ export const moneyStyles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        padding: 32,
+        paddingTop: 60,
+        paddingBottom: 24,
+        paddingHorizontal: 24,
         alignItems: 'center',
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
-        marginBottom: 24,
     },
     headerTitle: {
         fontSize: 28,
@@ -26,7 +25,8 @@ export const moneyStyles = StyleSheet.create({
     balanceCard: {
         marginHorizontal: 16,
         marginBottom: 24,
-        borderRadius: 16,
+        marginTop: 24,
+        borderRadius: 12,
         overflow: 'hidden',
     },
     balanceGradient: {
@@ -77,13 +77,14 @@ export const moneyStyles = StyleSheet.create({
     statCard: {
         flex: 1,
         backgroundColor: 'white',
-        padding: 20,
+        padding: 16,
         borderRadius: 12,
         alignItems: 'center',
+        marginHorizontal: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
         elevation: 3,
     },
     statValue: {
@@ -111,12 +112,12 @@ export const moneyStyles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'white',
         padding: 16,
-        borderRadius: 12,
         marginBottom: 12,
+        borderRadius: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
         elevation: 2,
     },
     transactionIcon: {

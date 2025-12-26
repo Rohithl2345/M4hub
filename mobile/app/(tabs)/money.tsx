@@ -26,7 +26,7 @@ export default function MoneyScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <LinearGradient
-                    colors={['#f093fb', '#f5576c']}
+                    colors={['#4c669f', '#3b5998', '#192f6a']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.header}

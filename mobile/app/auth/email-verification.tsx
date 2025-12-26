@@ -6,7 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/slices/authSlice';
-import { APP_CONFIG, API_ENDPOINTS } from '@/constants';
+import { authService } from '@/services/auth.service';
 
 export default function EmailVerificationScreen() {
     const router = useRouter();
@@ -53,24 +53,12 @@ export default function EmailVerificationScreen() {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`${APP_CONFIG.API_URL}${API_ENDPOINTS.AUTH.VERIFY_EMAIL_OTP}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                    otpCode: verificationCode
-                }),
-            });
+            const data = await authService.verifyEmailOtp(email, verificationCode, password);
 
-            const data = await response.json();
-
-            if (response.ok && data.success) {
+            if (data.success) {
                 // Store auth token and user data
                 dispatch(setCredentials({
-                    token: data.token,
+                    token: data.token!,
                     user: data.user
                 }));
 
@@ -82,9 +70,9 @@ export default function EmailVerificationScreen() {
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Verify OTP error:', error);
-            Alert.alert('Error', 'Network error. Please check your connection.');
+            Alert.alert('Error', error.message || 'Network error. Please check your connection.');
         } finally {
             setIsLoading(false);
         }
@@ -95,20 +83,9 @@ export default function EmailVerificationScreen() {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`${APP_CONFIG.API_URL}${API_ENDPOINTS.AUTH.RESEND_EMAIL_OTP}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password
-                }),
-            });
+            const data = await authService.resendEmailOtp(email, password);
 
-            const data = await response.json();
-
-            if (response.ok && data.success) {
+            if (data.success) {
                 setTimer(60);
                 setCode(['', '', '', '', '', '']);
                 Alert.alert('Code Resent', 'A new verification code has been sent to your email');
@@ -119,9 +96,9 @@ export default function EmailVerificationScreen() {
                     setTimer(60);
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Resend OTP error:', error);
-            Alert.alert('Error', 'Network error. Please try again.');
+            Alert.alert('Error', error.message || 'Network error. Please try again.');
         } finally {
             setIsLoading(false);
         }

@@ -10,6 +10,7 @@ import { config } from '../config';
 export interface UserData {
     id: number;
     phoneNumber: string;
+    username?: string;
     name?: string;
     firstName?: string;
     lastName?: string;

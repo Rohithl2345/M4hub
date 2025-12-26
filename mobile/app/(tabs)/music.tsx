@@ -69,7 +69,7 @@ export default function MusicScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <LinearGradient
-                    colors={['#667eea', '#764ba2']}
+                    colors={['#4c669f', '#3b5998', '#192f6a']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.header}

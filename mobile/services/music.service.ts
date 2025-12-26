@@ -1,3 +1,4 @@
+import { Linking } from 'react-native';
 import { APP_CONFIG, API_ENDPOINTS } from '../constants';
 import { storageService } from './storage.service';
 
@@ -14,6 +15,7 @@ export interface Track {
     genre?: string;
     isFavorite?: boolean;
     isInWishlist?: boolean;
+    spotifyUrl?: string;
 }
 
 class MusicService {
@@ -38,8 +40,25 @@ class MusicService {
             album_image: song.imageUrl || '',
             genre: song.genre,
             isFavorite: song.isFavorite || false,
-            isInWishlist: song.isInWishlist || false
+            isInWishlist: song.isInWishlist || false,
+            spotifyUrl: song.spotifyUrl
         };
+    }
+
+    /**
+     * Open track in Spotify app or web
+     */
+    async openInSpotify(url: string) {
+        try {
+            const supported = await Linking.canOpenURL(url);
+            if (supported) {
+                await Linking.openURL(url);
+            } else {
+                console.error("Don't know how to open URI: " + url);
+            }
+        } catch (error) {
+            console.error('Error opening Spotify:', error);
+        }
     }
 
     private async getHeaders() {

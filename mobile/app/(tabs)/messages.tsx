@@ -12,6 +12,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     Image,
+    ScrollView,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useAppSelector } from '../../store/hooks';
@@ -291,65 +292,56 @@ export default function MessagesScreen() {
     if (!selectedEntity) {
         return (
             <View style={styles.container}>
+                {/* Header - Exact same structure as Money tab */}
                 <LinearGradient
-                    colors={[COLORS.PRIMARY, COLORS.SECONDARY]}
+                    colors={['#4c669f', '#3b5998', '#192f6a']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.header}
                 >
-                    <View style={styles.headerTop}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                            <Ionicons name="chatbubble-ellipses" size={32} color="white" />
-                            <View>
-                                <Text style={styles.headerTitle}>Messenger</Text>
-                                <Text style={styles.headerSubtitleTop}>Stay connected with your friends and groups</Text>
-                            </View>
-                        </View>
-                        <View style={styles.headerActions}>
-                            <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.iconCircle}>
-                                <Ionicons name="person-add" size={18} color="white" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setShowCreateGroup(true)} style={styles.iconCircle}>
-                                <Ionicons name="add" size={22} color="white" />
-                            </TouchableOpacity>
-                        </View>
+                    <View style={styles.headerTopActions}>
+                        <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.iconCircle}>
+                            <Ionicons name="search" size={22} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setShowCreateGroup(true)} style={styles.iconCircle}>
+                            <Ionicons name="add" size={28} color="white" />
+                        </TouchableOpacity>
                     </View>
-
-                    <View style={styles.tabBar}>
-                        {[
-                            { label: 'Friends', icon: 'people' },
-                            { label: 'Groups', icon: 'grid' },
-                            { label: 'Requests', icon: 'mail-unread' }
-                        ].map((tab, index) => (
-                            <TouchableOpacity
-                                key={tab.label}
-                                style={styles.tabItem}
-                                onPress={() => setActiveTab(index)}
-                            >
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                    <Ionicons
-                                        name={tab.icon as any}
-                                        size={16}
-                                        color={activeTab === index ? 'white' : 'rgba(255,255,255,0.7)'}
-                                    />
-                                    <View>
-                                        <Text style={[styles.tabText, activeTab === index && styles.activeTabText]}>
-                                            {tab.label}
-                                        </Text>
-                                        {index === 2 && (pendingRequests.length + sentRequests.length) > 0 && (
-                                            <View style={styles.tabBadge}>
-                                                <Text style={styles.tabBadgeText}>{pendingRequests.length + sentRequests.length}</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                </View>
-                                {activeTab === index && <View style={styles.tabIndicator} />}
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                    <Ionicons name="chatbubble-ellipses" size={64} color="white" />
+                    <Text style={styles.headerTitle}>Messenger</Text>
+                    <Text style={styles.headerSubtitle}>Connect with friends and groups</Text>
                 </LinearGradient>
 
-                <View style={styles.listContainer}>
+                {/* Tab Selection */}
+                <View style={styles.statsContainer}>
+                    <TouchableOpacity
+                        style={[styles.statCard, activeTab === 0 && styles.activeStatCard]}
+                        onPress={() => setActiveTab(0)}
+                    >
+                        <Ionicons name="people" size={32} color={activeTab === 0 ? '#4c669f' : '#999'} />
+                        <Text style={[styles.statValue, activeTab === 0 && styles.activeStatValue]}>{friends.length}</Text>
+                        <Text style={styles.statLabel}>Friends</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.statCard, activeTab === 1 && styles.activeStatCard]}
+                        onPress={() => setActiveTab(1)}
+                    >
+                        <Ionicons name="grid" size={32} color={activeTab === 1 ? '#4c669f' : '#999'} />
+                        <Text style={[styles.statValue, activeTab === 1 && styles.activeStatValue]}>{groups.length}</Text>
+                        <Text style={styles.statLabel}>Groups</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.statCard, activeTab === 2 && styles.activeStatCard]}
+                        onPress={() => setActiveTab(2)}
+                    >
+                        <Ionicons name="mail-unread" size={32} color={activeTab === 2 ? '#4c669f' : '#999'} />
+                        <Text style={[styles.statValue, activeTab === 2 && styles.activeStatValue]}>{pendingRequests.length + sentRequests.length}</Text>
+                        <Text style={styles.statLabel}>Requests</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* List Content */}
+                <View style={styles.section}>
                     {activeTab === 0 && (
                         <FlatList
                             data={friends}
@@ -607,7 +599,7 @@ export default function MessagesScreen() {
                         </View>
                     </TouchableOpacity>
                 </Modal>
-            </View >
+            </View>
         );
     }
 
@@ -618,7 +610,9 @@ export default function MessagesScreen() {
             keyboardVerticalOffset={90}
         >
             <LinearGradient
-                colors={[COLORS.PRIMARY, COLORS.SECONDARY]}
+                colors={['#4c669f', '#3b5998', '#192f6a']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={styles.chatHeader}
             >
                 <TouchableOpacity onPress={() => setSelectedEntity(null)} style={styles.backButton}>
@@ -678,7 +672,7 @@ export default function MessagesScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.sendBtn} onPress={handleSendMessage}>
                         <LinearGradient
-                            colors={[COLORS.PRIMARY, COLORS.SECONDARY]}
+                            colors={['#4c669f', '#3b5998', '#192f6a']}
                             style={styles.sendBtnGradient}
                         >
                             <Ionicons name="send" size={20} color="white" />
@@ -747,32 +741,85 @@ const styles = StyleSheet.create({
         backgroundColor: '#94a3b8',
     },
     header: {
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
-        paddingBottom: 0,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
+        paddingTop: 60,
+        paddingBottom: 24,
+        paddingHorizontal: 24,
+        alignItems: 'center',
     },
     headerTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 24,
-        marginBottom: 20,
+        marginBottom: 16,
+    },
+    headerTopActions: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 60 : 40,
+        right: 20,
+        flexDirection: 'row',
+        gap: 12,
+        zIndex: 10,
     },
     headerTitle: {
-        fontSize: 24,
-        fontWeight: '900',
+        fontSize: 28,
+        fontWeight: '800',
         color: 'white',
         letterSpacing: -0.5,
+        textAlign: 'center',
     },
-    headerSubtitleTop: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.8)',
-        fontWeight: '600',
+    headerSubtitle: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.9)',
+        fontWeight: '500',
+        marginTop: 2,
+        textAlign: 'center',
     },
     headerActions: {
         flexDirection: 'row',
         gap: 12,
+    },
+    statsContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        paddingVertical: 20,
+        gap: 12,
+        backgroundColor: '#f8fafc',
+    },
+    statCard: {
+        flex: 1,
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    activeStatCard: {
+        backgroundColor: '#eef2ff',
+        borderWidth: 2,
+        borderColor: '#4c669f',
+    },
+    statValue: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#1e293b',
+        marginTop: 8,
+    },
+    activeStatValue: {
+        color: '#4c669f',
+    },
+    statLabel: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#64748b',
+        marginTop: 4,
+    },
+    section: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
     },
     iconCircle: {
         width: 40,
@@ -784,12 +831,13 @@ const styles = StyleSheet.create({
     },
     tabBar: {
         flexDirection: 'row',
-        paddingHorizontal: 12,
-        gap: 8,
+        justifyContent: 'space-around',
+        paddingHorizontal: 24,
+        paddingBottom: 12,
     },
     tabItem: {
+        flex: 1,
         paddingVertical: 12,
-        paddingHorizontal: 16,
         alignItems: 'center',
         position: 'relative',
     },
@@ -1026,7 +1074,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     bubbleSent: {
-        backgroundColor: COLORS.PRIMARY,
+        backgroundColor: '#4c669f',
         borderBottomRightRadius: 4,
     },
     bubbleReceived: {
