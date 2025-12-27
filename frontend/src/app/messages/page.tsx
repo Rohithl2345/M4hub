@@ -26,6 +26,7 @@ import {
     ListItemAvatar,
     Chip,
     InputAdornment,
+    Tooltip,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
@@ -467,14 +468,6 @@ export default function MessagesPage() {
                                 </Tabs>
                             </div>
 
-                            <div className={styles.navActions}>
-                                <IconButton className={styles.actionBtn} onClick={() => setSearchDialogOpen(true)} title="Add Friend">
-                                    <PersonAddIcon />
-                                </IconButton>
-                                <IconButton className={styles.actionBtn} onClick={() => setGroupDialogOpen(true)} title="Create Group">
-                                    <GroupAddIcon />
-                                </IconButton>
-                            </div>
                         </div>
                     </div>
                 ) : (
@@ -513,6 +506,34 @@ export default function MessagesPage() {
                         <div className={styles.listView}>
                             {tabValue === 0 && (
                                 <div className={styles.gridList}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+                                        <Button
+                                            variant="contained"
+                                            startIcon={<PersonAddIcon />}
+                                            onClick={() => setSearchDialogOpen(true)}
+                                            sx={{
+                                                textTransform: 'none',
+                                                borderRadius: '50px',
+                                                px: 3,
+                                                py: 1,
+                                                fontWeight: 800,
+                                                fontSize: '0.85rem',
+                                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                                                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+                                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                '&:hover': {
+                                                    transform: 'translateY(-3px) scale(1.05)',
+                                                    boxShadow: '0 8px 25px rgba(99, 102, 241, 0.45)',
+                                                    background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+                                                },
+                                                '&:active': {
+                                                    transform: 'scale(0.95)',
+                                                }
+                                            }}
+                                        >
+                                            Add Friend
+                                        </Button>
+                                    </Box>
                                     {friends.map((friend) => (
                                         <div key={friend.id} className={styles.gridItem} onClick={() => handleSelectFriend(friend)}>
                                             <Box sx={{ position: 'relative' }}>
@@ -569,6 +590,34 @@ export default function MessagesPage() {
 
                             {tabValue === 1 && (
                                 <div className={styles.gridList}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+                                        <Button
+                                            variant="contained"
+                                            startIcon={<GroupAddIcon />}
+                                            onClick={() => setGroupDialogOpen(true)}
+                                            sx={{
+                                                textTransform: 'none',
+                                                borderRadius: '50px',
+                                                px: 3,
+                                                py: 1,
+                                                fontWeight: 800,
+                                                fontSize: '0.85rem',
+                                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                                                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                '&:hover': {
+                                                    transform: 'translateY(-3px) scale(1.05)',
+                                                    boxShadow: '0 8px 25px rgba(139, 92, 246, 0.45)',
+                                                    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                                                },
+                                                '&:active': {
+                                                    transform: 'scale(0.95)',
+                                                }
+                                            }}
+                                        >
+                                            Create Group
+                                        </Button>
+                                    </Box>
                                     {groups.map((group) => (
                                         <div key={group.id} className={styles.gridItem} onClick={() => handleSelectGroup(group)}>
                                             <Badge
