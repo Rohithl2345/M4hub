@@ -43,6 +43,8 @@ import InsertPhotoIcon from '@mui/icons-material/InsertPhoto';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import SearchIcon from '@mui/icons-material/Search';
+
 import { env } from '@/utils/env';
 
 const API_URL = env.apiUrl;
@@ -66,6 +68,10 @@ export default function MessagesPage() {
     const [isSearching, setIsSearching] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
+    const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
+    const [groupSearchQuery, setGroupSearchQuery] = useState('');
+
+
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +131,20 @@ export default function MessagesPage() {
         }
     }, [user?.id]);
 
+    // Auto-search for friends when query length >= 3
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (searchQuery.length >= 3) {
+                handleSearch();
+            } else if (searchQuery.length === 0) {
+                setSearchResults([]);
+                setHasSearched(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
+
     // Message and Request Subscriptions
     useEffect(() => {
         if (!user?.id) return;
@@ -155,8 +175,8 @@ export default function MessagesPage() {
         });
 
         const unsubRequest = chatService.onRequest(() => {
-            console.log('Refreshing requests due to real-time notification');
             loadPendingRequests();
+            loadGroups();
         });
 
         const unsubPresence = chatService.onPresence((data) => {
@@ -164,13 +184,19 @@ export default function MessagesPage() {
             setFriends(prevFriends => prevFriends.map(f => {
                 // Use loose equality (==) to handle string/number mismatch
                 if (f.id == data.userId) {
-                    console.log(`Updating user ${f.username} to ${data.isActive}`);
+                    console.log(`Updating user ${f.id} to ${data.isActive}`);
                     return { ...f, isActive: data.isActive };
                 }
                 return f;
             }));
-            // Also fetch fresh list to be 100% sure
-            loadFriends();
+
+            // If the active chat is with this user, update its status too
+            setSelectedEntity(prev => {
+                if (prev?.type === 'friend' && prev.data.id == data.userId) {
+                    return { ...prev, data: { ...prev.data, isActive: data.isActive } };
+                }
+                return prev;
+            });
         });
 
         return () => {
@@ -184,10 +210,11 @@ export default function MessagesPage() {
         scrollToBottom();
     }, [messages]);
 
-    // Refresh data on window focus (handle tab switching)
+    // Refresh data on window focus or network restoration
     useEffect(() => {
-        const handleFocus = () => {
-            if (user?.id) {
+        const handleRefresh = () => {
+            if (user?.id && navigator.onLine) {
+                console.log('Refreshing data due to focus or network restoration');
                 loadFriends();
                 loadPendingRequests();
                 if (selectedEntity?.type === 'friend' && selectedEntity.data?.id) {
@@ -196,8 +223,13 @@ export default function MessagesPage() {
             }
         };
 
-        window.addEventListener('focus', handleFocus);
-        return () => window.removeEventListener('focus', handleFocus);
+        window.addEventListener('focus', handleRefresh);
+        window.addEventListener('online', handleRefresh);
+
+        return () => {
+            window.removeEventListener('focus', handleRefresh);
+            window.removeEventListener('online', handleRefresh);
+        };
     }, [user?.id, selectedEntity]);
 
     const loadFriends = async () => {
@@ -272,13 +304,32 @@ export default function MessagesPage() {
         loadFriends();
     };
 
+    const toggleMemberSelection = (friendId: number) => {
+        setSelectedMemberIds(prev =>
+            prev.includes(friendId)
+                ? prev.filter(id => id !== friendId)
+                : [...prev, friendId]
+        );
+    };
+
+    const AVATAR_COLORS = [
+        '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e',
+        '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#4f46e5'
+    ];
+
+    const getAvatarColor = (id: number | string) => {
+        const numId = typeof id === 'string' ? id.length : (id || 0);
+        return AVATAR_COLORS[numId % AVATAR_COLORS.length];
+    };
+
     const handleCreateGroup = async () => {
-        if (!newGroupName.trim()) return;
+        if (!newGroupName.trim() || !user) return;
         try {
-            await chatService.createGroup(newGroupName, newGroupDesc);
-            setGroupDialogOpen(false);
+            await chatService.createGroup(newGroupName, newGroupDesc, selectedMemberIds);
             setNewGroupName('');
             setNewGroupDesc('');
+            setSelectedMemberIds([]);
+            setGroupDialogOpen(false);
             loadGroups();
         } catch (error) {
             console.error('Error creating group:', error);
@@ -435,9 +486,7 @@ export default function MessagesPage() {
                             </div>
                         </div>
                         <div className={styles.navActions}>
-                            <IconButton onClick={handleMenuClick} className={styles.actionBtn}>
-                                <MoreVertIcon />
-                            </IconButton>
+                            {/* Removed redundant attachment menu from here */}
                         </div>
                     </div>
                 )}
@@ -456,7 +505,7 @@ export default function MessagesPage() {
                                                     overlap="circular"
                                                     anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                                                 >
-                                                    <Avatar sx={{ width: 56, height: 56, bgcolor: '#6366f1', fontSize: 24, fontWeight: 800 }}>
+                                                    <Avatar sx={{ width: 56, height: 56, bgcolor: getAvatarColor(friend.id), fontSize: 24, fontWeight: 800 }}>
                                                         {(friend.name || friend.username || 'U').charAt(0).toUpperCase()}
                                                     </Avatar>
                                                 </Badge>
@@ -505,19 +554,39 @@ export default function MessagesPage() {
                                 <div className={styles.gridList}>
                                     {groups.map((group) => (
                                         <div key={group.id} className={styles.gridItem} onClick={() => handleSelectGroup(group)}>
-                                            <Avatar sx={{ width: 56, height: 56, bgcolor: '#8b5cf6' }}>
-                                                <GroupsIcon />
-                                            </Avatar>
+                                            <Badge
+                                                overlap="circular"
+                                                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                                badgeContent={
+                                                    unreadCounts[`group-${group.id}`] ?
+                                                        <Box sx={{ bgcolor: '#ef4444', color: '#fff', borderRadius: '50%', minWidth: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, border: '2px solid #fff' }}>
+                                                            {unreadCounts[`group-${group.id}`]}
+                                                        </Box> : null
+                                                }
+                                            >
+                                                <Avatar sx={{ width: 56, height: 56, bgcolor: getAvatarColor(group.id), fontSize: 24, fontWeight: 800 }}>
+                                                    {(group.name || 'G').charAt(0).toUpperCase()}
+                                                </Avatar>
+                                            </Badge>
                                             <div className={styles.gridItemText}>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="h6" fontWeight={800} color="#1e293b">{group.name}</Typography>
+                                                    <Typography variant="subtitle1" fontWeight={800} color="#1e293b">{group.name}</Typography>
                                                     {group.lastMessageAt && (
                                                         <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
                                                             {new Date(group.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </Typography>
                                                     )}
                                                 </Box>
-                                                <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>{group.description || 'No description'}</Typography>
+                                                <Typography variant="body2" sx={{
+                                                    color: unreadCounts[`group-${group.id}`] ? '#1e293b' : '#64748b',
+                                                    fontWeight: unreadCounts[`group-${group.id}`] ? 700 : 500,
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    maxWidth: '200px'
+                                                }}>
+                                                    {group.description || 'No description'}
+                                                </Typography>
                                             </div>
                                         </div>
                                     ))}
@@ -786,17 +855,22 @@ export default function MessagesPage() {
                     </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                         <TextField
+                            placeholder="Type at least 3 characters to search..."
                             fullWidth
-                            label="User Identifier"
-                            placeholder="Enter username or name..."
+                            size="small"
                             value={searchQuery}
                             onChange={(e) => {
                                 setSearchQuery(e.target.value);
-                                if (hasSearched) setHasSearched(false);
                             }}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                            variant="filled"
-                            sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
+                            onKeyPress={(e) => e.key === 'Enter' && searchQuery.length >= 3 && handleSearch()}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' } }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: '#64748b', fontSize: '1.2rem' }} />
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
                     </Box>
                     <List sx={{ mt: 3, minHeight: '100px' }}>
@@ -893,8 +967,9 @@ export default function MessagesPage() {
                         )}
                     </List>
                 </DialogContent>
-                <DialogActions sx={{ p: 3, gap: 1 }}>
+                <DialogActions sx={{ p: 2, justifyContent: 'flex-end' }}>
                     <Button
+                        variant="contained"
                         onClick={() => {
                             setSearchDialogOpen(false);
                             setHasSearched(false);
@@ -904,35 +979,24 @@ export default function MessagesPage() {
                         sx={{
                             textTransform: 'none',
                             fontWeight: 700,
-                            px: 3,
-                            borderRadius: 2,
-                            color: 'text.secondary',
-                            '&:hover': { background: '#f1f5f9' }
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleSearch}
-                        disabled={isSearching}
-                        sx={{
-                            textTransform: 'none',
-                            fontWeight: 700,
                             px: 4,
-                            borderRadius: 2,
+                            py: 1,
+                            borderRadius: 2.5,
                             background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
                             color: '#fff !important'
                         }}
                     >
-                        {isSearching ? '...' : 'Search'}
+                        Close
                     </Button>
                 </DialogActions>
             </Dialog>
 
             <Dialog
                 open={groupDialogOpen}
-                onClose={() => setGroupDialogOpen(false)}
+                onClose={() => {
+                    setGroupDialogOpen(false);
+                    setGroupSearchQuery('');
+                }}
                 maxWidth="sm"
                 fullWidth
                 PaperProps={{
@@ -943,26 +1007,116 @@ export default function MessagesPage() {
                 <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Create Group</DialogTitle>
                 <DialogContent>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        Create a group to chat with multiple friends at once.
+                        Select friends to add and give your group a name.
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+
+                    <Box sx={{ mb: 4 }}>
                         <TextField
-                            label="Group Name"
+                            placeholder="Search friends..."
                             fullWidth
+                            size="small"
+                            value={groupSearchQuery}
+                            onChange={(e) => setGroupSearchQuery(e.target.value)}
+                            sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' } }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: '#64748b', fontSize: '1.2rem' }} />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+
+                        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, color: '#64748b' }}>
+                            ADD FRIENDS ({selectedMemberIds.length})
+                        </Typography>
+                        <Box sx={{
+                            display: 'flex',
+                            gap: 1.5,
+                            overflowX: 'auto',
+                            pb: 1,
+                            minHeight: 85,
+                            alignItems: 'center',
+                            justifyContent: groupSearchQuery.length < 3 ? 'center' : 'flex-start',
+                            '&::-webkit-scrollbar': { height: 4 },
+                            '&::-webkit-scrollbar-thumb': { bgcolor: '#e2e8f0', borderRadius: 10 }
+                        }}>
+                            {groupSearchQuery.length < 3 ? (
+                                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', opacity: 0.7 }}>
+                                    Type at least 3 characters to see friends...
+                                </Typography>
+                            ) : (
+                                friends
+                                    .filter(f =>
+                                        (f.name || f.username || '').toLowerCase().includes(groupSearchQuery.toLowerCase())
+                                    )
+                                    .map(friend => (
+                                        <Box
+                                            key={friend.id}
+                                            onClick={() => toggleMemberSelection(friend.id)}
+                                            sx={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: 0.5,
+                                                cursor: 'pointer',
+                                                minWidth: 60
+                                            }}
+                                        >
+                                            <Badge
+                                                overlap="circular"
+                                                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                                badgeContent={
+                                                    selectedMemberIds.includes(friend.id) ?
+                                                        <CheckIcon sx={{ fontSize: 12, bgcolor: '#10b981', color: '#fff', borderRadius: '50%', p: 0.2 }} /> :
+                                                        null
+                                                }
+                                            >
+                                                <Avatar
+                                                    sx={{
+                                                        width: 48,
+                                                        height: 48,
+                                                        bgcolor: getAvatarColor(friend.id),
+                                                        opacity: selectedMemberIds.includes(friend.id) ? 1 : 0.6,
+                                                        border: selectedMemberIds.includes(friend.id) ? '3px solid #10b981' : 'none',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    {(friend.name || friend.username).charAt(0).toUpperCase()}
+                                                </Avatar>
+                                            </Badge>
+                                            <Typography variant="caption" fontWeight={700} sx={{
+                                                maxWidth: 60,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                color: selectedMemberIds.includes(friend.id) ? '#10b981' : 'text.secondary'
+                                            }}>
+                                                {friend.name || friend.username}
+                                            </Typography>
+                                        </Box>
+                                    ))
+                            )}
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        <TextField
+                            placeholder="Group Name"
+                            fullWidth
+                            size="small"
                             value={newGroupName}
                             onChange={(e) => setNewGroupName(e.target.value)}
-                            variant="filled"
-                            sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' } }}
                         />
                         <TextField
-                            label="Description"
+                            placeholder="Description"
                             fullWidth
                             multiline
                             rows={3}
                             value={newGroupDesc}
                             onChange={(e) => setNewGroupDesc(e.target.value)}
-                            variant="filled"
-                            sx={{ '& .MuiFilledInput-root': { borderRadius: 2 } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' } }}
                         />
                     </Box>
                 </DialogContent>

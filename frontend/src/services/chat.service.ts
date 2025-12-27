@@ -60,6 +60,10 @@ class ChatService {
     private deliveryCallbacks: ((messageId: number) => void)[] = [];
     private readCallbacks: ((data: { messageId: number; readAt: string }) => void)[] = [];
     private requestCallbacks: (() => void)[] = [];
+    private statusCallbacks: ((status: { isConnected: boolean, isConnecting: boolean }) => void)[] = [];
+    private _isConnected: boolean = false;
+    private _isConnecting: boolean = false;
+
 
     // WebSocket Connection
     connect(userId: number, onConnected?: () => void) {
@@ -75,6 +79,10 @@ class ChatService {
                 userId: userId.toString()
             }
         });
+
+        this._isConnecting = true;
+        this.notifyStatus();
+
 
         this.stompClient.onConnect = () => {
             console.log('WebSocket Connected');
@@ -117,8 +125,20 @@ class ChatService {
             });
             console.log('Subscribed to /topic/presence');
 
+            this._isConnected = true;
+            this._isConnecting = false;
+            this.notifyStatus();
+
             if (onConnected) onConnected();
         };
+
+        this.stompClient.onDisconnect = () => {
+            console.log('WebSocket Disconnected');
+            this._isConnected = false;
+            this._isConnecting = false;
+            this.notifyStatus();
+        };
+
 
         this.stompClient.onStompError = (frame) => {
             console.error('Broker reported error: ' + frame.headers['message']);
@@ -132,8 +152,26 @@ class ChatService {
         if (this.stompClient) {
             this.stompClient.deactivate();
             this.stompClient = null;
+            this._isConnected = false;
+            this._isConnecting = false;
+            this.notifyStatus();
         }
     }
+
+    onStatusChange(callback: (status: { isConnected: boolean, isConnecting: boolean }) => void) {
+        this.statusCallbacks.push(callback);
+        // Initial call
+        callback({ isConnected: this._isConnected, isConnecting: this._isConnecting });
+        return () => {
+            this.statusCallbacks = this.statusCallbacks.filter(cb => cb !== callback);
+        };
+    }
+
+    private notifyStatus() {
+        const status = { isConnected: this._isConnected, isConnecting: this._isConnecting };
+        this.statusCallbacks.forEach(cb => cb(status));
+    }
+
 
     onMessage(callback: (message: ChatMessage) => void) {
         this.messageCallbacks.push(callback);
@@ -429,11 +467,11 @@ class ChatService {
     }
 
     // Group Chat
-    async createGroup(name: string, description: string): Promise<any> {
+    async createGroup(name: string, description: string, memberIds: number[]): Promise<any> {
         const token = sessionStorage.getItem('authToken');
         const response = await axios.post(
             `${API_URL}/api/chat/group/create`,
-            { name, description },
+            { name, description, memberIds },
             { headers: { Authorization: `Bearer ${token}` } }
         );
         return response.data;

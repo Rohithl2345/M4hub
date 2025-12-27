@@ -30,6 +30,9 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const isLoading = useAppSelector((state) => state.auth.isLoading);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
+    const [chatStatus, setChatStatus] = useState({ isConnected: false, isConnecting: false });
+    const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
+
 
     // Global Chat Connection and Presence
     useEffect(() => {
@@ -40,19 +43,49 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         }
 
         if (user?.id) {
-            chatService.connect(user.id, () => {
-                console.log('Global presence established');
+            const connectChat = () => {
+                chatService.connect(user.id, () => {
+                    console.log('Global presence established');
+                });
+            };
+
+            connectChat();
+
+            const handleOnline = () => {
+                console.log('Internet connection restored, reconnecting chat...');
+                connectChat();
+            };
+
+            const handleOffline = () => {
+                console.log('Internet connection lost');
+                // The WebSocket will naturally disconnect, but we could explicitly handle UI here if needed
+            };
+
+            window.addEventListener('online', handleOnline);
+            window.addEventListener('offline', handleOffline);
+
+            const unsubStatus = chatService.onStatusChange((status) => {
+                setChatStatus(status);
             });
 
-            // Disconnect only on component unmount (effectively logout or app close)
             return () => {
-                // If we are just navigating between dashboard pages, we might not want to disconnect
-                // but Next.js might remount the layout. Our chatService.connect already checks
-                // for active connections, but we should be careful.
-                // For now, let's keep it connected as long as user is logged in.
+                window.removeEventListener('online', handleOnline);
+                window.removeEventListener('offline', handleOffline);
+                unsubStatus();
             };
         }
     }, [user?.id, isLoading, router]);
+
+    useEffect(() => {
+        const handleStatus = () => setIsOnline(window.navigator.onLine);
+        window.addEventListener('online', handleStatus);
+        window.addEventListener('offline', handleStatus);
+        return () => {
+            window.removeEventListener('online', handleStatus);
+            window.removeEventListener('offline', handleStatus);
+        };
+    }, []);
+
 
     // Load pending requests count
     useEffect(() => {
@@ -99,12 +132,23 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                 <div className={styles.logo} onClick={() => router.push('/dashboard')}>M4Hub</div>
                 {user?.username && (
                     <div className={styles.userInfo}>
-                        <div className={styles.userAvatar}>
-                            {(user.name || user.username).charAt(0).toUpperCase()}
+                        <div className={styles.avatarWrapper}>
+                            <div className={styles.userAvatar}>
+                                {(user.name || user.username).charAt(0).toUpperCase()}
+                            </div>
+                            <div className={`${styles.statusBadge} ${isOnline && chatStatus.isConnected ? styles.statusOnline : styles.statusOffline}`} />
                         </div>
-                        <span className={styles.username}>@{user.username}</span>
+                        <div className={styles.userDetails}>
+                            <span className={styles.username}>@{user.username}</span>
+                            <span className={styles.statusText}>
+                                {!isOnline ? 'Internet Offline' :
+                                    chatStatus.isConnecting ? 'Connecting...' :
+                                        chatStatus.isConnected ? 'Online' : 'Disconnected'}
+                            </span>
+                        </div>
                     </div>
                 )}
+
 
                 <nav className={styles.nav}>
                     <div

@@ -98,7 +98,49 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
 }
+
+.avatarWrapper {
+    position: relative;
+    display: flex;
+}
+
+.statusBadge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #1e293b;
+    z-index: 10;
+}
+
+.statusOnline {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.statusOffline {
+    background: #94a3b8;
+}
+
+.userDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.statusText {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 
 .nav {
     display: flex;

@@ -278,13 +278,38 @@ public class ChatService {
 
     // Group Chat
     @Transactional
-    public com.m4hub.backend.model.GroupChat createGroup(Long creatorId, String name, String description) {
+    public com.m4hub.backend.model.GroupChat createGroup(Long creatorId, String name, String description,
+            List<Long> memberIds) {
         User creator = userRepository.findById(creatorId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         com.m4hub.backend.model.GroupChat group = new com.m4hub.backend.model.GroupChat(name, creator);
         group.setDescription(description);
-        return groupChatRepository.save(group);
+
+        if (memberIds != null) {
+            for (Long memberId : memberIds) {
+                if (!memberId.equals(creatorId)) {
+                    userRepository.findById(memberId).ifPresent(user -> group.getMembers().add(user));
+                }
+            }
+        }
+
+        com.m4hub.backend.model.GroupChat savedGroup = groupChatRepository.save(group);
+
+        // Notify all members via WebSocket
+        try {
+            Map<String, Object> payload = Map.of(
+                    "type", "GROUP_CREATED",
+                    "groupId", savedGroup.getId(),
+                    "name", savedGroup.getName());
+            for (User member : savedGroup.getMembers()) {
+                messagingTemplate.convertAndSend("/queue/requests/" + member.getId(), payload);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to notify members of new group", e);
+        }
+
+        return savedGroup;
     }
 
     @Transactional

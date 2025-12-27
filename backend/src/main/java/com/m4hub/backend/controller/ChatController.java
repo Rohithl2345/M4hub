@@ -267,6 +267,7 @@ public class ChatController {
     // --- Group Chat ---
 
     @PostMapping("/group/create")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> createGroup(@RequestHeader("Authorization") String token,
             @RequestBody Map<String, Object> payload) {
         try {
@@ -276,8 +277,12 @@ public class ChatController {
             }
             String name = (String) payload.get("name");
             String description = (String) payload.get("description");
+            List<Long> memberIds = payload.containsKey("memberIds")
+                    ? ((List<?>) payload.get("memberIds")).stream().map(o -> Long.valueOf(o.toString())).toList()
+                    : new java.util.ArrayList<>();
 
-            return ResponseEntity.ok(chatService.createGroup(user.getId(), name, description));
+            return ResponseEntity.ok(new com.m4hub.backend.dto.GroupChatDto(
+                    chatService.createGroup(user.getId(), name, description, memberIds)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -301,6 +306,7 @@ public class ChatController {
     }
 
     @GetMapping("/groups")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> getGroups(@RequestHeader("Authorization") String token) {
         try {
             User user = authService.getUserFromToken(token);
