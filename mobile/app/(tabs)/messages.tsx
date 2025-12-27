@@ -753,8 +753,17 @@ export default function MessagesScreen() {
                                             </TouchableOpacity>
                                         );
                                     })}
+                                    {groupSearchQuery.length >= 3 && groupSearchResults.length === 0 && !isSearchingMembers && (
+                                        <View style={styles.noResultsContainer}>
+                                            <Ionicons name="search-outline" size={40} color="#cbd5e1" />
+                                            <Text style={styles.noResultsText}>No friends found for "{groupSearchQuery}"</Text>
+                                        </View>
+                                    )}
                                     {groupSearchQuery.length > 0 && groupSearchQuery.length < 3 && (
                                         <Text style={styles.searchHint}>Type at least 3 characters...</Text>
+                                    )}
+                                    {friends.length === 0 && groupSearchQuery.length === 0 && (
+                                        <Text style={styles.searchHint}>You don't have any friends to add yet.</Text>
                                     )}
                                 </View>
 
@@ -825,13 +834,38 @@ export default function MessagesScreen() {
                             </Text>
                         </View>
                     ) : (
-                        <Text style={styles.chatHeaderSubtitle}>Group Conversation</Text>
+                        <Text style={styles.chatHeaderSubtitle}>
+                            {selectedEntity.data.members?.length || 0} Members
+                        </Text>
                     )}
                 </View>
-                <TouchableOpacity>
+                {selectedEntity.type === 'group' && (
+                    <TouchableOpacity style={{ padding: 8 }}>
+                        <Ionicons name="information-circle-outline" size={24} color="white" />
+                    </TouchableOpacity>
+                )}
+                <TouchableOpacity style={{ paddingLeft: 8 }}>
                     <Ionicons name="ellipsis-vertical" size={24} color="white" />
                 </TouchableOpacity>
             </LinearGradient>
+
+            {/* Group Members Preview (for Group Chat) */}
+            {selectedEntity.type === 'group' && selectedEntity.data.members && (
+                <View style={styles.membersPreview}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+                        {selectedEntity.data.members.map((member: any) => (
+                            <View key={member.id} style={styles.memberAvatarSmall}>
+                                <View style={[styles.avatar, { width: 32, height: 32, backgroundColor: COLORS.SECONDARY }]}>
+                                    <Text style={{ color: 'white', fontSize: 12, fontWeight: '800' }}>
+                                        {(member.name || member.username || 'U').charAt(0).toUpperCase()}
+                                    </Text>
+                                </View>
+                                <Text style={styles.memberAvatarName} numberOfLines={1}>{member.name || member.username}</Text>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
 
             <FlatList
                 ref={flatListRef}
@@ -1435,5 +1469,33 @@ const styles = StyleSheet.create({
         fontSize: 13,
         padding: 16,
         fontStyle: 'italic',
+    },
+    membersPreview: {
+        backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    memberAvatarSmall: {
+        alignItems: 'center',
+        marginRight: 20,
+        width: 45,
+    },
+    memberAvatarName: {
+        fontSize: 10,
+        color: '#64748b',
+        fontWeight: '700',
+        marginTop: 4,
+        textAlign: 'center',
+    },
+    noResultsContainer: {
+        padding: 30,
+        alignItems: 'center',
+    },
+    noResultsText: {
+        fontSize: 14,
+        color: '#94a3b8',
+        marginTop: 10,
+        fontWeight: '600',
+        textAlign: 'center',
     },
 });

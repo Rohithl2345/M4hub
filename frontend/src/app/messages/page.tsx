@@ -480,10 +480,8 @@ export default function MessagesPage() {
                                 <div className={styles.navTitle}>
                                     {selectedEntity.data.name || selectedEntity.data.username}
                                 </div>
-                                {(() => {
-                                    const activeFriend = selectedEntity.type === 'friend'
-                                        ? friends.find(f => f.id === selectedEntity.data.id)
-                                        : null;
+                                {selectedEntity.type === 'friend' ? (() => {
+                                    const activeFriend = friends.find(f => f.id === selectedEntity.data.id);
                                     const isOnline = activeFriend?.isActive ?? selectedEntity.data.isActive;
 
                                     return (
@@ -492,11 +490,43 @@ export default function MessagesPage() {
                                             <span className={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</span>
                                         </div>
                                     );
-                                })()}
+                                })() : (
+                                    <div className={styles.statusWrapper}>
+                                        <GroupsIcon sx={{ fontSize: '0.9rem', mr: 0.5, color: 'rgba(255,255,255,0.7)' }} />
+                                        <span className={styles.statusText}>
+                                            {selectedEntity.data.members?.length || 0} Members
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className={styles.navActions}>
-                            {/* Removed redundant attachment menu from here */}
+                            {selectedEntity.type === 'group' && selectedEntity.data.members && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, gap: -1 }}>
+                                    {selectedEntity.data.members.slice(0, 5).map((member: any, i: number) => (
+                                        <Tooltip key={member.id} title={member.name || member.username}>
+                                            <Avatar
+                                                sx={{
+                                                    width: 32,
+                                                    height: 32,
+                                                    fontSize: '0.8rem',
+                                                    border: '2px solid #fff',
+                                                    ml: i > 0 ? -1 : 0,
+                                                    bgcolor: getAvatarColor(member.id),
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                }}
+                                            >
+                                                {(member.name || member.username || 'U').charAt(0).toUpperCase()}
+                                            </Avatar>
+                                        </Tooltip>
+                                    ))}
+                                    {selectedEntity.data.members.length > 5 && (
+                                        <Avatar sx={{ width: 32, height: 32, fontSize: '0.75rem', border: '2px solid #fff', ml: -1, bgcolor: '#94a3b8' }}>
+                                            +{selectedEntity.data.members.length - 5}
+                                        </Avatar>
+                                    )}
+                                </Box>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1114,6 +1144,14 @@ export default function MessagesPage() {
                                 <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', opacity: 0.7 }}>
                                     Type at least 3 characters to see friends...
                                 </Typography>
+                            ) : friends.filter(f =>
+                                (f.name || f.username || '').toLowerCase().includes(groupSearchQuery.toLowerCase())
+                            ).length === 0 ? (
+                                <Box sx={{ width: '100%', py: 3, textAlign: 'center' }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        No friends match your search.
+                                    </Typography>
+                                </Box>
                             ) : (
                                 friends
                                     .filter(f =>
