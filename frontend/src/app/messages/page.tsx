@@ -70,6 +70,7 @@ export default function MessagesPage() {
     const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
     const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
     const [groupSearchQuery, setGroupSearchQuery] = useState('');
+    const [groupFormError, setGroupFormError] = useState<{ name?: string; members?: string } | null>(null);
 
 
 
@@ -322,14 +323,30 @@ export default function MessagesPage() {
         return AVATAR_COLORS[numId % AVATAR_COLORS.length];
     };
 
+    const resetGroupForm = () => {
+        setNewGroupName('');
+        setNewGroupDesc('');
+        setSelectedMemberIds([]);
+        setGroupSearchQuery('');
+        setGroupFormError(null);
+        setGroupDialogOpen(false);
+    };
+
     const handleCreateGroup = async () => {
-        if (!newGroupName.trim() || !user) return;
+        if (!user) return;
+
+        const errors: { name?: string; members?: string } = {};
+        if (!newGroupName.trim()) errors.name = 'Group name is required';
+        if (selectedMemberIds.length === 0) errors.members = 'Please select at least one friend';
+
+        if (Object.keys(errors).length > 0) {
+            setGroupFormError(errors);
+            return;
+        }
+
         try {
             await chatService.createGroup(newGroupName, newGroupDesc, selectedMemberIds);
-            setNewGroupName('');
-            setNewGroupDesc('');
-            setSelectedMemberIds([]);
-            setGroupDialogOpen(false);
+            resetGroupForm();
             loadGroups();
         } catch (error) {
             console.error('Error creating group:', error);
@@ -993,10 +1010,7 @@ export default function MessagesPage() {
 
             <Dialog
                 open={groupDialogOpen}
-                onClose={() => {
-                    setGroupDialogOpen(false);
-                    setGroupSearchQuery('');
-                }}
+                onClose={resetGroupForm}
                 maxWidth="sm"
                 fullWidth
                 PaperProps={{
@@ -1027,8 +1041,14 @@ export default function MessagesPage() {
                             }}
                         />
 
-                        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, color: '#64748b' }}>
-                            ADD FRIENDS ({selectedMemberIds.length})
+                        <Typography variant="subtitle2" fontWeight={700} sx={{
+                            mb: 1,
+                            color: groupFormError?.members ? '#ef4444' : '#64748b',
+                            display: 'flex',
+                            justifyContent: 'space-between'
+                        }}>
+                            <span>ADD FRIENDS ({selectedMemberIds.length})</span>
+                            {groupFormError?.members && <span style={{ fontSize: '0.75rem' }}>{groupFormError.members}</span>}
                         </Typography>
                         <Box sx={{
                             display: 'flex',
@@ -1102,12 +1122,20 @@ export default function MessagesPage() {
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <TextField
-                            placeholder="Group Name"
+                            placeholder="Group Name *"
                             fullWidth
                             size="small"
                             value={newGroupName}
-                            onChange={(e) => setNewGroupName(e.target.value)}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' } }}
+                            onChange={(e) => {
+                                setNewGroupName(e.target.value);
+                                if (groupFormError?.name) setGroupFormError(prev => ({ ...prev, name: undefined }));
+                            }}
+                            error={!!groupFormError?.name}
+                            helperText={groupFormError?.name}
+                            sx={{
+                                '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' },
+                                '& .MuiFormHelperText-root': { fontWeight: 600, ml: 1 }
+                            }}
                         />
                         <TextField
                             placeholder="Description"
@@ -1122,7 +1150,7 @@ export default function MessagesPage() {
                 </DialogContent>
                 <DialogActions sx={{ p: 3, gap: 1 }}>
                     <Button
-                        onClick={() => setGroupDialogOpen(false)}
+                        onClick={resetGroupForm}
                         sx={{
                             textTransform: 'none',
                             fontWeight: 700,
@@ -1137,7 +1165,6 @@ export default function MessagesPage() {
                     <Button
                         variant="contained"
                         onClick={handleCreateGroup}
-                        disabled={!newGroupName.trim()}
                         sx={{
                             textTransform: 'none',
                             fontWeight: 700,
