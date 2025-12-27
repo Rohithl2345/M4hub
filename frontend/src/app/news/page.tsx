@@ -19,7 +19,7 @@ export default function NewsPage() {
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('All');
 
-    const categories = ['All', 'Technology', 'Business', 'Science', 'Sports', 'Entertainment', 'World'];
+    const categories = ['All', 'Technology', 'Business', 'Science', 'Health', 'Sports', 'Entertainment', 'World'];
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -76,7 +76,7 @@ export default function NewsPage() {
                     {categories.map((cat) => (
                         <button
                             key={cat}
-                            className={`${styles.tab} ${category === cat ? styles.tabActive : ''}`}
+                            className={`tab-pill ${styles.tab} ${category === cat ? `tab-pill-active ${styles.tabActive}` : ''}`}
                             onClick={() => setCategory(cat)}
                         >
                             {cat}

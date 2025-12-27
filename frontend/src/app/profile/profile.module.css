@@ -98,21 +98,8 @@
 }
 
 .editButton {
-    background: #6366f1 !important;
-    border: none !important;
-    color: white !important;
-    font-weight: 700 !important;
-    border-radius: 8px !important;
     padding: 6px 16px !important;
     font-size: 13px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    cursor: pointer !important;
-}
-
-.editButton:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4) !important;
-    background: #5558e3 !important;
 }
 
 .editButton:active {
@@ -149,33 +136,13 @@
     justify-content: flex-end;
 }
 
-.saveButton {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-    color: white !important;
-    padding: 10px 24px !important;
-    border-radius: 10px !important;
-    font-weight: 700 !important;
-    border: none !important;
-    cursor: pointer !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.saveButton:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4) !important;
-}
+.saveButton {}
 
 .saveButton:active {
     transform: translateY(0);
 }
 
-.cancelButton {
-    background: #f1f5f9 !important;
-    color: #475569 !important;
-    padding: 8px 24px !important;
-    border-radius: 10px !important;
-    font-weight: 700 !important;
-}
+.cancelButton {}
 
 .successMessage,
 .errorMessage {

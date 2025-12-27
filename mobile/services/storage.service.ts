@@ -19,6 +19,7 @@ export interface UserData {
     email?: string;
     isVerified: boolean;
     isActive: boolean;
+    hasSeenTutorial: boolean;
 }
 
 class StorageService {

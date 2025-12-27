@@ -4,6 +4,7 @@ import SockJS from 'sockjs-client';
 import axios from 'axios';
 
 import { env } from '@/utils/env';
+import { logger } from '@/utils/logger';
 const API_URL = env.apiUrl;
 
 export interface ChatMessage {
@@ -71,7 +72,7 @@ class ChatService {
 
         this.stompClient = new Client({
             webSocketFactory: () => new SockJS(`${API_URL}/ws`),
-            debug: (str) => console.log(str),
+            debug: (str) => logger.debug(str),
             reconnectDelay: 5000,
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000,
@@ -85,7 +86,7 @@ class ChatService {
 
 
         this.stompClient.onConnect = () => {
-            console.log('WebSocket Connected');
+            logger.info('WebSocket Connected');
 
             // Subscribe to personal message queue
             this.stompClient?.subscribe(`/queue/messages/${userId}`, (message: IMessage) => {
@@ -113,17 +114,17 @@ class ChatService {
 
             // Subscribe to friend request notifications
             this.stompClient?.subscribe(`/queue/requests/${userId}`, (message: IMessage) => {
-                console.log('Friend request notification received');
+                logger.info('Friend request notification received');
                 this.requestCallbacks.forEach(callback => callback());
             });
 
             // Subscribe to global presence updates (if backend supports it)
             this.stompClient?.subscribe('/topic/presence', (message: IMessage) => {
-                console.log('Received raw presence message:', message.body);
+                logger.debug('Received raw presence message:', message.body);
                 const data = JSON.parse(message.body);
                 this.presenceCallbacks.forEach(callback => callback(data));
             });
-            console.log('Subscribed to /topic/presence');
+            logger.debug('Subscribed to /topic/presence');
 
             this._isConnected = true;
             this._isConnecting = false;
@@ -133,7 +134,7 @@ class ChatService {
         };
 
         this.stompClient.onDisconnect = () => {
-            console.log('WebSocket Disconnected');
+            logger.info('WebSocket Disconnected');
             this._isConnected = false;
             this._isConnecting = false;
             this.notifyStatus();
@@ -141,8 +142,8 @@ class ChatService {
 
 
         this.stompClient.onStompError = (frame) => {
-            console.error('Broker reported error: ' + frame.headers['message']);
-            console.error('Additional details: ' + frame.body);
+            logger.error('Broker reported error: ' + frame.headers['message']);
+            logger.error('Additional details: ' + frame.body);
         };
 
         this.stompClient.activate();
@@ -313,7 +314,7 @@ class ChatService {
             );
             return response.data;
         } catch (error) {
-            console.error('Error sending friend request:', error);
+            logger.error('Error sending friend request:', error);
             throw error;
         }
     }
@@ -334,7 +335,7 @@ class ChatService {
             });
             return response.data;
         } catch (error) {
-            console.warn('Failed to fetch pending requests (backend might be down/restarting)');
+            logger.warn('Failed to fetch pending requests (backend might be down/restarting)');
             return [];
         }
     }
@@ -352,7 +353,7 @@ class ChatService {
             });
             return response.data;
         } catch (error) {
-            console.warn('Failed to fetch sent requests');
+            logger.warn('Failed to fetch sent requests');
             return [];
         }
     }
@@ -372,7 +373,7 @@ class ChatService {
             );
             return response.data;
         } catch (error) {
-            console.error('Error accepting friend request:', error);
+            logger.error('Error accepting friend request:', error);
             throw error;
         }
     }
@@ -392,7 +393,7 @@ class ChatService {
             );
             return response.data;
         } catch (error) {
-            console.error('Error rejecting friend request:', error);
+            logger.error('Error rejecting friend request:', error);
             throw error;
         }
     }
@@ -412,7 +413,7 @@ class ChatService {
             });
             return response.data;
         } catch (error) {
-            console.warn('Failed to fetch friends list');
+            logger.warn('Failed to fetch friends list');
             return [];
         }
     }
@@ -499,7 +500,7 @@ class ChatService {
             });
             return response.data;
         } catch (error) {
-            console.warn('Failed to fetch groups:', error);
+            logger.warn('Failed to fetch groups:', error);
             return [];
         }
     }
@@ -523,7 +524,7 @@ class ChatService {
                 isSent: sent.some(r => r.receiver.id === userId)
             };
         } catch (error) {
-            console.error('Error getting relationship status:', error);
+            logger.error('Error getting relationship status:', error);
             return { isFriend: false, isPending: false, isSent: false };
         }
     }

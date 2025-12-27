@@ -7,7 +7,7 @@
     background: white;
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 
@@ -87,11 +87,9 @@
     opacity: 0.9;
 }
 
-.headerTabsRow {
-    flex: 1;
+.headerActions {
     display: flex;
-    justify-content: center;
-    margin: 0 40px;
+    gap: 12px;
 }
 
 .chatHeader {
@@ -182,27 +180,70 @@
     opacity: 0.9;
 }
 
-.tabsWrapper {
-    flex: 1;
+/* Tabs Container */
+.tabsContainer {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    margin-bottom: 24px;
+    padding: 12px 20px;
     display: flex;
-    justify-content: center;
+    align-items: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+    /* All-around shadow */
 }
 
+
+
 .tabs {
-    min-height: 40px !important;
+    min-height: 48px !important;
 }
 
 .headerTab {
+    color: #64748b !important;
+    background: transparent !important;
+    margin: 0 8px !important;
+    /* Balanced spacing */
+    padding: 8px 16px !important;
+    /* Compact 'medium' padding */
+    min-height: 38px !important;
+    /* Reduced height */
+    font-size: 13px !important;
+    /* Medium/Professional size */
+    font-weight: 600 !important;
     text-transform: none !important;
-    font-weight: 700 !important;
-    min-height: 40px !important;
-    color: rgba(255, 255, 255, 0.7) !important;
-    font-size: 14px !important;
-    padding: 0 20px !important;
+    letter-spacing: 0.3px !important;
+    border-radius: 50px !important;
+    transition: all 0.2s ease-in-out !important;
+    border: 1px solid transparent !important;
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    opacity: 1 !important;
+}
+
+.headerTab:hover:not(.Mui-selected) {
+    background: rgba(99, 102, 241, 0.05) !important;
+    color: #6366f1 !important;
+    border-color: rgba(99, 102, 241, 0.1) !important;
+    transform: none !important;
+    /* Explicitly prevent movement */
 }
 
 .headerTab:global(.Mui-selected) {
-    color: #fff !important;
+    color: white !important;
+    background: #6366f1 !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25) !important;
+    font-weight: 600 !important;
+    /* Keep same weight as inactive */
+    border-color: #6366f1 !important;
+    transform: none !important;
 }
 
 .actionBtn {
@@ -386,14 +427,18 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: linear-gradient(to bottom, #fafbfc 0%, #f8fafc 100%);
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
 }
 
 .listView {
     flex: 1;
-    padding: 12px;
+    padding: 20px 24px;
     overflow-y: auto;
     width: 100%;
     min-height: 0;
+    background: transparent;
 }
 
 .listView::-webkit-scrollbar {
@@ -416,48 +461,47 @@
 .gridList {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-bottom: 20px;
+    gap: 10px;
+    padding-bottom: 16px;
 }
 
 .gridItem {
-    background: linear-gradient(to right, #ffffff, #fcfcfd);
-    padding: 20px 24px;
-    border-radius: 18px;
+    background: #ffffff;
+    padding: 18px 20px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 1px solid #cbd5e1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #e5e7eb;
     position: relative;
     overflow: hidden;
-    margin-bottom: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .gridItem:hover {
-    background: #ffffff;
-    border-color: #6366f1;
-    transform: translateY(-4px) scale(1.005);
-    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.1), 0 10px 10px -5px rgba(99, 102, 241, 0.04);
+    background: #fafbfc;
+    border-color: #a5b4fc;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -8px rgba(99, 102, 241, 0.15), 0 4px 8px -2px rgba(99, 102, 241, 0.08);
 }
 
-.gridItem::after {
+.gridItem::before {
     content: '';
     position: absolute;
     left: 0;
     top: 0;
-    width: 3px;
     height: 100%;
-    background: linear-gradient(to bottom, #6366f1, #a855f7);
-    opacity: 0.15;
-    transition: all 0.3s ease;
+    width: 3px;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.gridItem:hover::after {
+.gridItem:hover::before {
     opacity: 1;
-    width: 5px;
 }
 
 .gridItemSelected {
@@ -670,18 +714,10 @@
 }
 
 .sendBtn {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-    color: white !important;
-    width: 48px;
-    height: 48px;
-    border-radius: 50% !important;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
     min-width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
 }
 
 .sendBtn:hover {
@@ -690,8 +726,10 @@
 }
 
 @media (max-width: 1024px) {
-    .tabsWrapper {
-        display: none;
+    .tabsContainer {
+        padding: 10px 12px;
+        justify-content: flex-start;
+        overflow-x: auto;
     }
 }
 
@@ -752,7 +790,11 @@
     }
 
     .listView {
-        padding: 8px;
+        padding: 12px 16px;
+    }
+
+    .mainContent {
+        border-radius: 16px;
     }
 
     .gridItem {
@@ -764,4 +806,23 @@
         min-height: 300px;
         padding: 20px;
     }
+}
+
+/* Requests Tab Sections */
+.requestSection {
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.requestSection:last-child {
+    margin-bottom: 0;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom-width: 3px;
+    border-bottom-style: solid;
 }

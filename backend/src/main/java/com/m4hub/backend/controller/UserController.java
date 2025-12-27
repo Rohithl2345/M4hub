@@ -45,19 +45,7 @@ public class UserController {
             User user = getUserFromToken(authHeader);
             logger.debug("Fetching profile for user: {}", user.getEmail());
 
-            UserDto userDto = new UserDto(
-                    user.getId(),
-                    user.getPhoneNumber(),
-                    user.getEmail(),
-                    user.getUsername(),
-                    user.getName(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getDateOfBirth(),
-                    user.getGender(),
-                    user.getIsVerified(),
-                    user.getIsActive());
-
+            UserDto userDto = UserDto.fromEntity(user);
             return ResponseEntity.ok(userDto);
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
@@ -113,18 +101,7 @@ public class UserController {
 
             userRepository.save(user);
 
-            UserDto userDto = new UserDto(
-                    user.getId(),
-                    user.getPhoneNumber(),
-                    user.getEmail(),
-                    user.getUsername(),
-                    user.getName(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getDateOfBirth(),
-                    user.getGender(),
-                    user.getIsVerified(),
-                    user.getIsActive());
+            UserDto userDto = UserDto.fromEntity(user);
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Profile setup completed successfully", userDto));
         } catch (Exception e) {
@@ -182,18 +159,7 @@ public class UserController {
 
             userRepository.save(user);
 
-            UserDto userDto = new UserDto(
-                    user.getId(),
-                    user.getPhoneNumber(),
-                    user.getEmail(),
-                    user.getUsername(),
-                    user.getName(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getDateOfBirth(),
-                    user.getGender(),
-                    user.getIsVerified(),
-                    user.getIsActive());
+            UserDto userDto = UserDto.fromEntity(user);
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Profile updated successfully", userDto));
         } catch (Exception e) {
@@ -227,18 +193,7 @@ public class UserController {
             user.setEmail(email);
             userRepository.save(user);
 
-            UserDto userDto = new UserDto(
-                    user.getId(),
-                    user.getPhoneNumber(),
-                    user.getEmail(),
-                    user.getUsername(),
-                    user.getName(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getDateOfBirth(),
-                    user.getGender(),
-                    user.getIsVerified(),
-                    user.getIsActive());
+            UserDto userDto = UserDto.fromEntity(user);
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Email updated successfully", userDto));
         } catch (Exception e) {
@@ -278,18 +233,7 @@ public class UserController {
                 userRepository.save(user);
             }
 
-            UserDto userDto = new UserDto(
-                    user.getId(),
-                    user.getPhoneNumber(),
-                    user.getEmail(),
-                    user.getUsername(),
-                    user.getName(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getDateOfBirth(),
-                    user.getGender(),
-                    user.getIsVerified(),
-                    user.getIsActive());
+            UserDto userDto = UserDto.fromEntity(user);
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Username updated successfully", userDto));
         } catch (Exception e) {
@@ -334,23 +278,29 @@ public class UserController {
                 userRepository.save(user);
             }
 
-            UserDto userDto = new UserDto(
-                    user.getId(),
-                    user.getPhoneNumber(),
-                    user.getEmail(),
-                    user.getUsername(),
-                    user.getName(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getDateOfBirth(),
-                    user.getGender(),
-                    user.getIsVerified(),
-                    user.getIsActive());
-
+            UserDto userDto = UserDto.fromEntity(user);
             return ResponseEntity.ok(new ApiResponse<>(true, "Phone number updated successfully", userDto));
         } catch (Exception e) {
             return ResponseEntity.status(400)
                     .body(new ApiResponse<>(false, "Failed to update phone number: " + e.getMessage(), null));
+        }
+    }
+
+    /**
+     * Mark tutorial as seen
+     */
+    @PostMapping("/tutorial-seen")
+    public ResponseEntity<ApiResponse<UserDto>> markTutorialAsSeen(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            User user = getUserFromToken(authHeader);
+            user.setHasSeenTutorial(true);
+            userRepository.save(user);
+
+            return ResponseEntity.ok(new ApiResponse<>(true, "Tutorial marked as seen", UserDto.fromEntity(user)));
+        } catch (Exception e) {
+            return ResponseEntity.status(400)
+                    .body(new ApiResponse<>(false, "Failed to update tutorial status: " + e.getMessage(), null));
         }
     }
 }

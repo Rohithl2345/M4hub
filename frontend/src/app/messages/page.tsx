@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import chatService, { ChatMessage, FriendRequest, UserSearchResult } from '@/services/chat.service';
 import DashboardLayout from '@/components/DashboardLayout';
+import { logger } from '@/utils/logger';
 import styles from './messages.module.css';
 import {
     Box,
@@ -92,9 +93,9 @@ export default function MessagesPage() {
         if (!file || !user || !selectedEntity) return;
 
         try {
-            console.log('Uploading file...');
+            logger.info('Uploading file...');
             const result = await chatService.uploadFile(file);
-            console.log('File uploaded:', result);
+            logger.info('File uploaded:', result);
             const msgType = file.type.startsWith('image/') ? 'IMAGE' : 'FILE';
 
             if (selectedEntity.type === 'friend') {
@@ -105,7 +106,7 @@ export default function MessagesPage() {
                 chatService.sendGroupMessage(selectedEntity.data.id, user.id, result.fileName, msgType);
             }
         } catch (error) {
-            console.error('Error uploading file:', error);
+            logger.error('Error uploading file:', error);
         }
         handleMenuClose();
     };
@@ -182,11 +183,11 @@ export default function MessagesPage() {
         });
 
         const unsubPresence = chatService.onPresence((data) => {
-            console.log('Presence update received in page:', data);
+            logger.debug('Presence update received in page:', data);
             setFriends(prevFriends => prevFriends.map(f => {
                 // Use loose equality (==) to handle string/number mismatch
                 if (f.id == data.userId) {
-                    console.log(`Updating user ${f.id} to ${data.isActive}`);
+                    logger.debug(`Updating user ${f.id} to ${data.isActive}`);
                     return { ...f, isActive: data.isActive };
                 }
                 return f;
@@ -216,7 +217,7 @@ export default function MessagesPage() {
     useEffect(() => {
         const handleRefresh = () => {
             if (user?.id && navigator.onLine) {
-                console.log('Refreshing data due to focus or network restoration');
+                logger.info('Refreshing data due to focus or network restoration');
                 loadFriends();
                 loadPendingRequests();
                 if (selectedEntity?.type === 'friend' && selectedEntity.data?.id) {
@@ -239,7 +240,7 @@ export default function MessagesPage() {
             const friendsList = await chatService.getFriends();
             setFriends(friendsList);
         } catch (error) {
-            console.error('Error loading friends:', error);
+            logger.error('Error loading friends:', error);
         }
     };
 
@@ -248,7 +249,7 @@ export default function MessagesPage() {
             const groupList = await chatService.getGroups();
             setGroups(groupList);
         } catch (error) {
-            console.error('Error loading groups:', error);
+            logger.error('Error loading groups:', error);
         }
     };
 
@@ -261,7 +262,7 @@ export default function MessagesPage() {
             setPendingRequests(received);
             setSentRequests(sent);
         } catch (error) {
-            console.error('Error loading requests:', error);
+            logger.error('Error loading requests:', error);
         }
     };
 
@@ -278,7 +279,7 @@ export default function MessagesPage() {
             const conversation = await chatService.getConversation(friend.id);
             setMessages(conversation);
         } catch (error) {
-            console.error('Error loading conversation:', error);
+            logger.error('Error loading conversation:', error);
         }
     };
 
@@ -350,7 +351,7 @@ export default function MessagesPage() {
             resetGroupForm();
             loadGroups();
         } catch (error) {
-            console.error('Error creating group:', error);
+            logger.error('Error creating group:', error);
         }
     };
 
@@ -371,7 +372,7 @@ export default function MessagesPage() {
                 const results = await chatService.searchUsers(query);
                 setSearchResults(results);
             } catch (error) {
-                console.error('Error searching users:', error);
+                logger.error('Error searching users:', error);
                 setSearchResults([]);
             } finally {
                 setIsSearching(false);
@@ -387,7 +388,7 @@ export default function MessagesPage() {
                 loadFriends()
             ]);
         } catch (error) {
-            console.error('Error accepting request:', error);
+            logger.error('Error accepting request:', error);
         }
     };
 
@@ -430,17 +431,21 @@ export default function MessagesPage() {
         <DashboardLayout title="Messages">
             <div className={styles.container}>
                 {!selectedEntity ? (
-                    <div className={styles.header}>
-                        <div className={styles.headerContent}>
-                            <div className={styles.headerInfo}>
-                                <ChatBubbleIcon className={styles.headerIcon} />
-                                <div>
-                                    <h1 className={styles.title}>Messenger</h1>
-                                    <p className={styles.subtitle}>Stay connected with your friends and groups</p>
+                    <>
+                        <div className={styles.header}>
+                            <div className={styles.headerContent}>
+                                <div className={styles.headerInfo}>
+                                    <ChatBubbleIcon className={styles.headerIcon} />
+                                    <div>
+                                        <h1 className={styles.title}>Messenger</h1>
+                                        <p className={styles.subtitle}>Stay connected with your friends and groups</p>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className={styles.headerTabsRow}>
+                        <div className={styles.tabsContainer}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 2 }}>
                                 <Tabs
                                     value={tabValue}
                                     onChange={(_, v) => setTabValue(v)}
@@ -450,8 +455,9 @@ export default function MessagesPage() {
                                     allowScrollButtonsMobile
                                     className={styles.tabs}
                                     TabIndicatorProps={{
-                                        style: { backgroundColor: '#ffffff', height: '3px', borderRadius: '3px' }
+                                        style: { display: 'none' }
                                     }}
+                                    sx={{ flex: 1 }}
                                 >
                                     <Tab icon={<PeopleIcon />} label="Friends" iconPosition="start" className={styles.headerTab} />
                                     <Tab icon={<GroupsIcon />} label="Groups" iconPosition="start" className={styles.headerTab} />
@@ -466,10 +472,32 @@ export default function MessagesPage() {
                                         className={styles.headerTab}
                                     />
                                 </Tabs>
-                            </div>
 
+                                {tabValue === 0 && (
+                                    <Button
+                                        className="btn-primary"
+                                        startIcon={<PersonAddIcon />}
+                                        onClick={() => setSearchDialogOpen(true)}
+                                        sx={{ borderRadius: '50px', px: 2.5, py: 1, whiteSpace: 'nowrap', minWidth: 'auto' }}
+                                        size="small"
+                                    >
+                                        Add Friend
+                                    </Button>
+                                )}
+                                {tabValue === 1 && (
+                                    <Button
+                                        className="btn-primary"
+                                        startIcon={<GroupAddIcon />}
+                                        onClick={() => setGroupDialogOpen(true)}
+                                        sx={{ borderRadius: '50px', px: 2.5, py: 1, whiteSpace: 'nowrap', minWidth: 'auto' }}
+                                        size="small"
+                                    >
+                                        Create Group
+                                    </Button>
+                                )}
+                            </Box>
                         </div>
-                    </div>
+                    </>
                 ) : (
                     <div className={styles.chatHeader}>
                         <div className={styles.navLeft}>
@@ -536,34 +564,6 @@ export default function MessagesPage() {
                         <div className={styles.listView}>
                             {tabValue === 0 && (
                                 <div className={styles.gridList}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<PersonAddIcon />}
-                                            onClick={() => setSearchDialogOpen(true)}
-                                            sx={{
-                                                textTransform: 'none',
-                                                borderRadius: '50px',
-                                                px: 3,
-                                                py: 1,
-                                                fontWeight: 800,
-                                                fontSize: '0.85rem',
-                                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                                                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                                '&:hover': {
-                                                    transform: 'translateY(-3px) scale(1.05)',
-                                                    boxShadow: '0 8px 25px rgba(99, 102, 241, 0.45)',
-                                                    background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
-                                                },
-                                                '&:active': {
-                                                    transform: 'scale(0.95)',
-                                                }
-                                            }}
-                                        >
-                                            Add Friend
-                                        </Button>
-                                    </Box>
                                     {friends.map((friend) => (
                                         <div key={friend.id} className={styles.gridItem} onClick={() => handleSelectFriend(friend)}>
                                             <Box sx={{ position: 'relative' }}>
@@ -620,34 +620,6 @@ export default function MessagesPage() {
 
                             {tabValue === 1 && (
                                 <div className={styles.gridList}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<GroupAddIcon />}
-                                            onClick={() => setGroupDialogOpen(true)}
-                                            sx={{
-                                                textTransform: 'none',
-                                                borderRadius: '50px',
-                                                px: 3,
-                                                py: 1,
-                                                fontWeight: 800,
-                                                fontSize: '0.85rem',
-                                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                                                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-                                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                                '&:hover': {
-                                                    transform: 'translateY(-3px) scale(1.05)',
-                                                    boxShadow: '0 8px 25px rgba(139, 92, 246, 0.45)',
-                                                    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                                                },
-                                                '&:active': {
-                                                    transform: 'scale(0.95)',
-                                                }
-                                            }}
-                                        >
-                                            Create Group
-                                        </Button>
-                                    </Box>
                                     {groups.map((group) => (
                                         <div key={group.id} className={styles.gridItem} onClick={() => handleSelectGroup(group)}>
                                             <Badge
@@ -693,13 +665,13 @@ export default function MessagesPage() {
                             {tabValue === 2 && (
                                 <div className={styles.gridList}>
                                     {/* Incoming Friend Requests Section */}
-                                    <div style={{ width: '100%', marginBottom: '40px' }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, pb: 2, borderBottom: '3px solid #e0e7ff' }}>
+                                    <div className={styles.requestSection}>
+                                        <div className={styles.sectionHeader} style={{ borderBottomColor: '#e0e7ff' }}>
                                             <Badge badgeContent={pendingRequests.length} color="primary" sx={{ mr: 2 }}>
                                                 <PersonAddIcon sx={{ fontSize: 28, color: '#6366f1' }} />
                                             </Badge>
                                             <Typography variant="h5" fontWeight={900} sx={{ color: '#1e293b', letterSpacing: '-0.5px' }}>Incoming Friend Requests</Typography>
-                                        </Box>
+                                        </div>
 
                                         {pendingRequests.length > 0 ? (
                                             pendingRequests.map((request) => (
@@ -715,14 +687,11 @@ export default function MessagesPage() {
                                                         variant="contained"
                                                         onClick={() => handleAcceptRequest(request.id)}
                                                         sx={{
-                                                            textTransform: 'none',
-                                                            borderRadius: '16px',
+                                                            borderRadius: '12px',
                                                             padding: '14px 32px',
                                                             fontSize: '1.1rem',
-                                                            fontWeight: 800,
-                                                            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-                                                            color: '#fff !important'
                                                         }}
+                                                        className="btn-primary"
                                                     >
                                                         Accept
                                                     </Button>
@@ -738,13 +707,13 @@ export default function MessagesPage() {
                                     </div>
 
                                     {/* Outgoing Friend Requests Section */}
-                                    <div style={{ width: '100%' }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, pb: 2, borderBottom: '3px solid #fef3c7' }}>
+                                    <div className={styles.requestSection}>
+                                        <div className={styles.sectionHeader} style={{ borderBottomColor: '#fef3c7' }}>
                                             <Badge badgeContent={sentRequests.length} color="warning" sx={{ mr: 2 }}>
                                                 <SendIcon sx={{ fontSize: 28, color: '#f59e0b' }} />
                                             </Badge>
                                             <Typography variant="h5" fontWeight={900} sx={{ color: '#1e293b', letterSpacing: '-0.5px' }}>Outgoing Friend Requests</Typography>
-                                        </Box>
+                                        </div>
 
                                         {sentRequests.length > 0 ? (
                                             sentRequests.map((request) => (
@@ -919,7 +888,7 @@ export default function MessagesPage() {
                                         <Typography variant="body2" fontWeight={700}>Send Photo</Typography>
                                     </MenuItem>
                                 </Menu>
-                                <IconButton className={styles.sendBtn} onClick={handleSendMessage} disabled={!messageInput.trim()}>
+                                <IconButton className={`btn-primary ${styles.sendBtn}`} onClick={handleSendMessage} disabled={!messageInput.trim()}>
                                     <SendIcon sx={{ fontSize: '1.4rem' }} />
                                 </IconButton>
                             </div>
@@ -959,7 +928,7 @@ export default function MessagesPage() {
                                 setSearchQuery(e.target.value);
                             }}
                             onKeyPress={(e) => e.key === 'Enter' && searchQuery.length >= 3 && handleSearch()}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#f1f5f9' } }}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -1016,11 +985,13 @@ export default function MessagesPage() {
                                                         size="small"
                                                         onClick={() => handleAcceptRequest(result.id)}
                                                         sx={{
-                                                            borderRadius: 2,
+                                                            borderRadius: '50px',
+                                                            px: 3,
                                                             textTransform: 'none',
                                                             fontWeight: 700,
                                                             background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-                                                            color: '#fff !important'
+                                                            color: '#fff !important',
+                                                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
                                                         }}
                                                     >
                                                         Accept
@@ -1044,12 +1015,10 @@ export default function MessagesPage() {
                                                             }
                                                         }}
                                                         sx={{
-                                                            borderRadius: 2,
-                                                            textTransform: 'none',
-                                                            fontWeight: 700,
-                                                            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                                                            color: '#fff !important'
+                                                            borderRadius: '50px',
+                                                            px: 3
                                                         }}
+                                                        className="btn-primary"
                                                     >
                                                         Add Friend
                                                     </Button>
@@ -1065,22 +1034,14 @@ export default function MessagesPage() {
                 </DialogContent>
                 <DialogActions sx={{ p: 2, justifyContent: 'flex-end' }}>
                     <Button
-                        variant="contained"
                         onClick={() => {
                             setSearchDialogOpen(false);
                             setHasSearched(false);
                             setSearchResults([]);
                             setSearchQuery('');
                         }}
-                        sx={{
-                            textTransform: 'none',
-                            fontWeight: 700,
-                            px: 4,
-                            py: 1,
-                            borderRadius: 2.5,
-                            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                            color: '#fff !important'
-                        }}
+                        className="btn-primary"
+                        sx={{ px: 4, py: 1, borderRadius: '50px' }}
                     >
                         Close
                     </Button>
@@ -1110,7 +1071,7 @@ export default function MessagesPage() {
                             size="small"
                             value={groupSearchQuery}
                             onChange={(e) => setGroupSearchQuery(e.target.value)}
-                            sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' } }}
+                            sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#f1f5f9' } }}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -1220,7 +1181,7 @@ export default function MessagesPage() {
                             error={!!groupFormError?.name}
                             helperText={groupFormError?.name}
                             sx={{
-                                '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' },
+                                '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#f1f5f9' },
                                 '& .MuiFormHelperText-root': { fontWeight: 600, ml: 1 }
                             }}
                         />
@@ -1231,35 +1192,22 @@ export default function MessagesPage() {
                             rows={3}
                             value={newGroupDesc}
                             onChange={(e) => setNewGroupDesc(e.target.value)}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#f1f5f9' } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#f1f5f9' } }}
                         />
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 3, gap: 1 }}>
                     <Button
                         onClick={resetGroupForm}
-                        sx={{
-                            textTransform: 'none',
-                            fontWeight: 700,
-                            px: 3,
-                            borderRadius: 2,
-                            color: 'text.secondary',
-                            '&:hover': { background: '#f1f5f9' }
-                        }}
+                        className="btn-secondary"
+                        sx={{ px: 3, borderRadius: '50px' }}
                     >
                         Cancel
                     </Button>
                     <Button
-                        variant="contained"
                         onClick={handleCreateGroup}
-                        sx={{
-                            textTransform: 'none',
-                            fontWeight: 700,
-                            px: 4,
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                            color: '#fff !important'
-                        }}
+                        className="btn-primary"
+                        sx={{ px: 4, borderRadius: '50px' }}
                     >
                         Create Group
                     </Button>

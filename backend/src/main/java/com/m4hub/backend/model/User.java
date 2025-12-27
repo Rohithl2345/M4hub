@@ -49,6 +49,9 @@ public class User {
     @Column(name = "session_token")
     private String sessionToken;
 
+    @Column(name = "has_seen_tutorial")
+    private Boolean hasSeenTutorial = false;
+
     // Constructors
     public User() {
     }
@@ -176,5 +179,13 @@ public class User {
 
     public void setSessionToken(String sessionToken) {
         this.sessionToken = sessionToken;
+    }
+
+    public Boolean getHasSeenTutorial() {
+        return hasSeenTutorial != null ? hasSeenTutorial : false;
+    }
+
+    public void setHasSeenTutorial(Boolean hasSeenTutorial) {
+        this.hasSeenTutorial = hasSeenTutorial;
     }
 }

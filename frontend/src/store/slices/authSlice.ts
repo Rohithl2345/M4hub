@@ -16,6 +16,7 @@ interface UserData {
     username?: string;
     isVerified: boolean;
     isActive: boolean;
+    hasSeenTutorial: boolean;
 }
 
 interface AuthState {
@@ -98,10 +99,18 @@ const authSlice = createSlice({
                 }
             }
         },
+        markTutorialSeen: (state) => {
+            if (state.user) {
+                state.user.hasSeenTutorial = true;
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('user', JSON.stringify(state.user));
+                }
+            }
+        },
     },
 });
 
-export const { setCredentials, logout, setLoading, restoreAuth, updateUserEmail, updateUsername, updateUserPhone } = authSlice.actions;
+export const { setCredentials, logout, setLoading, restoreAuth, updateUserEmail, updateUsername, updateUserPhone, markTutorialSeen } = authSlice.actions;
 export default authSlice.reducer;
 
 // Selectors

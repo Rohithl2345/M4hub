@@ -29,8 +29,8 @@ public class NewsController {
     }
 
     @PostMapping("/sync")
-    public ResponseEntity<String> syncNews() {
+    public ResponseEntity<?> syncNews() {
         newsService.syncNews();
-        return ResponseEntity.ok("Sync initiated successfully");
+        return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Sync initiated successfully"));
     }
 }

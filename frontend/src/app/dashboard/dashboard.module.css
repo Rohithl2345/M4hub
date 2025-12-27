@@ -109,18 +109,23 @@
 
 .featuresGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
 }
 
 .featureCard {
     background: white;
-    border-radius: 12px;
-    padding: 32px;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transition: all 0.2s;
+    border-radius: 16px;
+    padding: 20px 24px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
 }
 
 .featureCard:hover {
@@ -129,30 +134,30 @@
 }
 
 .featureIcon {
-    font-size: 60px !important;
-    margin-bottom: 16px;
+    font-size: 32px !important;
+    margin-bottom: 4px;
     color: white;
-    width: 60px !important;
-    height: 60px !important;
+    width: 32px !important;
+    height: 32px !important;
 }
 
 .featureCard h3 {
-    font-size: 22px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
     color: #1A1A1A;
     font-family: 'Poppins', sans-serif;
 }
 
 .featureCard p {
-    font-size: 14px;
+    font-size: 12px;
     color: #666666;
     margin: 0;
+    opacity: 0.8;
 }
 
 .musicCard {
     background: linear-gradient(135deg, #5433ff 0%, #20bdff 100%);
-    border-left: 4px solid white;
 }
 
 .musicCard h3,
@@ -162,7 +167,6 @@
 
 .messageCard {
     background: linear-gradient(135deg, #20bdff 0%, #a5fecb 100%);
-    border-left: 4px solid white;
 }
 
 .messageCard h3,
@@ -172,7 +176,6 @@
 
 .moneyCard {
     background: linear-gradient(135deg, #5433ff 0%, #a5fecb 100%);
-    border-left: 4px solid white;
 }
 
 .moneyCard h3,
@@ -182,12 +185,15 @@
 
 .newsCard {
     background: linear-gradient(135deg, #20bdff 0%, #5433ff 100%);
-    border-left: 4px solid white;
 }
 
 .newsCard h3,
 .newsCard p {
     color: white;
+}
+
+.analyticsSection {
+    margin-top: 32px;
 }
 
 @media (max-width: 1024px) {

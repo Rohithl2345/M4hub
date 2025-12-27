@@ -147,7 +147,7 @@ export default function MusicPage() {
                                 <CloseIcon />
                             </button>
                         )}
-                        <button type="submit" className={styles.searchButton}>Search</button>
+                        <button type="submit" className={`btn-primary ${styles.searchButton}`}>Search</button>
                     </div>
                     {searchError && (
                         <div style={{
@@ -170,19 +170,19 @@ export default function MusicPage() {
 
                 <div className={styles.tabs}>
                     <button
-                        className={`${styles.tab} ${filter === 'all' ? styles.tabActive : ''}`}
+                        className={`tab-pill ${styles.tab} ${filter === 'all' ? `tab-pill-active ${styles.tabActive}` : ''}`}
                         onClick={() => setFilter('all')}
                     >
                         All Songs
                     </button>
                     <button
-                        className={`${styles.tab} ${filter === 'favorites' ? styles.tabActive : ''}`}
+                        className={`tab-pill ${styles.tab} ${filter === 'favorites' ? `tab-pill-active ${styles.tabActive}` : ''}`}
                         onClick={() => setFilter('favorites')}
                     >
                         Favorites
                     </button>
                     <button
-                        className={`${styles.tab} ${filter === 'wishlist' ? styles.tabActive : ''}`}
+                        className={`tab-pill ${styles.tab} ${filter === 'wishlist' ? `tab-pill-active ${styles.tabActive}` : ''}`}
                         onClick={() => setFilter('wishlist')}
                     >
                         Wishlist

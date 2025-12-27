@@ -54,10 +54,16 @@ const authSlice = createSlice({
             }
             state.isLoading = false;
         },
+        markTutorialSeen: (state) => {
+            if (state.user) {
+                state.user.hasSeenTutorial = true;
+                storageService.saveUserData(state.user);
+            }
+        },
     },
 });
 
-export const { setCredentials, logout, setLoading, restoreAuth } = authSlice.actions;
+export const { setCredentials, logout, setLoading, restoreAuth, markTutorialSeen } = authSlice.actions;
 export default authSlice.reducer;
 
 // Selectors

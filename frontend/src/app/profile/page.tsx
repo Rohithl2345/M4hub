@@ -181,7 +181,7 @@ export default function ProfilePage() {
                             {!isEditingEmail ? (
                                 <div className={styles.profileValue}>
                                     <span>{user.email || 'Not set'}</span>
-                                    <button onClick={handleEmailEdit} className={styles.editButton}>
+                                    <button onClick={handleEmailEdit} className={`btn-secondary ${styles.editButton}`}>
                                         EDIT
                                     </button>
                                 </div>
@@ -196,10 +196,10 @@ export default function ProfilePage() {
                                         disabled={loading}
                                     />
                                     <div className={styles.actions}>
-                                        <button onClick={handleCancel} className={styles.cancelButton} disabled={loading}>
+                                        <button onClick={handleCancel} className={`btn-secondary ${styles.cancelButton}`} disabled={loading}>
                                             Cancel
                                         </button>
-                                        <button onClick={handleEmailSave} className={styles.saveButton} disabled={loading}>
+                                        <button onClick={handleEmailSave} className={`btn-primary ${styles.saveButton}`} disabled={loading}>
                                             {loading ? '...' : 'Save'}
                                         </button>
                                     </div>
@@ -217,7 +217,7 @@ export default function ProfilePage() {
                             {!isEditingPhone ? (
                                 <div className={styles.profileValue}>
                                     <span>{user.phoneNumber || 'Not set'}</span>
-                                    <button onClick={handlePhoneEdit} className={styles.editButton}>
+                                    <button onClick={handlePhoneEdit} className={`btn-secondary ${styles.editButton}`}>
                                         EDIT
                                     </button>
                                 </div>
@@ -232,10 +232,10 @@ export default function ProfilePage() {
                                         disabled={loading}
                                     />
                                     <div className={styles.actions}>
-                                        <button onClick={handlePhoneCancel} className={styles.cancelButton} disabled={loading}>
+                                        <button onClick={handlePhoneCancel} className={`btn-secondary ${styles.cancelButton}`} disabled={loading}>
                                             Cancel
                                         </button>
-                                        <button onClick={handlePhoneSave} className={styles.saveButton} disabled={loading}>
+                                        <button onClick={handlePhoneSave} className={`btn-primary ${styles.saveButton}`} disabled={loading}>
                                             {loading ? '...' : 'Save'}
                                         </button>
                                     </div>

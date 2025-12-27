@@ -90,7 +90,10 @@ function VerifyOTPContent() {
 
                 dispatch(setCredentials({
                     token: result.token,
-                    user: result.user,
+                    user: {
+                        ...result.user,
+                        hasSeenTutorial: (result.user as any).hasSeenTutorial || false
+                    },
                 }));
 
                 const needsProfileSetup = !result.user.firstName || !result.user.lastName;

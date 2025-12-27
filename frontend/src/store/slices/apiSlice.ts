@@ -30,6 +30,7 @@ interface UserData {
     email?: string;
     isVerified: boolean;
     isActive: boolean;
+    hasSeenTutorial?: boolean;
 }
 
 interface VerifyOtpResponse {

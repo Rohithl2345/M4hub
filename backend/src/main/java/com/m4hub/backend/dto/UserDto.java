@@ -12,12 +12,14 @@ public class UserDto {
     private String gender;
     private Boolean isVerified;
     private Boolean isActive;
+    private Boolean hasSeenTutorial;
 
     public UserDto() {
     }
 
     public UserDto(Long id, String phoneNumber, String email, String username, String name, String firstName,
-            String lastName, String dateOfBirth, String gender, Boolean isVerified, Boolean isActive) {
+            String lastName, String dateOfBirth, String gender, Boolean isVerified, Boolean isActive,
+            Boolean hasSeenTutorial) {
         this.id = id;
         this.phoneNumber = phoneNumber;
         this.email = email;
@@ -29,6 +31,7 @@ public class UserDto {
         this.gender = gender;
         this.isVerified = isVerified;
         this.isActive = isActive;
+        this.hasSeenTutorial = hasSeenTutorial;
     }
 
     public static UserDto fromEntity(com.m4hub.backend.model.User user) {
@@ -45,7 +48,8 @@ public class UserDto {
                 user.getDateOfBirth() != null ? user.getDateOfBirth().toString() : null,
                 user.getGender(),
                 user.getIsVerified(),
-                user.getIsActive());
+                user.getIsActive(),
+                user.getHasSeenTutorial());
     }
 
     // Getters and Setters
@@ -135,5 +139,13 @@ public class UserDto {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public Boolean getHasSeenTutorial() {
+        return hasSeenTutorial;
+    }
+
+    public void setHasSeenTutorial(Boolean hasSeenTutorial) {
+        this.hasSeenTutorial = hasSeenTutorial;
     }
 }

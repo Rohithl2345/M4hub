@@ -112,11 +112,7 @@ public class ChatController {
         List<User> friends = chatService.getFriends(user.getId());
         List<com.m4hub.backend.dto.FriendDto> results = friends.stream()
                 .map(f -> {
-                    com.m4hub.backend.dto.FriendDto dto = new com.m4hub.backend.dto.FriendDto(
-                            f.getId(), f.getPhoneNumber(), f.getEmail(), f.getUsername(),
-                            f.getName(), f.getFirstName(), f.getLastName(),
-                            f.getDateOfBirth() != null ? f.getDateOfBirth().toString() : null,
-                            f.getGender(), f.getIsVerified(), f.getIsActive());
+                    com.m4hub.backend.dto.FriendDto dto = com.m4hub.backend.dto.FriendDto.fromEntity(f);
 
                     // Fetch last message
                     ChatMessage lastMsg = chatMessageRepository.findLastMessage(user.getId(), f.getId());

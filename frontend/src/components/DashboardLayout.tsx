@@ -7,6 +7,8 @@ import { logout, selectIsLoading } from '@/store/slices/authSlice';
 import { Badge } from '@mui/material';
 import chatService from '@/services/chat.service';
 import styles from './DashboardLayout.module.css';
+import { logger } from '@/utils/logger';
+import PortalTutorial from './PortalTutorial';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PersonIcon from '@mui/icons-material/Person';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
@@ -16,6 +18,10 @@ import NewspaperIcon from '@mui/icons-material/Newspaper';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import LocalActivityIcon from '@mui/icons-material/LocalActivity';
+import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
+import SnakeGame from './SnakeGame';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -32,12 +38,17 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const [pendingCount, setPendingCount] = useState(0);
     const [chatStatus, setChatStatus] = useState({ isConnected: false, isConnecting: false });
     const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
+    const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+    const [isGameOpen, setIsGameOpen] = useState(false);
+
+
+
 
 
     // Global Chat Connection and Presence
     useEffect(() => {
         // Protect the route
-        const token = typeof window !== 'undefined' ? sessionStorage.getItem('authToken') : null;
+        const token = typeof window !== 'undefined' ? (localStorage.getItem('authToken') || sessionStorage.getItem('authToken')) : null;
         if (!token && !isLoading) {
             router.push('/auth/email-login');
         }
@@ -45,19 +56,19 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         if (user?.id) {
             const connectChat = () => {
                 chatService.connect(user.id, () => {
-                    console.log('Global presence established');
+                    logger.info('Global presence established');
                 });
             };
 
             connectChat();
 
             const handleOnline = () => {
-                console.log('Internet connection restored, reconnecting chat...');
+                logger.info('Internet connection restored, reconnecting chat...');
                 connectChat();
             };
 
             const handleOffline = () => {
-                console.log('Internet connection lost');
+                logger.info('Internet connection lost');
                 // The WebSocket will naturally disconnect, but we could explicitly handle UI here if needed
             };
 
@@ -87,6 +98,26 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     }, []);
 
 
+    // Tab Usage Tracking
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const startTime = Date.now();
+        const currentTab = pathname.split('/')[1]?.toUpperCase() || 'DASHBOARD';
+
+        return () => {
+            const endTime = Date.now();
+            const durationSeconds = Math.round((endTime - startTime) / 1000);
+
+            // Only log if they spent at least 1 second
+            if (durationSeconds > 0) {
+                import('@/services/analytics.service').then(({ default: analyticsService }) => {
+                    analyticsService.logUsage(currentTab, durationSeconds);
+                });
+            }
+        };
+    }, [pathname, user?.id]);
+
     // Load pending requests count
     useEffect(() => {
         const loadPendingCount = async () => {
@@ -95,7 +126,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     const requests = await chatService.getPendingRequests();
                     setPendingCount(requests.length);
                 } catch (error) {
-                    console.error('Error loading pending count:', error);
+                    logger.error('Error loading pending count:', error);
                 }
             }
         };
@@ -118,8 +149,21 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
     const isActive = (path: string) => pathname === path;
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showProfileDropdown) {
+                setShowProfileDropdown(false);
+            }
+        };
+        if (showProfileDropdown) {
+            window.addEventListener('click', handleClickOutside);
+        }
+        return () => window.removeEventListener('click', handleClickOutside);
+    }, [showProfileDropdown]);
+
     return (
         <div className={styles.container}>
+            <PortalTutorial />
             <button
                 className={styles.mobileMenuButton}
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -130,24 +174,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
             <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
                 <div className={styles.logo} onClick={() => router.push('/dashboard')}>M4Hub</div>
-                {user?.username && (
-                    <div className={styles.userInfo}>
-                        <div className={styles.avatarWrapper}>
-                            <div className={styles.userAvatar}>
-                                {(user.name || user.username).charAt(0).toUpperCase()}
-                            </div>
-                            <div className={`${styles.statusBadge} ${isOnline && chatStatus.isConnected ? styles.statusOnline : styles.statusOffline}`} />
-                        </div>
-                        <div className={styles.userDetails}>
-                            <span className={styles.username}>@{user.username}</span>
-                            <span className={styles.statusText}>
-                                {!isOnline ? 'Internet Offline' :
-                                    chatStatus.isConnecting ? 'Connecting...' :
-                                        chatStatus.isConnected ? 'Online' : 'Disconnected'}
-                            </span>
-                        </div>
-                    </div>
-                )}
 
 
                 <nav className={styles.nav}>
@@ -159,15 +185,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     >
                         <DashboardIcon className={styles.navIcon} />
                         <span>Dashboard</span>
-                    </div>
-                    <div
-                        className={`${styles.navItem} ${isActive('/profile') ? styles.navItemActive : ''}`}
-                        onClick={() => handleNavigation('/profile')}
-                        role="button"
-                        tabIndex={0}
-                    >
-                        <PersonIcon className={styles.navIcon} />
-                        <span>Profile</span>
                     </div>
                     <div
                         className={`${styles.navItem} ${isActive('/music') ? styles.navItemActive : ''}`}
@@ -209,11 +226,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     </div>
                 </nav>
 
-                <div className={styles.rightSection}>
-                    <button onClick={handleLogout} className={styles.logoutButton}>
-                        <LogoutIcon /> Logout
-                    </button>
-                </div>
             </aside>
 
             {isSidebarOpen && <div className={styles.overlay} onClick={() => setIsSidebarOpen(false)} />}
@@ -221,11 +233,65 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             <main className={styles.main}>
                 <div className={styles.pageHeader}>
                     <h1 className={styles.title}>{title}</h1>
+
+                    {user?.username && (
+                        <div className={styles.headerProfileContainer}>
+                            <div
+                                className={`${styles.headerProfile} ${showProfileDropdown ? styles.headerProfileActive : ''}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowProfileDropdown(!showProfileDropdown);
+                                }}
+                            >
+                                <div className={styles.headerUserInfo}>
+                                    <div className={styles.avatarWrapper}>
+                                        <div className={styles.userAvatar}>
+                                            {(user.name || user.username).charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className={`${styles.statusBadge} ${isOnline && chatStatus.isConnected ? styles.statusOnline : styles.statusOffline}`} />
+                                    </div>
+                                    <div className={styles.headerUserDetails}>
+                                        <span className={styles.headerUsername}>{user.name || user.username}</span>
+                                        <span className={styles.headerStatusText}>
+                                            {!isOnline || !chatStatus.isConnected ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }} onClick={() => setIsGameOpen(true)}>
+                                                    <span style={{ color: '#ef4444', fontWeight: 700 }}>Offline</span>
+                                                    <VideogameAssetIcon sx={{ fontSize: 14, color: '#ef4444' }} />
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: '#10b981' }}>Online</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className={`${styles.dropdownArrow} ${showProfileDropdown ? styles.arrowRotate : ''}`}>▾</div>
+
+                                {showProfileDropdown && (
+                                    <div className={styles.profileDropdown} onClick={(e) => e.stopPropagation()}>
+                                        <div className={styles.dropdownItem} onClick={() => setIsGameOpen(true)}>
+                                            <VideogameAssetIcon fontSize="small" sx={{ color: '#6366f1' }} />
+                                            <span>Play Game</span>
+                                        </div>
+                                        <div className={styles.dropdownItem} onClick={() => handleNavigation('/profile')}>
+                                            <PersonIcon fontSize="small" />
+                                            <span>My Profile</span>
+                                        </div>
+                                        <div className={styles.dropdownDivider} />
+                                        <div className={`${styles.dropdownItem} ${styles.dropdownLogout}`} onClick={handleLogout}>
+                                            <LogoutIcon fontSize="small" />
+                                            <span>Logout</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className={styles.content}>
                     {children}
                 </div>
+                <SnakeGame isOpen={isGameOpen} onClose={() => setIsGameOpen(false)} />
             </main>
         </div>
     );

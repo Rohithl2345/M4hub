@@ -348,18 +348,7 @@ public class AuthService {
         user.setSessionToken(token);
         userRepository.save(user);
 
-        UserDto userDto = new UserDto(
-                user.getId(),
-                user.getPhoneNumber(),
-                user.getEmail(),
-                user.getUsername(),
-                user.getName(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getDateOfBirth(),
-                user.getGender(),
-                user.getIsVerified(),
-                user.getIsActive());
+        UserDto userDto = UserDto.fromEntity(user);
 
         return new AuthResponse(true, "Login successful", token, userDto);
     }
@@ -453,18 +442,7 @@ public class AuthService {
         // tokenStorage.put(token, normalizedEmail);
 
         // Create user DTO
-        UserDto userDto = new UserDto(
-                user.getId(),
-                user.getPhoneNumber(),
-                user.getEmail(),
-                user.getUsername(),
-                user.getName(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getDateOfBirth(),
-                user.getGender(),
-                user.getIsVerified(),
-                user.getIsActive());
+        UserDto userDto = UserDto.fromEntity(user);
 
         return new AuthResponse(true, "Login successful", token, userDto);
     }

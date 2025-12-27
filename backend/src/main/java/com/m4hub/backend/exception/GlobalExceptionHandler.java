@@ -28,4 +28,13 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "message", ex.getMessage()));
     }
+
+    @ExceptionHandler(org.springframework.dao.DataAccessException.class)
+    public ResponseEntity<?> handleDataAccessException(org.springframework.dao.DataAccessException ex) {
+        logger.error("Database error occurred: ", ex);
+        return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "message", "Database error occurred",
+                "error", ex.getMostSpecificCause().getMessage()));
+    }
 }

@@ -10,6 +10,7 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
+import AnalyticsDashboard from '@/components/AnalyticsDashboard';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -84,6 +85,10 @@ export default function DashboardPage() {
                         <h3>News</h3>
                         <p>Stay informed with latest updates</p>
                     </div>
+                </div>
+
+                <div className={styles.analyticsSection}>
+                    <AnalyticsDashboard />
                 </div>
             </div>
         </DashboardLayout>
