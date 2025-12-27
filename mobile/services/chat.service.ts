@@ -305,10 +305,10 @@ class ChatService {
         return response.data;
     }
 
-    async createGroup(name: string, description: string, token: string): Promise<any> {
+    async createGroup(name: string, description: string, token: string, memberIds: number[] = []): Promise<any> {
         const response = await axios.post(
             `${API_URL}/api/chat/group/create`,
-            { name, description },
+            { name, description, memberIds },
             { headers: { Authorization: `Bearer ${token}` } }
         );
         return response.data;

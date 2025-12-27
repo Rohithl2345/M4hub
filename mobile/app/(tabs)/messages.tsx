@@ -46,6 +46,11 @@ export default function MessagesScreen() {
     const [newGroupDesc, setNewGroupDesc] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
+    const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
+    const [groupSearchQuery, setGroupSearchQuery] = useState('');
+    const [groupFormError, setGroupFormError] = useState<{ name?: string, members?: string } | null>(null);
+    const [groupSearchResults, setGroupSearchResults] = useState<UserSearchResult[]>([]);
+    const [isSearchingMembers, setIsSearchingMembers] = useState(false);
     const [showAttachMenu, setShowAttachMenu] = useState(false);
 
     const flatListRef = useRef<FlatList>(null);
@@ -60,6 +65,41 @@ export default function MessagesScreen() {
             return () => chatService.disconnect();
         }
     }, [user?.id, token]);
+
+    // Debounced Search for Friends
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (searchQuery.length >= 3) {
+                handleSearch();
+            } else if (searchQuery.length === 0) {
+                setSearchResults([]);
+                setHasSearched(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
+
+    // Debounced Search for Members in Group Creation
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(async () => {
+            if (groupSearchQuery.length >= 3 && token) {
+                setIsSearchingMembers(true);
+                try {
+                    const results = await chatService.searchUsers(groupSearchQuery, token);
+                    setGroupSearchResults(results || []);
+                } catch (error) {
+                    console.error('Error searching members:', error);
+                } finally {
+                    setIsSearchingMembers(false);
+                }
+            } else if (groupSearchQuery.length === 0) {
+                setGroupSearchResults([]);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [groupSearchQuery, token]);
 
     useEffect(() => {
         if (!user?.id || !token) return;
@@ -77,8 +117,9 @@ export default function MessagesScreen() {
         });
 
         const unsubRequest = chatService.onRequest(() => {
-            console.log('Refreshing requests due to real-time notification');
+            console.log('Refreshing data due to real-time notification');
             loadPendingRequests();
+            loadGroups();
         });
 
         const unsubPresence = chatService.onPresence((data: any) => {
@@ -211,17 +252,53 @@ export default function MessagesScreen() {
         }
     };
 
+    const resetSearchForm = () => {
+        setSearchQuery('');
+        setSearchResults([]);
+        setHasSearched(false);
+        setSearchError(null);
+        setShowSearch(false);
+    };
+
+    const resetGroupForm = () => {
+        setNewGroupName('');
+        setNewGroupDesc('');
+        setSelectedMemberIds([]);
+        setGroupSearchQuery('');
+        setGroupFormError(null);
+        setGroupSearchResults([]);
+        setShowCreateGroup(false);
+    };
+
     const handleCreateGroup = async () => {
-        if (!token || !newGroupName.trim()) return;
+        if (!token || !user) return;
+
+        const errors: { name?: string, members?: string } = {};
+        if (!newGroupName.trim()) errors.name = 'Group name is required';
+        if (selectedMemberIds.length === 0) errors.members = 'Select at least one member';
+
+        if (Object.keys(errors).length > 0) {
+            setGroupFormError(errors);
+            return;
+        }
+
         try {
-            await chatService.createGroup(newGroupName, newGroupDesc, token);
-            setShowCreateGroup(false);
-            setNewGroupName('');
-            setNewGroupDesc('');
+            await chatService.createGroup(newGroupName, newGroupDesc, token, selectedMemberIds);
+            resetGroupForm();
             loadGroups();
+            Alert.alert('Success', 'Group created successfully!');
         } catch (error) {
             console.error('Error creating group:', error);
+            Alert.alert('Error', 'Failed to create group');
         }
+    };
+
+    const toggleMemberSelection = (friendId: number) => {
+        setSelectedMemberIds(prev =>
+            prev.includes(friendId)
+                ? prev.filter(id => id !== friendId)
+                : [...prev, friendId]
+        );
     };
 
     const renderEmptyState = (type: string) => {
@@ -309,12 +386,6 @@ export default function MessagesScreen() {
                     style={styles.header}
                 >
                     <View style={styles.headerTopActions}>
-                        <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.iconCircle}>
-                            <Ionicons name="search" size={22} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setShowCreateGroup(true)} style={styles.iconCircle}>
-                            <Ionicons name="add" size={28} color="white" />
-                        </TouchableOpacity>
                     </View>
                     <Ionicons name="chatbubble-ellipses" size={64} color="white" />
                     <Text style={styles.headerTitle}>Messenger</Text>
@@ -356,6 +427,20 @@ export default function MessagesScreen() {
                             data={friends}
                             renderItem={(props) => renderListItem({ ...props, type: 'friend' })}
                             keyExtractor={(item) => item.id.toString()}
+                            ListHeaderComponent={
+                                <TouchableOpacity
+                                    style={styles.tabActionBtn}
+                                    onPress={() => setShowSearch(true)}
+                                >
+                                    <LinearGradient
+                                        colors={['#6366f1', '#4f46e5']}
+                                        style={styles.tabActionGradient}
+                                    >
+                                        <Ionicons name="person-add" size={20} color="white" />
+                                        <Text style={styles.tabActionText}>Add New Friend</Text>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            }
                             ListEmptyComponent={() => renderEmptyState('friends')}
                             contentContainerStyle={{ padding: 16 }}
                         />
@@ -365,6 +450,20 @@ export default function MessagesScreen() {
                             data={groups}
                             renderItem={(props) => renderListItem({ ...props, type: 'group' })}
                             keyExtractor={(item) => item.id.toString()}
+                            ListHeaderComponent={
+                                <TouchableOpacity
+                                    style={styles.tabActionBtn}
+                                    onPress={() => setShowCreateGroup(true)}
+                                >
+                                    <LinearGradient
+                                        colors={['#8b5cf6', '#7c3aed']}
+                                        style={styles.tabActionGradient}
+                                    >
+                                        <Ionicons name="add-circle" size={22} color="white" />
+                                        <Text style={styles.tabActionText}>Create New Group</Text>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            }
                             ListEmptyComponent={() => renderEmptyState('groups')}
                             contentContainerStyle={{ padding: 16 }}
                         />
@@ -464,7 +563,7 @@ export default function MessagesScreen() {
                 >
                     <View style={styles.modalBody}>
                         <View style={styles.modalHeader}>
-                            <TouchableOpacity onPress={() => setShowSearch(false)}>
+                            <TouchableOpacity onPress={resetSearchForm}>
                                 <Ionicons name="close" size={28} color="#1e293b" />
                             </TouchableOpacity>
                             <Text style={styles.modalTitle}>Find Friends</Text>
@@ -565,30 +664,105 @@ export default function MessagesScreen() {
                 <Modal visible={showCreateGroup} animationType="slide" transparent={false}>
                     <View style={styles.modalBody}>
                         <View style={styles.modalHeader}>
-                            <TouchableOpacity onPress={() => setShowCreateGroup(false)}>
+                            <TouchableOpacity onPress={resetGroupForm}>
                                 <Ionicons name="close" size={28} color="#1e293b" />
                             </TouchableOpacity>
                             <Text style={styles.modalTitle}>New Group</Text>
-                            <View style={{ width: 28 }} />
-                        </View>
-                        <View style={{ padding: 24 }}>
-                            <TextInput
-                                style={styles.inputField}
-                                placeholder="Group Name"
-                                value={newGroupName}
-                                onChangeText={setNewGroupName}
-                            />
-                            <TextInput
-                                style={[styles.inputField, { height: 100, textAlignVertical: 'top' }]}
-                                placeholder="Description"
-                                value={newGroupDesc}
-                                onChangeText={setNewGroupDesc}
-                                multiline
-                            />
-                            <TouchableOpacity style={styles.primaryBtn} onPress={handleCreateGroup}>
-                                <Text style={styles.primaryBtnText}>Create Group</Text>
+                            <TouchableOpacity onPress={handleCreateGroup}>
+                                <Ionicons name="checkmark-circle" size={32} color={COLORS.PRIMARY} />
                             </TouchableOpacity>
                         </View>
+                        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                            <View style={{ padding: 24 }}>
+                                <Text style={styles.fieldLabel}>GROUP INFO</Text>
+                                <TextInput
+                                    style={[styles.inputField, groupFormError?.name && styles.inputError]}
+                                    placeholder="Group Name *"
+                                    value={newGroupName}
+                                    onChangeText={(text) => {
+                                        setNewGroupName(text);
+                                        if (groupFormError?.name) setGroupFormError(prev => prev ? { ...prev, name: undefined } : null);
+                                    }}
+                                />
+                                {groupFormError?.name && <Text style={styles.errorText}>{groupFormError.name}</Text>}
+
+                                <TextInput
+                                    style={[styles.inputField, { height: 80, textAlignVertical: 'top' }]}
+                                    placeholder="Description (Optional)"
+                                    value={newGroupDesc}
+                                    onChangeText={setNewGroupDesc}
+                                    multiline
+                                />
+
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 15 }}>
+                                    <Text style={[styles.fieldLabel, groupFormError?.members && { color: '#ef4444' }]}>
+                                        ADD MEMBERS ({selectedMemberIds.length})
+                                    </Text>
+                                    {groupFormError?.members && <Text style={styles.errorText}>{groupFormError.members}</Text>}
+                                </View>
+
+                                {/* Selected Members Horizontal Scroll */}
+                                {selectedMemberIds.length > 0 && (
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+                                        {selectedMemberIds.map(id => {
+                                            const friend = friends.find(f => f.id === id);
+                                            return (
+                                                <TouchableOpacity key={id} onPress={() => toggleMemberSelection(id)} style={styles.selectedMember}>
+                                                    <View style={styles.selectedAvatar}>
+                                                        <Text style={styles.selectedAvatarText}>{(friend?.name || friend?.username || 'U').charAt(0).toUpperCase()}</Text>
+                                                        <View style={styles.removeIcon}>
+                                                            <Ionicons name="close" size={10} color="white" />
+                                                        </View>
+                                                    </View>
+                                                    <Text style={styles.selectedName} numberOfLines={1}>{friend?.name || friend?.username}</Text>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </ScrollView>
+                                )}
+
+                                <View style={styles.searchBar}>
+                                    <Ionicons name="search" size={20} color="#64748b" />
+                                    <TextInput
+                                        style={styles.searchInput}
+                                        placeholder="Search friends to add..."
+                                        value={groupSearchQuery}
+                                        onChangeText={setGroupSearchQuery}
+                                    />
+                                    {isSearchingMembers && <Text style={{ fontSize: 10, color: COLORS.PRIMARY }}>Searching...</Text>}
+                                </View>
+
+                                <View style={styles.memberList}>
+                                    {(groupSearchQuery.length >= 3 ? groupSearchResults : friends).map((item) => {
+                                        const isSelected = selectedMemberIds.includes(item.id);
+                                        return (
+                                            <TouchableOpacity
+                                                key={item.id}
+                                                style={[styles.memberItem, isSelected && styles.memberItemSelected]}
+                                                onPress={() => toggleMemberSelection(item.id)}
+                                            >
+                                                <View style={[styles.avatar, { width: 40, height: 40, backgroundColor: isSelected ? COLORS.PRIMARY : '#e2e8f0' }]}>
+                                                    <Text style={[styles.avatarText, { fontSize: 16 }]}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
+                                                </View>
+                                                <Text style={styles.memberName}>{item.name || item.username}</Text>
+                                                <Ionicons
+                                                    name={isSelected ? "checkmark-circle" : "add-circle-outline"}
+                                                    size={24}
+                                                    color={isSelected ? COLORS.PRIMARY : '#cbd5e1'}
+                                                />
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                    {groupSearchQuery.length > 0 && groupSearchQuery.length < 3 && (
+                                        <Text style={styles.searchHint}>Type at least 3 characters...</Text>
+                                    )}
+                                </View>
+
+                                <TouchableOpacity style={styles.primaryBtn} onPress={handleCreateGroup}>
+                                    <Text style={styles.primaryBtnText}>Create Group</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </ScrollView>
                     </View>
                 </Modal>
 
@@ -1153,5 +1327,113 @@ const styles = StyleSheet.create({
         borderRadius: 22,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    tabActionBtn: {
+        marginBottom: 16,
+        borderRadius: 16,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    tabActionGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        gap: 10,
+    },
+    tabActionText: {
+        color: 'white',
+        fontSize: 15,
+        fontWeight: '800',
+    },
+    fieldLabel: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#64748b',
+        marginBottom: 8,
+        letterSpacing: 1,
+    },
+    inputError: {
+        borderWidth: 1.5,
+        borderColor: '#ef4444',
+    },
+    errorText: {
+        color: '#ef4444',
+        fontSize: 12,
+        fontWeight: '700',
+        marginTop: -12,
+        marginBottom: 16,
+        marginLeft: 4,
+    },
+    selectedMember: {
+        alignItems: 'center',
+        marginRight: 16,
+        width: 60,
+    },
+    selectedAvatar: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: COLORS.PRIMARY,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    selectedAvatarText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: '800',
+    },
+    removeIcon: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: '#ef4444',
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: 'white',
+    },
+    selectedName: {
+        fontSize: 11,
+        color: '#1e293b',
+        fontWeight: '700',
+    },
+    memberList: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 8,
+        marginBottom: 20,
+        maxHeight: 300,
+    },
+    memberItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 14,
+        gap: 12,
+    },
+    memberItemSelected: {
+        backgroundColor: '#f1f5f9',
+    },
+    memberName: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1e293b',
+    },
+    searchHint: {
+        textAlign: 'center',
+        color: '#94a3b8',
+        fontSize: 13,
+        padding: 16,
+        fontStyle: 'italic',
     },
 });
