@@ -99,12 +99,13 @@ public class UserController {
                 user.setPhoneNumber(request.getPhoneNumber());
             }
 
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
 
-            UserDto userDto = UserDto.fromEntity(user);
+            UserDto userDto = UserDto.fromEntity(savedUser);
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Profile setup completed successfully", userDto));
         } catch (Exception e) {
+            logger.error("Profile setup failed for user: {}", e.getMessage(), e);
             return ResponseEntity.status(400)
                     .body(new ApiResponse<>(false, "Failed to setup profile: " + e.getMessage(), null));
         }
@@ -157,12 +158,13 @@ public class UserController {
                 user.setPhoneNumber(request.getPhoneNumber());
             }
 
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
 
-            UserDto userDto = UserDto.fromEntity(user);
+            UserDto userDto = UserDto.fromEntity(savedUser);
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Profile updated successfully", userDto));
         } catch (Exception e) {
+            logger.error("Profile update failed: {}", e.getMessage(), e);
             return ResponseEntity.status(400)
                     .body(new ApiResponse<>(false, "Failed to update profile: " + e.getMessage(), null));
         }

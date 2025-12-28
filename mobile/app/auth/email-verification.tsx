@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -63,7 +64,7 @@ export default function EmailVerificationScreen() {
                 }));
 
                 Alert.alert('Success', 'Email verified successfully!', [
-                    { text: 'OK', onPress: () => router.replace('/profile-setup') }
+                    { text: 'OK', onPress: () => router.replace('/profile-setup' as any) }
                 ]);
             } else {
                 Alert.alert('Error', data.message || 'Invalid OTP. Please try again.');
@@ -106,70 +107,89 @@ export default function EmailVerificationScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <View style={styles.header}>
+            <LinearGradient
+                colors={['#5433ff', '#20bdff', '#a5fecb']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.header}
+            >
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ThemedText style={styles.backText}>← Back</ThemedText>
+                    <Ionicons name="arrow-back" size={28} color="white" />
                 </TouchableOpacity>
-                <ThemedText type="title" style={styles.title}>Verify Email</ThemedText>
-                <ThemedText style={styles.subtitle}>
-                    Enter the 6-digit code sent to
-                </ThemedText>
-                <ThemedText type="defaultSemiBold" style={styles.email}>
-                    {email}
-                </ThemedText>
-            </View>
+                <View style={styles.logoContainer}>
+                    <View style={styles.logoCircle}>
+                        <Ionicons name="shield-checkmark" size={40} color="#5433ff" />
+                    </View>
+                </View>
+                <ThemedText style={styles.title}>Verification</ThemedText>
+                <ThemedText style={styles.subtitle}>Enter the code sent to your email</ThemedText>
+            </LinearGradient>
 
-            <View style={styles.form}>
+            <View style={styles.formContainer}>
+                <View style={styles.emailDisplay}>
+                    <Ionicons name="mail" size={20} color="#5433ff" />
+                    <ThemedText style={styles.emailText}>{email}</ThemedText>
+                </View>
+
                 <View style={styles.codeContainer}>
                     {code.map((digit, index) => (
                         <TextInput
                             key={index}
                             ref={(ref) => { inputRefs.current[index] = ref; }}
-                            style={[styles.codeInput, digit && styles.codeInputFilled]}
+                            style={[
+                                styles.codeInput,
+                                digit ? styles.codeInputFilled : null,
+                                (index === code.findIndex(d => !d)) ? styles.codeInputActive : null
+                            ]}
                             value={digit}
                             onChangeText={(value) => handleCodeChange(value, index)}
                             onKeyPress={(e) => handleKeyPress(e, index)}
                             keyboardType="number-pad"
                             maxLength={1}
                             autoFocus={index === 0}
+                            placeholder="•"
+                            placeholderTextColor="#cbd5e1"
                         />
                     ))}
                 </View>
 
                 <TouchableOpacity
+                    style={[
+                        styles.verifyButton,
+                        (code.join('').length !== 6 || isLoading) && styles.verifyButtonDisabled
+                    ]}
                     onPress={handleVerify}
                     disabled={code.join('').length !== 6 || isLoading}
                 >
-                    <LinearGradient
-                        colors={(code.join('').length !== 6 || isLoading) ? ['#ccc', '#ccc'] : ['#5433ff', '#20bdff']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.verifyButton}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <ThemedText style={styles.verifyButtonText}>Verify & Continue</ThemedText>
-                        )}
-                    </LinearGradient>
+                    {isLoading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <ThemedText style={styles.verifyButtonText}>Verify Account</ThemedText>
+                    )}
                 </TouchableOpacity>
 
                 <View style={styles.resendContainer}>
                     {timer > 0 ? (
-                        <ThemedText style={styles.timerText}>
-                            Resend code in {timer}s
-                        </ThemedText>
+                        <View style={styles.timerWrapper}>
+                            <Ionicons name="time-outline" size={18} color="#64748b" />
+                            <ThemedText style={styles.timerText}>
+                                Resend available in {timer}s
+                            </ThemedText>
+                        </View>
                     ) : (
-                        <TouchableOpacity onPress={handleResend}>
-                            <ThemedText style={styles.resendText}>Resend Code</ThemedText>
+                        <TouchableOpacity onPress={handleResend} style={styles.resendButton}>
+                            <ThemedText style={styles.resendText}>Didn't receive code? Resend</ThemedText>
                         </TouchableOpacity>
                     )}
                 </View>
 
                 <View style={styles.infoContainer}>
-                    <ThemedText style={styles.infoText}>
-                        Check your spam folder if you don&apos;t see the email
-                    </ThemedText>
+                    <View style={styles.infoBadge}>
+                        <Ionicons name="information-circle" size={16} color="#64748b" />
+                        <ThemedText style={styles.infoText}>
+                            Check your spam folder just in case
+                        </ThemedText>
+                    </View>
                 </View>
             </View>
         </ThemedView>
@@ -179,89 +199,158 @@ export default function EmailVerificationScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 24,
+        backgroundColor: '#fff',
     },
     header: {
-        marginTop: 60,
-        marginBottom: 40,
+        height: '40%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 40,
     },
     backButton: {
-        marginBottom: 20,
+        position: 'absolute',
+        top: 50,
+        left: 20,
+        zIndex: 10,
     },
-    backText: {
-        fontSize: 16,
-        color: '#007AFF',
+    logoContainer: {
+        marginBottom: 16,
+    },
+    logoCircle: {
+        width: 80,
+        height: 80,
+        backgroundColor: 'white',
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 6,
     },
     title: {
-        marginBottom: 8,
+        fontSize: 32,
+        fontWeight: '800',
+        color: 'white',
+        marginBottom: 4,
     },
     subtitle: {
-        opacity: 0.7,
-        fontSize: 16,
-        marginTop: 8,
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.85)',
+        fontWeight: '600',
     },
-    email: {
-        fontSize: 16,
-        marginTop: 4,
-        color: '#007AFF',
-    },
-    form: {
+    formContainer: {
         flex: 1,
+        paddingHorizontal: 24,
+        marginTop: -40,
+        backgroundColor: 'white',
+        borderTopLeftRadius: 40,
+        borderTopRightRadius: 40,
+        paddingTop: 40,
+    },
+    emailDisplay: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f0f4ff',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        marginBottom: 40,
+        gap: 8,
+    },
+    emailText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#5433ff',
     },
     codeContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 32,
+        marginBottom: 48,
         gap: 8,
     },
     codeInput: {
         flex: 1,
-        height: 56,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 12,
+        height: 64,
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
         textAlign: 'center',
         fontSize: 24,
-        fontWeight: '600',
+        fontWeight: '800',
         borderWidth: 2,
-        borderColor: 'transparent',
+        borderColor: '#e2e8f0',
+        color: '#1e293b',
     },
     codeInputFilled: {
-        borderColor: '#007AFF',
-        backgroundColor: '#E6F4FE',
+        borderColor: '#5433ff',
+        backgroundColor: '#fff',
+    },
+    codeInputActive: {
+        borderColor: '#20bdff',
+        backgroundColor: '#fff',
     },
     verifyButton: {
-        borderRadius: 16,
-        height: 56,
+        backgroundColor: '#5433ff',
+        borderRadius: 20,
+        height: 60,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        shadowColor: "#5433ff",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    verifyButtonDisabled: {
+        backgroundColor: '#cbd5e1',
+        elevation: 0,
     },
     verifyButtonText: {
         color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 18,
+        fontWeight: '800',
     },
     resendContainer: {
         alignItems: 'center',
-        paddingVertical: 16,
+        marginTop: 32,
+    },
+    timerWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     timerText: {
-        opacity: 0.6,
+        color: '#64748b',
         fontSize: 14,
-    },
-    resendText: {
-        color: '#007AFF',
-        fontSize: 16,
         fontWeight: '600',
     },
+    resendButton: {
+        padding: 8,
+    },
+    resendText: {
+        color: '#5433ff',
+        fontSize: 15,
+        fontWeight: '700',
+    },
     infoContainer: {
+        marginTop: 'auto',
+        marginBottom: 32,
         alignItems: 'center',
-        paddingVertical: 16,
-        marginTop: 20,
+    },
+    infoBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#f1f5f9',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 100,
     },
     infoText: {
-        textAlign: 'center',
-        opacity: 0.6,
-        fontSize: 13,
+        fontSize: 12,
+        color: '#64748b',
+        fontWeight: '600',
     },
 });

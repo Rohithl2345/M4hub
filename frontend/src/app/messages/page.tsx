@@ -494,7 +494,13 @@ export default function MessagesPage() {
                             <div className={styles.headerTabsRow}>
                                 <Tabs
                                     value={tabValue}
-                                    onChange={(_, v) => setTabValue(v)}
+                                    onChange={(_, v) => {
+                                        setTabValue(v);
+                                        // Clear search states when switching tabs
+                                        setSearchQuery('');
+                                        setSearchResults([]);
+                                        setHasSearched(false);
+                                    }}
                                     textColor="inherit"
                                     variant={isMobile ? "fullWidth" : "standard"}
                                     className={styles.tabs}
@@ -1022,7 +1028,12 @@ export default function MessagesPage() {
 
             <Dialog
                 open={searchDialogOpen}
-                onClose={() => setSearchDialogOpen(false)}
+                onClose={() => {
+                    setSearchDialogOpen(false);
+                    setHasSearched(false);
+                    setSearchResults([]);
+                    setSearchQuery('');
+                }}
                 maxWidth="sm"
                 fullWidth
                 fullScreen={isMobile}

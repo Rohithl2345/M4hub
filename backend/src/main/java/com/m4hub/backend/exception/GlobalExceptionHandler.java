@@ -37,4 +37,20 @@ public class GlobalExceptionHandler {
                 "message", "Database error occurred",
                 "error", ex.getMostSpecificCause().getMessage()));
     }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidationExceptions(
+            org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        logger.error("Validation error occurred: {}", ex.getMessage());
+        java.util.Map<String, String> errors = new java.util.HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((org.springframework.validation.FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return ResponseEntity.status(400).body(Map.of(
+                "success", false,
+                "message", "Validation failed",
+                "errors", errors));
+    }
 }

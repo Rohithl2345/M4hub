@@ -39,17 +39,27 @@ public class AuthService {
         String confirmPassword = request.getConfirmPassword();
 
         if (email == null || email.isEmpty()) {
-            return new AuthResponse(false, "Email is required");
+            return new AuthResponse(false, "Email or Username is required");
         }
-        email = email.toLowerCase().trim();
-        if (newPassword == null || newPassword.length() < 6) {
-            return new AuthResponse(false, "Password must be at least 6 characters");
+        String identifier = email.toLowerCase().trim();
+
+        // Password validation (8 chars + uppercase)
+        if (newPassword == null || newPassword.length() < 8) {
+            return new AuthResponse(false, "Password must be at least 8 characters");
         }
+        if (!newPassword.matches(".*[A-Z].*")) {
+            return new AuthResponse(false, "Password must contain at least one uppercase letter");
+        }
+
         if (!newPassword.equals(confirmPassword)) {
             return new AuthResponse(false, "Passwords do not match");
         }
 
-        var userOpt = userRepository.findByEmail(email);
+        // Search for user by email OR username
+        var userOpt = identifier.contains("@")
+                ? userRepository.findByEmail(identifier)
+                : userRepository.findByUsername(identifier);
+
         if (userOpt.isEmpty()) {
             return new AuthResponse(false, "User not found");
         }

@@ -89,6 +89,17 @@ export default function ProfileSetupPage() {
 
         setIsLoading(true);
 
+        const payload = {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            username: username.toLowerCase().trim(),
+            dateOfBirth: dateOfBirth?.format('YYYY-MM-DD'),
+            gender,
+            email: email.trim() || null,
+        };
+
+        logger.debug('Sending profile setup request', payload);
+
         try {
             const token = localStorage.getItem('authToken');
 
@@ -100,14 +111,7 @@ export default function ProfileSetupPage() {
 
             const response = await axios.post(
                 `${env.apiUrl}/api/users/profile/setup`,
-                {
-                    firstName: firstName.trim(),
-                    lastName: lastName.trim(),
-                    username: username.toLowerCase().trim(),
-                    dateOfBirth: dateOfBirth?.format('YYYY-MM-DD'),
-                    gender,
-                    email: email.trim() || null,
-                },
+                payload,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -124,12 +128,23 @@ export default function ProfileSetupPage() {
 
                 router.push('/dashboard');
             } else {
+                logger.warn('Profile setup response not successful', response.data);
                 setError(response.data.message || 'Failed to setup profile');
             }
         } catch (err) {
-            logger.error('Profile setup failed', { error: err });
-            const error = err as { response?: { data?: { message?: string } } };
-            setError(error.response?.data?.message || 'Failed to setup profile');
+            logger.error('Profile setup failed', err);
+            const error = err as { response?: { data?: { message?: string, errors?: Record<string, string> } } };
+            const backendMessage = error.response?.data?.message;
+            const validationErrors = error.response?.data?.errors;
+
+            if (validationErrors) {
+                const detailedError = Object.entries(validationErrors)
+                    .map(([field, msg]) => `${field}: ${msg}`)
+                    .join(', ');
+                setError(`Validation failed: ${detailedError}`);
+            } else {
+                setError(backendMessage || 'Failed to setup profile');
+            }
         } finally {
             setIsLoading(false);
         }

@@ -12,6 +12,14 @@ const loggingEnabled = process.env.NEXT_PUBLIC_ENABLE_LOGGING === 'true';
  * Sanitize sensitive data from logs
  */
 const sanitizeData = (data: unknown): unknown => {
+    if (data instanceof Error) {
+        return {
+            message: data.message,
+            stack: isDevelopment ? data.stack : undefined,
+            ...(data as any)
+        };
+    }
+
     if (typeof data !== 'object' || data === null) {
         return data;
     }

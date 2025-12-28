@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View, Alert, ActivityIndicator, ScrollView, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useRouter } from 'expo-router';
@@ -128,139 +130,168 @@ export default function ProfileSetupScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.header}>
-                    <ThemedText type="title" style={styles.title}>Complete Your Profile</ThemedText>
-                    <ThemedText style={styles.subtitle}>
-                        Tell us a bit about yourself
-                    </ThemedText>
+            <LinearGradient
+                colors={['#5433ff', '#20bdff', '#a5fecb']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.header}
+            >
+                <View style={styles.headerContent}>
+                    <View style={styles.avatarPlaceholder}>
+                        <Ionicons name="person" size={50} color="#5433ff" />
+                    </View>
+                    <ThemedText style={styles.title}>Your Profile</ThemedText>
+                    <ThemedText style={styles.subtitle}>Set up your digital identity</ThemedText>
                 </View>
+            </LinearGradient>
 
-                <View style={styles.form}>
-                    <View style={styles.inputGroup}>
-                        <ThemedText style={styles.label}>First Name *</ThemedText>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter first name"
-                            placeholderTextColor={COLORS.TEXT_TERTIARY}
-                            value={firstName}
-                            onChangeText={setFirstName}
-                            autoCapitalize="words"
-                        />
-                    </View>
+            <View style={styles.formContainer}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.section}>
+                        <ThemedText style={styles.sectionTitle}>Basic Information</ThemedText>
 
-                    <View style={styles.inputGroup}>
-                        <ThemedText style={styles.label}>Last Name *</ThemedText>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter last name"
-                            placeholderTextColor={COLORS.TEXT_TERTIARY}
-                            value={lastName}
-                            onChangeText={setLastName}
-                            autoCapitalize="words"
-                        />
-                    </View>
+                        <View style={styles.row}>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
+                                <ThemedText style={styles.label}>First Name</ThemedText>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="e.g. John"
+                                    placeholderTextColor="#94a3b8"
+                                    value={firstName}
+                                    onChangeText={setFirstName}
+                                    autoCapitalize="words"
+                                />
+                            </View>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
+                                <ThemedText style={styles.label}>Last Name</ThemedText>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="e.g. Doe"
+                                    placeholderTextColor="#94a3b8"
+                                    value={lastName}
+                                    onChangeText={setLastName}
+                                    autoCapitalize="words"
+                                />
+                            </View>
+                        </View>
 
-                    <View style={styles.inputGroup}>
-                        <ThemedText style={styles.label}>Username (Unique ID) *</ThemedText>
-                        <TextInput
-                            style={[styles.input, usernameStatus === 'taken' && { borderColor: COLORS.ERROR }]}
-                            placeholder="e.g. johndoe123"
-                            placeholderTextColor={COLORS.TEXT_TERTIARY}
-                            value={username}
-                            onChangeText={(val) => {
-                                const cleanVal = val.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                                setUsername(cleanVal);
-                                checkUsername(cleanVal);
-                            }}
-                            autoCapitalize="none"
-                        />
-                        {usernameStatus !== 'idle' && (
-                            <ThemedText style={[
-                                styles.statusText,
-                                { color: usernameStatus === 'available' ? COLORS.SUCCESS : (usernameStatus === 'taken' ? COLORS.ERROR : COLORS.TEXT_SECONDARY) }
+                        <View style={styles.inputGroup}>
+                            <ThemedText style={styles.label}>Username</ThemedText>
+                            <View style={[
+                                styles.usernameWrapper,
+                                usernameStatus === 'available' ? styles.borderSuccess :
+                                    usernameStatus === 'taken' ? styles.borderError : null
                             ]}>
-                                {usernameStatus === 'checking' ? 'Checking...' :
-                                    usernameStatus === 'available' ? '✓ Username available' :
-                                        '✗ Username already taken'}
-                            </ThemedText>
-                        )}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <ThemedText style={styles.label}>Date of Birth *</ThemedText>
-                        <TouchableOpacity
-                            style={styles.dateInput}
-                            onPress={() => setShowDatePicker(true)}
-                        >
-                            <ThemedText style={styles.dateText}>
-                                {formatDate(dateOfBirth)}
-                            </ThemedText>
-                        </TouchableOpacity>
-                        {showDatePicker && (
-                            <DateTimePicker
-                                value={dateOfBirth}
-                                mode="date"
-                                display="default"
-                                onChange={handleDateChange}
-                                maximumDate={new Date()}
-                            />
-                        )}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <ThemedText style={styles.label}>Gender *</ThemedText>
-                        <View style={styles.genderContainer}>
-                            <TouchableOpacity
-                                style={[styles.genderButton, gender === 'male' && styles.genderButtonActive]}
-                                onPress={() => setGender('male')}
-                            >
-                                <ThemedText style={[styles.genderText, gender === 'male' && styles.genderTextActive]}>
-                                    Male
-                                </ThemedText>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.genderButton, gender === 'female' && styles.genderButtonActive]}
-                                onPress={() => setGender('female')}
-                            >
-                                <ThemedText style={[styles.genderText, gender === 'female' && styles.genderTextActive]}>
-                                    Female
-                                </ThemedText>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.genderButton, gender === 'other' && styles.genderButtonActive]}
-                                onPress={() => setGender('other')}
-                            >
-                                <ThemedText style={[styles.genderText, gender === 'other' && styles.genderTextActive]}>
-                                    Other
-                                </ThemedText>
-                            </TouchableOpacity>
+                                <ThemedText style={styles.atSymbol}>@</ThemedText>
+                                <TextInput
+                                    style={styles.usernameInput}
+                                    placeholder="choose_username"
+                                    placeholderTextColor="#94a3b8"
+                                    value={username}
+                                    onChangeText={(val) => {
+                                        const cleanVal = val.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                                        setUsername(cleanVal);
+                                        checkUsername(cleanVal);
+                                    }}
+                                    autoCapitalize="none"
+                                />
+                                {usernameStatus !== 'idle' && (
+                                    <View style={styles.statusIcon}>
+                                        {usernameStatus === 'checking' ? <ActivityIndicator size="small" color="#5433ff" /> :
+                                            usernameStatus === 'available' ? <Ionicons name="checkmark-circle" size={20} color="#10b981" /> :
+                                                <Ionicons name="close-circle" size={20} color="#ef4444" />}
+                                    </View>
+                                )}
+                            </View>
                         </View>
                     </View>
 
-                    <View style={styles.inputGroup}>
-                        <ThemedText style={styles.label}>Email (Optional)</ThemedText>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter email address"
-                            placeholderTextColor={COLORS.TEXT_TERTIARY}
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
+                    <View style={styles.section}>
+                        <ThemedText style={styles.sectionTitle}>Details</ThemedText>
+
+                        <View style={styles.inputGroup}>
+                            <ThemedText style={styles.label}>Birthday</ThemedText>
+                            <TouchableOpacity
+                                style={styles.dateSelector}
+                                onPress={() => setShowDatePicker(true)}
+                            >
+                                <Ionicons name="calendar-outline" size={20} color="#5433ff" style={styles.inputIcon} />
+                                <ThemedText style={styles.dateText}>
+                                    {dateOfBirth.toLocaleDateString('en-US', {
+                                        month: 'long', day: 'numeric', year: 'numeric'
+                                    })}
+                                </ThemedText>
+                            </TouchableOpacity>
+                            {showDatePicker && (
+                                <DateTimePicker
+                                    value={dateOfBirth}
+                                    mode="date"
+                                    display="default"
+                                    onChange={handleDateChange}
+                                    maximumDate={new Date()}
+                                />
+                            )}
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <ThemedText style={styles.label}>Gender</ThemedText>
+                            <View style={styles.genderGrid}>
+                                {(['male', 'female', 'other'] as const).map((g) => (
+                                    <TouchableOpacity
+                                        key={g}
+                                        style={[
+                                            styles.genderCard,
+                                            gender === g && styles.genderCardActive
+                                        ]}
+                                        onPress={() => setGender(g)}
+                                    >
+                                        <Ionicons
+                                            name={g === 'male' ? 'male' : g === 'female' ? 'female' : 'person-outline'}
+                                            size={20}
+                                            color={gender === g ? 'white' : '#64748b'}
+                                        />
+                                        <ThemedText style={[
+                                            styles.genderLabel,
+                                            gender === g && styles.genderLabelActive
+                                        ]}>
+                                            {g.charAt(0).toUpperCase() + g.slice(1)}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
                     </View>
 
-                    <View style={styles.inputGroup}>
-                        <ThemedText style={styles.label}>Mobile Number (Optional)</ThemedText>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter mobile number"
-                            placeholderTextColor={COLORS.TEXT_TERTIARY}
-                            value={phoneNumber}
-                            onChangeText={setPhoneNumber}
-                            keyboardType="phone-pad"
-                        />
+                    <View style={styles.section}>
+                        <ThemedText style={styles.sectionTitle}>Contact (Optional)</ThemedText>
+
+                        <View style={styles.inputGroup}>
+                            <ThemedText style={styles.label}>Public Email</ThemedText>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter public email"
+                                placeholderTextColor="#94a3b8"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <ThemedText style={styles.label}>Phone Number</ThemedText>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="+1 (555) 000-0000"
+                                placeholderTextColor="#94a3b8"
+                                value={phoneNumber}
+                                onChangeText={setPhoneNumber}
+                                keyboardType="phone-pad"
+                            />
+                        </View>
                     </View>
 
                     <TouchableOpacity
@@ -269,13 +300,18 @@ export default function ProfileSetupScreen() {
                         disabled={isLoading}
                     >
                         {isLoading ? (
-                            <ActivityIndicator color={COLORS.WHITE} />
+                            <ActivityIndicator color="white" />
                         ) : (
-                            <ThemedText style={styles.submitButtonText}>Complete Profile</ThemedText>
+                            <>
+                                <ThemedText style={styles.submitButtonText}>Launch My Portal</ThemedText>
+                                <Ionicons name="rocket" size={20} color="white" style={{ marginLeft: 8 }} />
+                            </>
                         )}
                     </TouchableOpacity>
-                </View>
-            </ScrollView>
+
+                    <View style={{ height: 40 }} />
+                </ScrollView>
+            </View>
         </ThemedView>
     );
 }
@@ -283,113 +319,187 @@ export default function ProfileSetupScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.BACKGROUND,
-    },
-    scrollContent: {
-        padding: 24,
-        paddingTop: 60,
+        backgroundColor: '#fff',
     },
     header: {
-        marginBottom: 32,
+        height: '35%',
+        justifyContent: 'center',
+        paddingTop: 40,
+    },
+    headerContent: {
+        alignItems: 'center',
+    },
+    avatarPlaceholder: {
+        width: 100,
+        height: 100,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 6,
     },
     title: {
         fontSize: 28,
-        fontWeight: 'bold',
-        color: COLORS.TEXT_PRIMARY,
-        marginBottom: 8,
+        fontWeight: '800',
+        color: 'white',
+        letterSpacing: -0.5,
     },
     subtitle: {
-        fontSize: 16,
-        color: COLORS.TEXT_SECONDARY,
+        fontSize: 15,
+        color: 'rgba(255,255,255,0.85)',
+        fontWeight: '600',
     },
-    form: {
-        gap: 20,
+    formContainer: {
+        flex: 1,
+        marginTop: -40,
+        backgroundColor: 'white',
+        borderTopLeftRadius: 40,
+        borderTopRightRadius: 40,
+    },
+    scrollContent: {
+        padding: 28,
+        paddingTop: 32,
+    },
+    section: {
+        marginBottom: 32,
+    },
+    sectionTitle: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 20,
+        marginLeft: 4,
+    },
+    row: {
+        flexDirection: 'row',
+        gap: 16,
     },
     inputGroup: {
-        gap: 8,
+        marginBottom: 20,
     },
     label: {
         fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.TEXT_PRIMARY,
+        fontWeight: '700',
+        color: '#1e293b',
+        marginBottom: 10,
         marginLeft: 4,
     },
     input: {
-        backgroundColor: COLORS.WHITE,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: COLORS.BORDER,
-        paddingHorizontal: 16,
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        paddingHorizontal: 18,
         paddingVertical: 14,
         fontSize: 16,
+        color: '#1e293b',
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
         height: 56,
-        color: COLORS.TEXT_PRIMARY,
     },
-    dateInput: {
-        backgroundColor: COLORS.WHITE,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: COLORS.BORDER,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+    usernameWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
         height: 56,
-        justifyContent: 'center',
+        paddingHorizontal: 18,
+    },
+    atSymbol: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#94a3b8',
+        marginRight: 4,
+    },
+    statusIcon: {
+        marginLeft: 8,
+    },
+    usernameInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#1e293b',
+        fontWeight: '600',
+    },
+    borderSuccess: {
+        borderColor: '#10b981',
+    },
+    borderError: {
+        borderColor: '#ef4444',
+    },
+    dateSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        height: 56,
+        paddingHorizontal: 18,
+    },
+    inputIcon: {
+        marginRight: 12,
     },
     dateText: {
         fontSize: 16,
-        color: COLORS.TEXT_PRIMARY,
+        color: '#1e293b',
+        fontWeight: '600',
     },
-    genderContainer: {
+    genderGrid: {
         flexDirection: 'row',
         gap: 12,
     },
-    genderButton: {
+    genderCard: {
         flex: 1,
-        backgroundColor: COLORS.WHITE,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: COLORS.BORDER,
-        paddingVertical: 14,
-        height: 56,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        height: 56,
     },
-    genderButtonActive: {
-        backgroundColor: COLORS.PRIMARY,
-        borderColor: COLORS.PRIMARY,
+    genderCardActive: {
+        backgroundColor: '#5433ff',
+        borderColor: '#5433ff',
     },
-    genderText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: COLORS.TEXT_PRIMARY,
+    genderLabel: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#64748b',
     },
-    genderTextActive: {
-        color: COLORS.WHITE,
+    genderLabelActive: {
+        color: 'white',
     },
     submitButton: {
-        backgroundColor: COLORS.PRIMARY,
-        borderRadius: 12,
-        height: 56,
-        alignItems: 'center',
+        flexDirection: 'row',
+        backgroundColor: '#5433ff',
+        borderRadius: 20,
+        height: 64,
         justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: "#5433ff",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
         marginTop: 12,
-        shadowColor: COLORS.PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
     },
     submitButtonDisabled: {
-        opacity: 0.5,
+        backgroundColor: '#cbd5e1',
+        elevation: 0,
     },
     submitButtonText: {
-        color: COLORS.WHITE,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    statusText: {
-        fontSize: 12,
-        marginTop: 4,
-        marginLeft: 4,
+        color: 'white',
+        fontSize: 18,
+        fontWeight: '800',
     },
 });

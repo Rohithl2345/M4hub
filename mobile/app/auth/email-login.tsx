@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/slices/authSlice';
 import { authService } from '@/services/auth.service';
@@ -81,7 +81,7 @@ export default function EmailLoginScreen() {
                 const data = await authService.sendEmailOtp(email, password);
                 if (data.success) {
                     router.push({
-                        pathname: '/auth/email-verification',
+                        pathname: '/auth/email-verification' as any,
                         params: { email, password } // Pass password so it can be verified with OTP
                     });
                 } else {
@@ -99,18 +99,22 @@ export default function EmailLoginScreen() {
     return (
         <ThemedView style={styles.container}>
             <LinearGradient
-                colors={['#4c669f', '#3b5998', '#192f6a']}
-                style={styles.gradientHeader}
+                colors={['#5433ff', '#20bdff', '#a5fecb']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.header}
             >
-                <View style={styles.logoContainer}>
-                    <View style={styles.logoCircle}>
-                        <Ionicons name="cube" size={40} color="#4c669f" />
+                <View style={styles.content}>
+                    <View style={styles.logoContainer}>
+                        <View style={styles.logoCircle}>
+                            <Ionicons name="cube" size={40} color="#5433ff" />
+                        </View>
                     </View>
+                    <ThemedText style={styles.welcomeTitle}>M4Hub Portal</ThemedText>
+                    <ThemedText style={styles.welcomeSubtitle}>
+                        Your unified digital gateway
+                    </ThemedText>
                 </View>
-                <ThemedText style={styles.welcomeTitle}>Welcome to M4Hub</ThemedText>
-                <ThemedText style={styles.welcomeSubtitle}>
-                    Your ultimate platform for everything
-                </ThemedText>
             </LinearGradient>
 
             <View style={styles.formContainer}>
@@ -181,7 +185,10 @@ export default function EmailLoginScreen() {
                 </View>
 
                 {mode === 'login' && (
-                    <TouchableOpacity style={styles.forgotPassword}>
+                    <TouchableOpacity
+                        style={styles.forgotPassword}
+                        onPress={() => router.push('/auth/forgot-password' as any)}
+                    >
                         <ThemedText style={styles.forgotPasswordText}>Forgot Password?</ThemedText>
                     </TouchableOpacity>
                 )}
@@ -198,14 +205,14 @@ export default function EmailLoginScreen() {
                         <ActivityIndicator color="white" />
                     ) : (
                         <ThemedText style={styles.submitButtonText}>
-                            {mode === 'login' ? 'Login' : 'Create Account'}
+                            {mode === 'login' ? 'Continue' : 'Create My Account'}
                         </ThemedText>
                     )}
                 </TouchableOpacity>
 
                 <View style={styles.footer}>
                     <ThemedText style={styles.footerText}>
-                        By continuing, you agree to our Terms & Privacy Policy
+                        Secure Cloud Authentication
                     </ThemedText>
                 </View>
             </View>
@@ -218,158 +225,172 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
     },
-    gradientHeader: {
-        height: '35%',
+    header: {
+        height: '40%',
         justifyContent: 'center',
+        paddingHorizontal: 32,
+        paddingTop: 60,
+    },
+    content: {
         alignItems: 'center',
-        paddingTop: 40,
     },
     logoContainer: {
         marginBottom: 20,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-        elevation: 6,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 8,
     },
     logoCircle: {
-        width: 80,
-        height: 80,
-        backgroundColor: 'white',
-        borderRadius: 20,
+        width: 88,
+        height: 88,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
     },
     welcomeTitle: {
-        fontSize: 32,
-        fontWeight: 'bold',
+        fontSize: 34,
+        fontWeight: '800',
         color: 'white',
         marginBottom: 8,
+        letterSpacing: -0.5,
     },
     welcomeSubtitle: {
         fontSize: 16,
-        color: 'rgba(255,255,255,0.8)',
-        fontWeight: '500',
+        color: 'rgba(255,255,255,0.9)',
+        fontWeight: '600',
+        textAlign: 'center',
     },
     formContainer: {
         flex: 1,
-        paddingHorizontal: 24,
-        marginTop: -30,
+        paddingHorizontal: 28,
+        marginTop: -40,
+        backgroundColor: 'white',
+        borderTopLeftRadius: 40,
+        borderTopRightRadius: 40,
+        paddingTop: 40,
     },
     tabContainer: {
         flexDirection: 'row',
-        backgroundColor: 'white',
-        borderRadius: 15,
+        backgroundColor: '#f1f5f9',
+        borderRadius: 20,
         padding: 6,
-        marginBottom: 30,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 4,
+        marginBottom: 32,
     },
     tab: {
         flex: 1,
-        paddingVertical: 12,
+        paddingVertical: 14,
         alignItems: 'center',
-        borderRadius: 12,
+        borderRadius: 16,
     },
     activeTab: {
-        backgroundColor: '#4c669f',
+        backgroundColor: 'white',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
     },
     tabText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#666',
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#64748b',
     },
     activeTabText: {
-        color: 'white',
+        color: '#5433ff',
     },
     inputWrapper: {
-        marginBottom: 20,
+        marginBottom: 24,
     },
     label: {
         fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 8,
+        fontWeight: '700',
+        color: '#1e293b',
+        marginBottom: 10,
         marginLeft: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     input: {
-        backgroundColor: '#f5f7fa',
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        paddingHorizontal: 18,
+        paddingVertical: 16,
         fontSize: 16,
-        color: '#333',
-        borderWidth: 1,
-        borderColor: '#e1e4e8',
+        color: '#1e293b',
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        height: 60,
     },
     inputError: {
         borderColor: '#ef4444',
-        borderWidth: 1,
     },
     errorText: {
         color: '#ef4444',
         fontSize: 12,
-        marginTop: 4,
-        marginLeft: 4,
+        fontWeight: '600',
+        marginTop: 6,
+        marginLeft: 6,
     },
     passwordContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f5f7fa',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#e1e4e8',
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        height: 60,
     },
     passwordInput: {
         flex: 1,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingHorizontal: 18,
+        paddingVertical: 16,
         fontSize: 16,
-        color: '#333',
+        color: '#1e293b',
     },
     eyeButton: {
-        padding: 14,
+        padding: 18,
     },
     forgotPassword: {
         alignSelf: 'flex-end',
-        marginBottom: 24,
+        marginBottom: 32,
     },
     forgotPasswordText: {
-        color: '#4c669f',
-        fontWeight: '600',
+        color: '#5433ff',
+        fontWeight: '700',
         fontSize: 14,
     },
     submitButton: {
-        backgroundColor: '#4c669f',
-        borderRadius: 15,
-        paddingVertical: 16,
+        backgroundColor: '#5433ff',
+        borderRadius: 20,
+        paddingVertical: 18,
         alignItems: 'center',
-        shadowColor: "#4c669f",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
+        shadowColor: "#5433ff",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+        elevation: 8,
     },
     submitButtonDisabled: {
-        backgroundColor: '#a0aec0',
+        backgroundColor: '#cbd5e1',
         elevation: 0,
     },
     submitButtonText: {
         color: 'white',
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '800',
     },
     footer: {
         marginTop: 'auto',
-        marginBottom: 30,
+        marginBottom: 32,
         alignItems: 'center',
     },
     footerText: {
-        color: '#999',
-        fontSize: 12,
+        color: '#94a3b8',
+        fontSize: 13,
+        fontWeight: '600',
         textAlign: 'center',
     },
 });
