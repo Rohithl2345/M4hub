@@ -393,4 +393,23 @@ public class ChatService {
 
         return groupMessageRepository.findByGroupOrderByCreatedAtAsc(group);
     }
+
+    @Transactional
+    public void deleteGroup(Long groupId, Long userId) {
+        com.m4hub.backend.model.GroupChat group = groupChatRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        // Only creator can delete the group
+        if (!group.getCreatedBy().getId().equals(userId)) {
+            throw new RuntimeException("Only the group creator can delete this group");
+        }
+
+        // Delete all group messages first
+        List<com.m4hub.backend.model.GroupMessage> messages = groupMessageRepository
+                .findByGroupOrderByCreatedAtAsc(group);
+        groupMessageRepository.deleteAll(messages);
+
+        // Delete the group
+        groupChatRepository.delete(group);
+    }
 }

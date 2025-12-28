@@ -45,6 +45,7 @@ import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import InsertPhotoIcon from '@mui/icons-material/InsertPhoto';
+import DeleteIcon from '@mui/icons-material/Delete';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -78,6 +79,11 @@ export default function MessagesPage() {
     const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
     const [groupSearchQuery, setGroupSearchQuery] = useState('');
     const [groupFormError, setGroupFormError] = useState<{ name?: string; members?: string } | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [groupToDelete, setGroupToDelete] = useState<{ id: number; name: string } | null>(null);
+    const [headerMenuAnchor, setHeaderMenuAnchor] = useState<null | HTMLElement>(null);
+    const [groupOptionsAnchor, setGroupOptionsAnchor] = useState<null | HTMLElement>(null);
+    const [activeGroupMenu, setActiveGroupMenu] = useState<any | null>(null);
 
 
 
@@ -360,6 +366,29 @@ export default function MessagesPage() {
         }
     };
 
+    const handleDeleteGroup = (groupId: number, groupName: string) => {
+        setGroupToDelete({ id: groupId, name: groupName });
+        setDeleteConfirmOpen(true);
+    };
+
+    const confirmDeleteGroup = async () => {
+        if (!groupToDelete) return;
+
+        try {
+            await chatService.deleteGroup(groupToDelete.id);
+            if (selectedEntity?.type === 'group' && selectedEntity.data.id === groupToDelete.id) {
+                setSelectedEntity(null);
+                setMessages([]);
+            }
+            loadGroups();
+            setDeleteConfirmOpen(false);
+            setGroupToDelete(null);
+        } catch (error: any) {
+            logger.error('Error deleting group:', error);
+            alert(error.response?.data?.error || 'Failed to delete group');
+        }
+    };
+
     const [searchError, setSearchError] = useState<string | null>(null);
 
     const handleSearch = async () => {
@@ -602,6 +631,19 @@ export default function MessagesPage() {
                                     )}
                                 </Box>
                             )}
+                            {selectedEntity.type === 'group' && (
+                                <IconButton
+                                    onClick={(e) => setHeaderMenuAnchor(e.currentTarget)}
+                                    sx={{
+                                        color: '#fff',
+                                        opacity: 0.8,
+                                        '&:hover': { opacity: 1, bgcolor: 'rgba(255, 255, 255, 0.1)' },
+                                        ml: 1
+                                    }}
+                                >
+                                    <MoreVertIcon />
+                                </IconButton>
+                            )}
                         </div>
                     </div>
                 )}
@@ -612,52 +654,59 @@ export default function MessagesPage() {
                             {tabValue === 0 && (
                                 <div className={styles.gridList}>
                                     {friends.map((friend) => (
-                                        <div key={friend.id} className={styles.gridItem} onClick={() => handleSelectFriend(friend)}>
-                                            <Box sx={{ position: 'relative' }}>
+                                        <div
+                                            key={friend.id}
+                                            className={styles.gridItem}
+                                            onClick={() => handleSelectFriend(friend)}
+                                        >
+                                            <div className={styles.avatarContainer}>
                                                 <Badge
-                                                    color="primary"
-                                                    badgeContent={unreadCounts[`friend-${friend.id}`]}
                                                     overlap="circular"
-                                                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                                    badgeContent={
+                                                        unreadCounts[`friend-${friend.id}`] ?
+                                                            <Box sx={{ bgcolor: '#ef4444', color: '#fff', borderRadius: '50%', minWidth: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, border: '2px solid #fff' }}>
+                                                                {unreadCounts[`friend-${friend.id}`]}
+                                                            </Box> : null
+                                                    }
                                                 >
-                                                    <Avatar sx={{ width: 56, height: 56, bgcolor: getAvatarColor(friend.id), fontSize: 24, fontWeight: 800 }}>
+                                                    <Avatar sx={{
+                                                        width: 52,
+                                                        height: 52,
+                                                        bgcolor: getAvatarColor(friend.id),
+                                                        fontSize: 20,
+                                                        fontWeight: 800,
+                                                        boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
+                                                    }}>
                                                         {(friend.name || friend.username || 'U').charAt(0).toUpperCase()}
                                                     </Avatar>
                                                 </Badge>
-                                                <Box sx={{
-                                                    position: 'absolute',
-                                                    bottom: 2,
-                                                    right: 2,
-                                                    width: 14,
-                                                    height: 14,
-                                                    bgcolor: friend.isActive ? '#10b981' : '#94a3b8',
-                                                    borderRadius: '50%',
-                                                    border: '2.5px solid #fff'
-                                                }} />
-                                            </Box>
+                                                <div className={styles.memberTag} style={{ color: friend.isActive ? '#10b981' : '#64748b', background: friend.isActive ? '#ecfdf5' : '#f1f5f9', borderColor: friend.isActive ? '#d1fae5' : '#e2e8f0' }}>
+                                                    {friend.isActive ? 'Online' : 'Offline'}
+                                                </div>
+                                            </div>
+
                                             <div className={styles.gridItemText}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="subtitle1" fontWeight={800} color="#1e293b">
-                                                        {friend.name || friend.username}
-                                                    </Typography>
-                                                    {friend.lastMessageAt && (
-                                                        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-                                                            {new Date(friend.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </Typography>
-                                                    )}
-                                                </Box>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
-                                                    <Typography variant="body2" color="textSecondary" sx={{
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap',
-                                                        maxWidth: '200px',
-                                                        fontWeight: unreadCounts[`friend-${friend.id}`] ? 700 : 400,
-                                                        color: unreadCounts[`friend-${friend.id}`] ? '#1e293b' : '#64748b'
-                                                    }}>
-                                                        {friend.lastMessageContent || `@${friend.username}`}
-                                                    </Typography>
-                                                </Box>
+                                                <Typography className={styles.groupTitle} noWrap>
+                                                    {friend.name || friend.username}
+                                                </Typography>
+                                                <Typography className={styles.groupDesc}>
+                                                    {friend.lastMessageContent || `Send a message to @${friend.username}`}
+                                                </Typography>
+                                                <Typography className={styles.creatorText}>
+                                                    @{friend.username}
+                                                </Typography>
+                                            </div>
+
+                                            <div className={styles.actionColumn}>
+                                                <Typography className={styles.detailedTime}>
+                                                    {friend.lastMessageAt ?
+                                                        `Active ${new Date(friend.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                                        : 'New Chat'}
+                                                </Typography>
+                                                <IconButton size="small" sx={{ color: '#3b82f6', opacity: 0.5, '&:hover': { opacity: 1, bgcolor: '#eff6ff' } }}>
+                                                    <ChatBubbleIcon fontSize="small" />
+                                                </IconButton>
                                             </div>
                                         </div>
                                     ))}
@@ -669,39 +718,62 @@ export default function MessagesPage() {
                                 <div className={styles.gridList}>
                                     {groups.map((group) => (
                                         <div key={group.id} className={styles.gridItem} onClick={() => handleSelectGroup(group)}>
-                                            <Badge
-                                                overlap="circular"
-                                                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                                badgeContent={
-                                                    unreadCounts[`group-${group.id}`] ?
-                                                        <Box sx={{ bgcolor: '#ef4444', color: '#fff', borderRadius: '50%', minWidth: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, border: '2px solid #fff' }}>
-                                                            {unreadCounts[`group-${group.id}`]}
-                                                        </Box> : null
-                                                }
-                                            >
-                                                <Avatar sx={{ width: 56, height: 56, bgcolor: getAvatarColor(group.id), fontSize: 24, fontWeight: 800 }}>
-                                                    {(group.name || 'G').charAt(0).toUpperCase()}
-                                                </Avatar>
-                                            </Badge>
+                                            <div className={styles.avatarContainer}>
+                                                <Badge
+                                                    overlap="circular"
+                                                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                                    badgeContent={
+                                                        unreadCounts[`group-${group.id}`] ?
+                                                            <Box sx={{ bgcolor: '#ef4444', color: '#fff', borderRadius: '50%', minWidth: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, border: '2px solid #fff' }}>
+                                                                {unreadCounts[`group-${group.id}`]}
+                                                            </Box> : null
+                                                    }
+                                                >
+                                                    <Avatar sx={{ width: 56, height: 56, bgcolor: getAvatarColor(group.id), fontSize: 24, fontWeight: 800 }}>
+                                                        {(group.name || 'G').charAt(0).toUpperCase()}
+                                                    </Avatar>
+                                                </Badge>
+                                                <div className={styles.memberTag}>
+                                                    {group.members?.length || 0} Members
+                                                </div>
+                                            </div>
+
                                             <div className={styles.gridItemText}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="subtitle1" fontWeight={800} color="#1e293b">{group.name}</Typography>
-                                                    {group.lastMessageAt && (
-                                                        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-                                                            {new Date(group.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </Typography>
-                                                    )}
-                                                </Box>
-                                                <Typography variant="body2" sx={{
-                                                    color: unreadCounts[`group-${group.id}`] ? '#1e293b' : '#64748b',
-                                                    fontWeight: unreadCounts[`group-${group.id}`] ? 700 : 500,
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap',
-                                                    maxWidth: '200px'
-                                                }}>
-                                                    {group.description || 'No description'}
+                                                <Typography className={styles.groupTitle} noWrap>
+                                                    {group.name}
                                                 </Typography>
+                                                <Typography className={styles.groupDesc}>
+                                                    {group.description || 'No description provided'}
+                                                </Typography>
+                                                <Typography className={styles.creatorText}>
+                                                    Created by <b>{group.createdBy?.name || group.createdBy?.username || 'Owner'}</b>
+                                                </Typography>
+                                            </div>
+
+                                            <div className={styles.actionColumn}>
+                                                <Typography className={styles.detailedTime}>
+                                                    {(() => {
+                                                        if (group.lastMessageAt) {
+                                                            return `Active ${new Date(group.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                                                        }
+                                                        return `Created ${new Date(group.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                                                    })()}
+                                                </Typography>
+                                                {user?.id === group.createdBy?.id && (
+                                                    <Button
+                                                        size="small"
+                                                        variant="text"
+                                                        startIcon={<DeleteIcon sx={{ fontSize: '0.8rem !important' }} />}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteGroup(group.id, group.name);
+                                                        }}
+                                                        className={styles.ghostDangerBtn}
+                                                        sx={{ fontSize: '0.7rem' }}
+                                                    >
+                                                        Delete Group
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -756,8 +828,8 @@ export default function MessagesPage() {
                                     {/* Outgoing Friend Requests Section */}
                                     <div className={styles.requestSection}>
                                         <div className={styles.sectionHeader}>
-                                            <Badge badgeContent={sentRequests.length} color="warning" sx={{ mr: 2 }}>
-                                                <SendIcon sx={{ fontSize: 20, color: '#f59e0b' }} />
+                                            <Badge badgeContent={sentRequests.length} color="info" sx={{ mr: 2 }}>
+                                                <SendIcon sx={{ fontSize: 20, color: '#2563eb' }} />
                                             </Badge>
                                             <Typography variant="h6" fontWeight={800} color="#1e293b" sx={{ letterSpacing: '-0.5px' }}>OUTGOING REQUESTS</Typography>
                                         </div>
@@ -767,14 +839,14 @@ export default function MessagesPage() {
                                                 {sentRequests.map((request) => (
                                                     <div key={request.id} className={`${styles.requestCard} ${styles.outgoing}`}>
                                                         <div className={styles.requestHeader}>
-                                                            <Avatar sx={{ width: 56, height: 56, bgcolor: '#f59e0b', fontSize: 24, fontWeight: 800, border: '2px solid #fff', boxShadow: '0 4px 6px rgba(245, 158, 11, 0.2)' }}>
+                                                            <Avatar sx={{ width: 56, height: 56, bgcolor: '#2563eb', fontSize: 24, fontWeight: 800, border: '2px solid #fff', boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2)' }}>
                                                                 {(request.receiver.name || request.receiver.username || 'U').charAt(0).toUpperCase()}
                                                             </Avatar>
                                                             <div>
                                                                 <Typography variant="subtitle1" fontWeight={800} color="#1e293b">
                                                                     {request.receiver.name || request.receiver.username}
                                                                 </Typography>
-                                                                <Typography variant="body2" sx={{ color: '#f59e0b', fontWeight: 600 }}>
+                                                                <Typography variant="body2" sx={{ color: '#2563eb', fontWeight: 600 }}>
                                                                     Request Pending
                                                                 </Typography>
                                                             </div>
@@ -783,12 +855,12 @@ export default function MessagesPage() {
                                                             label="Waiting for response"
                                                             variant="outlined"
                                                             sx={{
-                                                                borderColor: '#fbbf24',
-                                                                color: '#d97706',
+                                                                borderColor: '#bfdbfe',
+                                                                color: '#1d4ed8',
                                                                 fontWeight: 700,
                                                                 width: '100%',
                                                                 borderRadius: '12px',
-                                                                bgcolor: '#fffbeb',
+                                                                bgcolor: '#eff6ff',
                                                                 height: '42px'
                                                             }}
                                                         />
@@ -1284,6 +1356,135 @@ export default function MessagesPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
-        </DashboardLayout >
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+                open={deleteConfirmOpen}
+                onClose={() => setDeleteConfirmOpen(false)}
+                PaperProps={{
+                    className: styles.dialogPaper,
+                    sx: { maxWidth: '400px', width: '100%', p: isMobile ? 0 : 1 }
+                }}
+            >
+                <DialogTitle className={styles.dialogHeader} component="div" sx={{ borderBottom: '1px solid #f1f5f9', pb: 2 }}>
+                    <Typography variant="h6" component="div" fontWeight={800} sx={{ color: '#1e293b' }}>
+                        Confirm Deletion
+                    </Typography>
+                </DialogTitle>
+                <DialogContent sx={{ mt: 2.5, pb: 1 }}>
+                    <Typography variant="body1" sx={{ color: '#334155', lineHeight: 1.6 }}>
+                        Are you sure you want to permanently delete the group <strong>"{groupToDelete?.name}"</strong>?
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 2, color: '#64748b', bgcolor: '#fef2f2', p: 2, borderRadius: '12px', border: '1px solid #fee2e2' }}>
+                        This action cannot be undone. All messages and history will be cleared for everyone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ p: 3, gap: 1.5 }}>
+                    <Button
+                        onClick={() => setDeleteConfirmOpen(false)}
+                        sx={{
+                            px: 3,
+                            borderRadius: '50px',
+                            color: '#64748b',
+                            fontWeight: 700,
+                            textTransform: 'none',
+                            '&:hover': { bgcolor: '#f1f5f9' }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmDeleteGroup}
+                        className={styles.dangerBtn}
+                        startIcon={<DeleteIcon />}
+                        sx={{ px: 4, py: 1 }}
+                    >
+                        Delete Group
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            {/* Header / Group Detail Menu */}
+            <Menu
+                anchorEl={headerMenuAnchor}
+                open={Boolean(headerMenuAnchor)}
+                onClose={() => setHeaderMenuAnchor(null)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: '20px',
+                        boxShadow: '0 15px 35px -5px rgba(0,0,0,0.15)',
+                        minWidth: '260px',
+                        mt: 1.5,
+                        p: 1,
+                        border: '1px solid #f1f5f9'
+                    }
+                }}
+            >
+                {selectedEntity?.type === 'group' && (
+                    <Box sx={{ p: 1 }}>
+                        <Typography variant="overline" sx={{ px: 2, color: '#94a3b8', fontWeight: 800, letterSpacing: 1.2 }}>
+                            Group Members ({selectedEntity.data.members?.length || 0})
+                        </Typography>
+                        <List sx={{ pt: 1, pb: 0 }}>
+                            {selectedEntity.data.members?.map((member: any) => (
+                                <Box key={member.id} sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1.5,
+                                    px: 2,
+                                    py: 1,
+                                    borderRadius: '12px',
+                                    '&:hover': { bgcolor: '#f8fafc' }
+                                }}>
+                                    <Avatar sx={{
+                                        width: 32,
+                                        height: 32,
+                                        bgcolor: getAvatarColor(member.id),
+                                        fontSize: '0.8rem',
+                                        fontWeight: 800
+                                    }}>
+                                        {(member.name || member.username || 'U').charAt(0).toUpperCase()}
+                                    </Avatar>
+                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                        <Typography variant="subtitle2" fontWeight={700} noWrap color="#1e293b">
+                                            {member.name || member.username}
+                                        </Typography>
+                                        {selectedEntity.data.createdBy?.id === member.id && (
+                                            <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 800 }}>
+                                                Group Admin
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                </Box>
+                            ))}
+                        </List>
+
+                        {user?.id === selectedEntity.data.createdBy?.id && (
+                            <>
+                                <Box sx={{ my: 1, borderTop: '1px solid #f1f5f9' }} />
+                                <MenuItem
+                                    onClick={() => {
+                                        handleDeleteGroup(selectedEntity.data.id, selectedEntity.data.name);
+                                        setHeaderMenuAnchor(null);
+                                    }}
+                                    sx={{
+                                        color: '#ef4444',
+                                        fontWeight: 800,
+                                        borderRadius: '12px',
+                                        py: 1.5,
+                                        gap: 1.5,
+                                        '&:hover': { bgcolor: '#fef2f2' }
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ color: '#ef4444', minWidth: 'auto' }}>
+                                        <DeleteIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    Delete Group
+                                </MenuItem>
+                            </>
+                        )}
+                    </Box>
+                )}
+            </Menu>
+        </DashboardLayout>
     );
 }

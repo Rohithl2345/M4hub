@@ -493,6 +493,21 @@ class ChatService {
         }
     }
 
+    async deleteGroup(groupId: number): Promise<any> {
+        const token = this.getToken();
+        if (!token) return Promise.reject('No auth token');
+
+        try {
+            const response = await axios.delete(`${API_URL}/api/chat/groups/${groupId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            logger.error('Error deleting group:', error);
+            throw error;
+        }
+    }
+
     // Get relationship status with a user
     async getUserRelationshipStatus(userId: number): Promise<{
         isFriend: boolean;

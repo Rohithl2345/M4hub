@@ -7,6 +7,11 @@ import { logout, selectIsLoading } from '@/store/slices/authSlice';
 import { Badge, Switch } from '@mui/material';
 import chatService from '@/services/chat.service';
 import styles from './DashboardLayout.module.css';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 function FloatingSidebarIcons({ Icon }: { Icon: any }) {
     const items = Array.from({ length: 15 }).map((_, i) => ({
@@ -321,14 +326,56 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
                 <div className={styles.sidebarFooter}>
                     <div className={styles.sidebarToggle}>
-                        <span className={styles.toggleLabel}>{animationsEnabled ? 'Theme On' : 'Theme Off'}</span>
+                        <div className={styles.toggleLabelWrapper}>
+                            {animationsEnabled ? <AutoAwesomeIcon sx={{ fontSize: 16 }} /> : <AutoFixHighIcon sx={{ fontSize: 16, opacity: 0.5 }} />}
+                            <span className={styles.toggleLabel}>{animationsEnabled ? 'Magic On' : 'Magic Off'}</span>
+                        </div>
                         <Switch
                             size="small"
                             checked={animationsEnabled}
                             onChange={handleAnimationToggle}
                             sx={{
-                                '& .MuiSwitch-switchBase.Mui-checked': { color: '#ffffff' },
-                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#ffffff', opacity: 0.5 }
+                                width: 42,
+                                height: 24,
+                                padding: 0,
+                                '& .MuiSwitch-switchBase': {
+                                    padding: 0,
+                                    margin: '2px',
+                                    transitionDuration: '300ms',
+                                    '&.Mui-checked': {
+                                        transform: 'translateX(18px)',
+                                        color: '#fff',
+                                        '& + .MuiSwitch-track': {
+                                            backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                            opacity: 1,
+                                            border: 0,
+                                        },
+                                        '& .MuiSwitch-thumb': {
+                                            background: 'linear-gradient(135deg, #fff 0%, #e2e8f0 100%)',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                        }
+                                    },
+                                    '&:not(.Mui-checked)': {
+                                        '& .MuiSwitch-thumb': {
+                                            background: 'rgba(255, 255, 255, 0.3)',
+                                        }
+                                    }
+                                },
+                                '& .MuiSwitch-thumb': {
+                                    boxSizing: 'border-box',
+                                    width: 20,
+                                    height: 20,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.3s ease',
+                                },
+                                '& .MuiSwitch-track': {
+                                    borderRadius: 24 / 2,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+                                    opacity: 1,
+                                    transition: 'background-color 500ms',
+                                },
                             }}
                         />
                     </div>
@@ -371,7 +418,10 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                                         </span>
                                     </div>
                                 </div>
-                                <div className={`${styles.dropdownArrow} ${showProfileDropdown ? styles.arrowRotate : ''}`}>▾</div>
+                                <div className={`${styles.dropdownArrowContainer} ${showProfileDropdown ? styles.arrowRotate : ''}`}>
+                                    <div className={styles.divider} />
+                                    <ExpandMoreIcon className={styles.dropdownArrow} />
+                                </div>
 
                                 {showProfileDropdown && (
                                     <div className={styles.profileDropdown} onClick={(e) => e.stopPropagation()}>

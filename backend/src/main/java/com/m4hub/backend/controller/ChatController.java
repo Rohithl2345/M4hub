@@ -351,6 +351,21 @@ public class ChatController {
         }
     }
 
+    @DeleteMapping("/groups/{groupId}")
+    public ResponseEntity<?> deleteGroup(@RequestHeader("Authorization") String token, @PathVariable Long groupId) {
+        try {
+            User currentUser = authService.getUserFromToken(token);
+            if (currentUser == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+            }
+
+            chatService.deleteGroup(groupId, currentUser.getId());
+            return ResponseEntity.ok(Map.of("message", "Group deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/search")
     public ResponseEntity<?> searchUsers(@RequestHeader("Authorization") String token, @RequestParam String query) {
         try {

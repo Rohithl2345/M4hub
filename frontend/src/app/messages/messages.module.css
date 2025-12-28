@@ -302,7 +302,8 @@
 .gridList {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+    /* Reduced from 12px */
     padding-bottom: 20px;
     flex: 1;
     width: 100%;
@@ -310,11 +311,13 @@
 
 .gridItem {
     background: #ffffff;
-    padding: 20px 24px;
+    padding: 16px 20px;
+    /* Reduced from 20px 24px */
     border-radius: 16px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
+    /* Reduced from 20px */
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid #e2e8f0;
@@ -358,7 +361,145 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    justify-content: center;
+    gap: 4px;
+    /* Reduced from 12px */
+}
+
+.avatarContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding-right: 4px;
+}
+
+.memberTag {
+    background: #f1f6ff;
+    color: #3b82f6;
+    font-size: 9px;
+    /* Reduced from 10px */
+    font-weight: 700;
+    /* Reduced from 800 */
+    padding: 3px 10px;
+    border-radius: 50px;
+    border: 1px solid #dbeafe;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.05);
+}
+
+
+.groupTitle {
+    font-size: 1rem !important;
+    /* Reduced from 1.15rem */
+    font-weight: 800 !important;
+    /* Reduced from 900 */
+    color: #0f172a;
+    letter-spacing: -0.3px;
+    line-height: 1.3 !important;
+    margin-bottom: 1px !important;
+}
+
+.creatorText {
+    font-size: 11px;
+    color: #64748b;
+    /* Slightly darker for better readability */
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.creatorText b {
+    color: #3b82f6;
+    font-weight: 800;
+}
+
+.actionColumn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 95px;
+    /* Reduced from 110px */
+    padding-left: 8px;
+}
+
+.detailedTime {
+    font-size: 9px;
+    /* Reduced from 10px */
+    color: #94a3b8;
+    font-weight: 700;
+    /* Reduced from 800 */
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    background: #f8fafc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #f1f5f9;
+}
+
+.groupDesc {
+    color: #475569;
+    font-size: 13px;
+    /* Reduced from 14px */
+    font-weight: 500;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 2px;
+}
+
+.cardMetaRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.metaBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ownerBadge {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #dbeafe;
+}
+
+.memberCountBadge {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.ghostDangerBtn {
+    background: transparent !important;
+    color: #94a3b8 !important;
+    border: none !important;
+    border-radius: 50px !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    min-width: auto !important;
+    padding: 4px 10px !important;
+}
+
+.ghostDangerBtn:hover {
+    background: #fef2f2 !important;
+    color: #ef4444 !important;
+    transform: translateY(-1px);
 }
 
 /* REQUESTS STYLING */
@@ -438,13 +579,13 @@
 
 .requestCard.outgoing {
     border-color: transparent;
-    background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%);
+    background: linear-gradient(145deg, #ffffff 0%, #eff6ff 100%);
     opacity: 0.9;
 }
 
 .requestCard.outgoing:hover {
-    border-color: #f59e0b;
-    box-shadow: 0 12px 30px -8px rgba(245, 158, 11, 0.15);
+    border-color: #2563eb;
+    box-shadow: 0 12px 30px -8px rgba(37, 99, 235, 0.15);
     opacity: 1;
 }
 
@@ -455,7 +596,7 @@
     top: 0;
     bottom: 0;
     width: 4px;
-    background: #f59e0b;
+    background: #2563eb;
 }
 
 /* Empty States */
@@ -764,6 +905,22 @@
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
+.dangerBtn {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+    transition: all 0.3s ease !important;
+    text-transform: none !important;
+    border-radius: 50px !important;
+}
+
+.dangerBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4) !important;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+}
+
 /* Responsive Overrides */
 @media (max-width: 1024px) {
     .tabsContainer {
@@ -855,5 +1012,81 @@
 
     .emptySectionState {
         min-height: 200px;
+    }
+
+    /* Group/Friend Card Mobile Optimization */
+    .gridList {
+        gap: 8px;
+        padding: 0 4px;
+    }
+
+    .gridItem {
+        padding: 12px 14px;
+        gap: 12px;
+        border-radius: 14px;
+        position: relative;
+        align-items: flex-start;
+    }
+
+    .avatarContainer {
+        padding-right: 0;
+        justify-content: flex-start;
+        min-width: 48px;
+    }
+
+    /* Hide text tags on mobile to save vertical space */
+    .memberTag {
+        display: none !important;
+    }
+
+    .gridItemText {
+        gap: 2px;
+        padding-right: 45px;
+        /* Room for timestamp */
+    }
+
+    .groupTitle {
+        font-size: 0.95rem !important;
+    }
+
+    .groupDesc {
+        font-size: 12px;
+        line-height: 1.4;
+        -webkit-line-clamp: 1;
+        line-clamp: 1;
+        margin-top: 0;
+    }
+
+    .creatorText {
+        font-size: 10px;
+        margin-top: 2px;
+    }
+
+    .actionColumn {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: auto;
+        min-width: auto;
+        padding: 0;
+        gap: 0;
+        height: calc(100% - 28px);
+        justify-content: space-between;
+    }
+
+    .detailedTime {
+        font-size: 8px;
+        background: transparent;
+        border: none;
+        padding: 0;
+        color: #94a3b8;
+    }
+
+    .ghostDangerBtn {
+        font-size: 8px !important;
+        padding: 2px 8px !important;
+        background: #fef2f2 !important;
+        color: #ef4444 !important;
+        margin-top: auto;
     }
 }
