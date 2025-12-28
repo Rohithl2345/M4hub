@@ -77,10 +77,10 @@ export const PortalTutorial: React.FC = () => {
 
     const finishTutorial = async () => {
         try {
-            const token = sessionStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken');
             if (token) {
                 await axios.post(`${API_URL}/api/users/tutorial-seen`, {}, {
-                    headers: { 'Authorization': token }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
             }
             dispatch(markTutorialSeen());

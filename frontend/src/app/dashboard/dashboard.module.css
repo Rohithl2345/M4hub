@@ -197,18 +197,39 @@
 }
 
 @media (max-width: 1024px) {
+    .container {
+        padding: 20px;
+    }
+
     .featuresGrid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .welcomeCard {
+        padding: 24px;
     }
 }
 
 @media (max-width: 768px) {
     .container {
         padding: 16px;
+        border-radius: 0;
     }
 
     .welcomeCard {
         padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .welcomeHeader {
+        gap: 12px;
+    }
+
+    .welcomeAvatar {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
     }
 
     .welcomeCard h2 {
@@ -217,31 +238,52 @@
 
     .featuresGrid {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 12px;
     }
 
     .featureCard {
-        padding: 24px;
+        padding: 16px 20px;
+        flex-direction: row;
+        text-align: left;
+        gap: 16px;
+        justify-content: flex-start;
     }
 
     .featureIcon {
-        font-size: 48px !important;
-        width: 48px !important;
-        height: 48px !important;
+        font-size: 28px !important;
+        margin-bottom: 0;
+    }
+
+    .featureCard h3 {
+        font-size: 15px;
+    }
+
+    .featureCard p {
+        font-size: 11px;
     }
 }
 
 @media (max-width: 480px) {
     .welcomeHeader {
-        flex-direction: column;
-        text-align: center;
+        flex-direction: row;
+        text-align: left;
+    }
+
+    .welcomeCard h2 {
+        font-size: 18px;
+        margin-bottom: 6px;
     }
 
     .userDetails {
-        justify-content: center;
+        gap: 8px;
+    }
+
+    .userDetails p {
+        font-size: 11px;
+        padding: 2px 10px;
     }
 
     .featureCard {
-        padding: 20px;
+        padding: 14px 16px;
     }
 }

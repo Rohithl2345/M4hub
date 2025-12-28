@@ -42,6 +42,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShieldIcon from '@mui/icons-material/Shield';
+import { useMediaQuery, useTheme } from '@mui/material';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import LockIcon from '@mui/icons-material/Lock';
 import paymentService, { BankAccount, Transaction, BankInfo } from '@/services/payment.service';
@@ -83,6 +84,8 @@ const BANK_COLORS: Record<string, string> = {
 };
 
 export default function MoneyPage() {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
@@ -450,7 +453,18 @@ export default function MoneyPage() {
                 </div>
 
                 {/* Link Bank Modal */}
-                <Dialog open={linkModalOpen} onClose={() => setLinkModalOpen(false)} PaperProps={{ sx: { borderRadius: '24px', p: 1, minWidth: '500px' } }}>
+                <Dialog
+                    fullScreen={isMobile}
+                    open={linkModalOpen}
+                    onClose={() => setLinkModalOpen(false)}
+                    PaperProps={{
+                        sx: {
+                            borderRadius: isMobile ? 0 : '24px',
+                            p: 1,
+                            minWidth: isMobile ? '100%' : '500px'
+                        }
+                    }}
+                >
                     <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem' }}>Link your Bank Account</DialogTitle>
                     <DialogContent>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -681,14 +695,14 @@ export default function MoneyPage() {
 
                 {/* Transfer Modal - Google Pay Style */}
                 <Dialog
-                    fullScreen={window.innerWidth < 600}
+                    fullScreen={isMobile}
                     open={transferModalOpen}
                     onClose={resetTransfer}
                     PaperProps={{
                         sx: {
-                            borderRadius: window.innerWidth < 600 ? 0 : '24px',
+                            borderRadius: isMobile ? 0 : '24px',
                             minHeight: '600px',
-                            minWidth: window.innerWidth < 600 ? '100%' : '500px'
+                            minWidth: isMobile ? '100%' : '500px'
                         }
                     }}
                 >

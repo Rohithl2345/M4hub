@@ -1,23 +1,20 @@
 'use client';
 
 import { useState, useRef, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import logger from '@/utils/logger';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/slices/authSlice';
 import {
     Box,
-    Card,
     TextField,
     Button,
     Typography,
     Alert,
-    Container,
     Link as MuiLink
 } from '@mui/material';
-import LockIcon from '@mui/icons-material/Lock';
-import styles from './verify-email.module.css';
-
+import AuthLayout from '../AuthLayout';
+import styles from '../email-login/email-login.module.css';
 import { env } from '@/utils/env';
 
 function VerifyEmailContent() {
@@ -66,7 +63,6 @@ function VerifyEmailContent() {
         setCode(newCode);
         setError('');
 
-        // Auto-focus next input
         if (value && index < 5) {
             inputRefs.current[index + 1]?.focus();
         }
@@ -101,17 +97,14 @@ function VerifyEmailContent() {
         logger.debug('Initiating email OTP verification');
 
         try {
-            logger.debug('Calling verify-email-otp API');
             const response = await fetch(`${env.apiUrl}/api/auth/verify-email-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, otpCode }),
             });
 
-            // Check if response is OK before parsing
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Server error' }));
-                logger.error('HTTP error', { status: response.status, message: errorData.message });
                 setError(errorData.message || `Server error (${response.status})`);
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
@@ -121,16 +114,9 @@ function VerifyEmailContent() {
             const data = await response.json();
 
             if (data.success) {
-                logger.info('Email OTP verification successful');
-
-                // Store token and user data in localStorage
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
-
-                // Dispatch to Redux
                 dispatch(setCredentials({ token: data.token, user: data.user }));
-
-                logger.debug('Navigating to profile setup or dashboard');
 
                 const needsProfileSetup = !data.user?.firstName || !data.user?.lastName;
                 if (needsProfileSetup) {
@@ -139,13 +125,11 @@ function VerifyEmailContent() {
                     router.push('/dashboard');
                 }
             } else {
-                logger.error('Email OTP verification failed', { message: data.message });
                 setError(data.message || 'Invalid OTP code');
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
             }
-        } catch (err) {
-            logger.error('Failed to verify email OTP', { error: err });
+        } catch {
             setError('Cannot connect to server. Please ensure backend is running.');
         } finally {
             setLoading(false);
@@ -157,7 +141,6 @@ function VerifyEmailContent() {
 
         setLoading(true);
         setError('');
-        logger.debug('Resending email OTP');
 
         try {
             const response = await fetch(`${env.apiUrl}/api/auth/resend-email-otp`, {
@@ -169,24 +152,19 @@ function VerifyEmailContent() {
             const data = await response.json();
 
             if (data.success) {
-                logger.info('OTP resent successfully');
                 setTimer(60);
                 setCanResend(false);
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
-                // Show success message briefly
                 setError('');
             } else {
-                logger.error('Failed to resend OTP', { message: data.message });
                 setError(data.message || 'Failed to resend OTP');
-                // If rate limited, don't reset timer
                 if (!data.message?.includes('wait')) {
                     setTimer(60);
                     setCanResend(false);
                 }
             }
-        } catch (err) {
-            logger.error('Resend OTP error', { error: err });
+        } catch {
             setError('Network error. Please try again.');
         } finally {
             setLoading(false);
@@ -194,101 +172,129 @@ function VerifyEmailContent() {
     };
 
     return (
-        <Box className={styles.container}>
-            <Container maxWidth="sm">
-                <Box className={styles.centerWrapper}>
-                    <Card className={styles.card}>
-                        <Box className={styles.header}>
-                            <LockIcon className={styles.icon} />
-                            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-                                Verify Email
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary">
-                                Enter the 6-digit code sent to
-                            </Typography>
-                            <Typography variant="body1" fontWeight="bold" className={styles.emailText}>
-                                {email}
-                            </Typography>
-                        </Box>
+        <AuthLayout>
+            <Box className={styles.formHeader}>
+                <Typography
+                    variant="h1"
+                    className={styles.formTitle}
+                    sx={{
+                        fontSize: '36px !important',
+                        fontWeight: '800 !important',
+                        color: '#0f172a !important',
+                        marginBottom: '12px !important',
+                        letterSpacing: '-1px !important',
+                        lineHeight: '1.1 !important',
+                        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important',
+                        WebkitBackgroundClip: 'text !important',
+                        WebkitTextFillColor: 'transparent !important',
+                        backgroundClip: 'text !important',
+                    }}
+                >
+                    Verify Email
+                </Typography>
+                <Typography
+                    variant="body1"
+                    className={styles.formSubtitle}
+                    sx={{
+                        fontSize: '16px !important',
+                        color: '#64748b !important',
+                        fontWeight: '500 !important',
+                        letterSpacing: '0.3px !important',
+                        lineHeight: '1.5 !important',
+                    }}
+                >
+                    Enter the 6-digit code sent to
+                </Typography>
+                <Typography variant="body1" fontWeight="600" color="primary" sx={{ mt: 0.5 }}>
+                    {email}
+                </Typography>
+            </Box>
 
-                        <form onSubmit={handleVerify} className={styles.form}>
-                            <Box className={styles.otpContainer}>
-                                {code.map((digit, index) => (
-                                    <TextField
-                                        key={index}
-                                        inputRef={(ref) => { inputRefs.current[index] = ref; }}
-                                        type="text"
-                                        inputProps={{
-                                            maxLength: 1,
-                                            style: { textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }
-                                        }}
-                                        value={digit}
-                                        onChange={(e) => handleChange(index, e.target.value)}
-                                        onKeyDown={(e) => handleKeyDown(index, e)}
-                                        onPaste={handlePaste}
-                                        autoFocus={index === 0}
-                                        className={digit ? styles.otpInputFilled : styles.otpInput}
-                                    />
-                                ))}
-                            </Box>
-
-                            {error && (
-                                <Alert severity="error" className={styles.alert}>
-                                    {error}
-                                </Alert>
-                            )}
-
-                            <Button
-                                type="submit"
-                                fullWidth
-                                variant="contained"
-                                disabled={code.join('').length !== 6 || loading}
-                                className={styles.verifyButton}
-                            >
-                                {loading ? 'Verifying...' : 'Verify & Continue'}
-                            </Button>
-
-                            <Box className={styles.resendContainer}>
-                                {canResend ? (
-                                    <MuiLink
-                                        component="button"
-                                        type="button"
-                                        onClick={handleResend}
-                                        disabled={loading}
-                                        className={styles.resendLink}
-                                    >
-                                        {loading ? 'Resending...' : 'Resend Code'}
-                                    </MuiLink>
-                                ) : (
-                                    <Typography variant="body2" color="text.secondary">
-                                        Resend code in {timer}s
-                                    </Typography>
-                                )}
-                            </Box>
-
-                            <Box className={styles.backButtonContainer}>
-                                <MuiLink
-                                    component="button"
-                                    type="button"
-                                    onClick={() => router.back()}
-                                    className={styles.backLink}
-                                >
-                                    ← Back to Login
-                                </MuiLink>
-                            </Box>
-                        </form>
-                    </Card>
+            <form onSubmit={handleVerify} className={styles.form}>
+                <Box className={styles.inputGroup}>
+                    <label className={styles.fieldLabel} style={{ textAlign: 'center' }}>
+                        Verification Code *
+                    </label>
+                    <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mb: 2 }}>
+                        {code.map((digit, index) => (
+                            <TextField
+                                key={index}
+                                inputRef={(ref) => { inputRefs.current[index] = ref; }}
+                                type="text"
+                                inputProps={{
+                                    maxLength: 1,
+                                    style: { textAlign: 'center', fontSize: '20px', fontWeight: '600', padding: '14px 0' }
+                                }}
+                                value={digit}
+                                onChange={(e) => handleChange(index, e.target.value)}
+                                onKeyDown={(e) => handleKeyDown(index, e)}
+                                onPaste={handlePaste}
+                                autoFocus={index === 0}
+                                sx={{
+                                    width: '50px',
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: '10px',
+                                        backgroundColor: digit ? '#f0f9ff' : '#f8fafc',
+                                        '& fieldset': {
+                                            borderColor: digit ? '#3b82f6' : '#e2e8f0',
+                                            borderWidth: digit ? '2px' : '1.5px'
+                                        }
+                                    }
+                                }}
+                            />
+                        ))}
+                    </Box>
                 </Box>
-            </Container>
-        </Box>
+
+                {error && (
+                    <Alert severity="error" className={styles.alert}>
+                        {error}
+                    </Alert>
+                )}
+
+                <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    disabled={code.join('').length !== 6 || loading}
+                    className={styles.continueButton}
+                >
+                    {loading ? 'Verifying...' : 'Verify & Continue'}
+                </Button>
+
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                    {canResend ? (
+                        <MuiLink
+                            component="button"
+                            type="button"
+                            onClick={handleResend}
+                            disabled={loading}
+                            sx={{ color: '#3b82f6', fontWeight: 500, cursor: 'pointer', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                            {loading ? 'Resending...' : 'Resend Code'}
+                        </MuiLink>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary">
+                            Resend code in {timer}s
+                        </Typography>
+                    )}
+                </Box>
+
+                <Box className={styles.switchModeText}>
+                    <span className={styles.switchModeLink} onClick={() => router.back()}>
+                        ← Back to Sign Up
+                    </span>
+                </Box>
+            </form>
+        </AuthLayout>
     );
 }
 
 export default function VerifyEmailPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-gray-600">Loading...</div>
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ color: '#64748b' }}>Loading...</div>
             </div>
         }>
             <VerifyEmailContent />

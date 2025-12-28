@@ -299,17 +299,95 @@
 }
 
 @media (max-width: 1024px) {
+    .container {
+        padding: 20px;
+    }
+
     .mainLayout {
         grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .sidebar {
+        order: 2;
+    }
+
+    .newsGrid {
+        order: 1;
     }
 }
 
 @media (max-width: 768px) {
     .container {
         padding: 16px;
+        border-radius: 0;
+    }
+
+    .header {
+        padding: 24px 20px;
+        margin-bottom: 24px;
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .headerIcon {
+        font-size: 40px !important;
+    }
+
+    .title {
+        font-size: 22px;
+    }
+
+    .subtitle {
+        font-size: 13px;
+    }
+
+    .tabs {
+        padding: 12px 16px;
+        margin-bottom: 24px;
+        justify-content: flex-start;
+    }
+
+    .tab {
+        padding: 8px 16px;
+        font-size: 13px;
     }
 
     .newsGrid {
         grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .newsCard {
+        border-radius: 12px;
+    }
+
+    .cardContent {
+        padding: 16px;
+    }
+
+    .newsTitle {
+        font-size: 17px;
+    }
+
+    .newsExcerpt {
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 20px;
+    }
+
+    .tickerItem {
+        padding: 0 20px;
+        font-size: 13px;
+    }
+
+    .newsTitle {
+        font-size: 16px;
     }
 }

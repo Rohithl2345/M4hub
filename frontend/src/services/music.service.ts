@@ -39,8 +39,9 @@ class MusicService {
         };
     }
 
-    private getHeaders() {
-        const token = sessionStorage.getItem('authToken');
+    private getHeaders(): Record<string, string> {
+        if (typeof window === 'undefined') return {};
+        const token = localStorage.getItem('authToken');
         return {
             'Content-Type': 'application/json',
             'Authorization': token ? `Bearer ${token}` : ''
@@ -64,7 +65,9 @@ class MusicService {
      */
     async getPopularTracks(limit: number = 20): Promise<Track[]> {
         try {
-            const response = await fetch(`${this.baseUrl}/songs`);
+            const response = await fetch(`${this.baseUrl}/songs`, {
+                headers: this.getHeaders()
+            });
             const songs = await response.json();
             return songs.map(this.mapSongToTrack).slice(0, limit);
         } catch (error) {
@@ -82,7 +85,9 @@ class MusicService {
                 return this.getPopularTracks(limit);
             }
 
-            const response = await fetch(`${this.baseUrl}/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`${this.baseUrl}/search?q=${encodeURIComponent(query)}`, {
+                headers: this.getHeaders()
+            });
             const songs = await response.json();
             return songs.map(this.mapSongToTrack).slice(0, limit);
         } catch (error) {

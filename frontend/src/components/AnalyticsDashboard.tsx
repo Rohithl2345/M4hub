@@ -43,11 +43,13 @@ export default function AnalyticsDashboard() {
         try {
             const stats = await analyticsService.getUsage(timeframe);
             // Format data for chart
-            const formatted = stats.map(s => ({
-                name: TAB_NAME_MAP[s.tabName] || s.tabName,
-                duration: s.totalDuration,
-                displayDuration: Math.round(s.totalDuration / 60) // Convert to minutes
-            }));
+            const formatted = stats
+                .filter(s => TAB_NAME_MAP[s.tabName]) // Filter to only show known tabs
+                .map(s => ({
+                    name: TAB_NAME_MAP[s.tabName],
+                    duration: s.totalDuration,
+                    displayDuration: Math.round(s.totalDuration / 60) // Convert to minutes
+                }));
             setData(formatted);
         } catch (error) {
             console.error('Error loading analytics:', error);
@@ -61,15 +63,6 @@ export default function AnalyticsDashboard() {
     }, [timeframe]);
 
     const renderChart = () => {
-        if (data.length === 0) {
-            return (
-                <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 2 }}>
-                    <InsightsIcon sx={{ fontSize: 60, opacity: 0.1 }} />
-                    <Typography color="text.secondary">No activity data for this period yet.</Typography>
-                </Box>
-            );
-        }
-
         switch (chartType) {
             case 'pie':
                 return (
@@ -216,9 +209,57 @@ export default function AnalyticsDashboard() {
                         <CircularProgress size={30} />
                     </Box>
                 ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                        {renderChart()}
-                    </ResponsiveContainer>
+                    data.length === 0 ? (
+                        <Box sx={{
+                            height: '100%',
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexDirection: 'column',
+                            gap: 2,
+                            background: 'linear-gradient(135deg, rgba(241, 245, 249, 0.5) 0%, rgba(226, 232, 240, 0.5) 100%)',
+                            borderRadius: 6,
+                            border: '2px dashed #e2e8f0',
+                            textAlign: 'center',
+                            p: 3
+                        }}>
+                            <Box sx={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: '50%',
+                                bgcolor: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)',
+                                mb: 1,
+                                animation: 'pulse 2s infinite ease-in-out'
+                            }}>
+                                <InsightsIcon sx={{ fontSize: 40, color: '#6366f1', opacity: 0.8 }} />
+                                <style>{`
+                                    @keyframes pulse {
+                                        0% { scale: 1; }
+                                        50% { scale: 1.05; }
+                                        100% { scale: 1; }
+                                    }
+                                `}</style>
+                            </Box>
+                            <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ letterSpacing: '-0.5px' }}>
+                                No Hub Activity
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 280, lineHeight: 1.6 }}>
+                                We haven't recorded any activity for this period yet.
+                                <span style={{ display: 'block', marginTop: '8px', fontWeight: 600, color: '#6366f1' }}>
+                                    Your journey starts here!
+                                </span>
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            {renderChart()}
+                        </ResponsiveContainer>
+                    )
                 )}
             </Box>
 

@@ -125,7 +125,9 @@ public class PaymentController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<?> searchUserByPhone(@RequestParam String phone) {
+    public ResponseEntity<?> searchUserByPhone(@RequestHeader("Authorization") String authHeader,
+            @RequestParam String phone) {
+        getUserFromToken(authHeader);
         return paymentService.findUserByPhone(phone)
                 .map(u -> {
                     Map<String, Object> response = new HashMap<>();
@@ -154,7 +156,8 @@ public class PaymentController {
     }
 
     @DeleteMapping("/reset")
-    public ResponseEntity<?> resetMoneyData() {
+    public ResponseEntity<?> resetMoneyData(@RequestHeader("Authorization") String authHeader) {
+        getUserFromToken(authHeader); // Only authenticated users can reset (maybe should be admin only?)
         paymentService.resetAllMoneyData();
         return ResponseEntity.ok(Map.of("success", true, "message", "All money data reset successfully"));
     }

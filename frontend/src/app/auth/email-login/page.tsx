@@ -15,16 +15,17 @@ import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/slices/authSlice';
 import {
     Box,
-    Card,
     TextField,
     Button,
     Typography,
     Alert,
-    Container,
     InputAdornment,
     IconButton
 } from '@mui/material';
-import EmailIcon from '@mui/icons-material/Email';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import NewspaperIcon from '@mui/icons-material/Newspaper';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import styles from './email-login.module.css';
@@ -34,7 +35,7 @@ import { env } from '@/utils/env';
 function EmailLoginPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const mode = searchParams.get('mode'); // 'login' or 'signup' or null => show choice
+    const mode = searchParams.get('mode') || 'signup'; // Default to signup to encourage new users
     const dispatch = useAppDispatch();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -62,26 +63,19 @@ function EmailLoginPageInner() {
 
     const isPasswordValid = Object.values(passwordChecks).every(Boolean);
 
-    useEffect(() => {
-        // Keep session if it exists, only clear on explicit logout
-    }, []);
-
     const validateEmail = (email: string) => {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     };
 
     const validateIdentifier = (id: string) => {
-        // If it looks like an email, use email regex
         if (id.includes('@')) {
             return validateEmail(id);
         }
-        // Otherwise it must be a valid username (at least 3 chars)
         return id.length >= 3;
     };
 
     const [touched, setTouched] = useState({ email: false, password: false });
 
-    // Computed errors
     const errors = {
         email: (() => {
             if (!email) return '';
@@ -104,10 +98,8 @@ function EmailLoginPageInner() {
         e.preventDefault();
         setError('');
 
-        // Mark all as touched on submit
         setTouched({ email: true, password: true });
 
-        // Check for errors
         if (errors.email || errors.password) {
             return;
         }
@@ -119,7 +111,6 @@ function EmailLoginPageInner() {
         setLoading(true);
         try {
             if (mode === 'login') {
-                // Direct email/password login
                 const response = await fetch(`${env.apiUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -128,7 +119,6 @@ function EmailLoginPageInner() {
 
                 const data = await response.json();
                 if (response.ok && data.success) {
-                    // store token and user
                     localStorage.setItem('authToken', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     dispatch(setCredentials({ token: data.token, user: data.user }));
@@ -137,7 +127,6 @@ function EmailLoginPageInner() {
                     setError(data.message || 'Invalid credentials');
                 }
             } else {
-                // Signup -> send OTP
                 const response = await fetch(`${env.apiUrl}/api/auth/send-email-otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -160,209 +149,238 @@ function EmailLoginPageInner() {
         }
     };
 
-    const isChoosing = !mode;
+    const switchMode = () => {
+        const newMode = mode === 'login' ? 'signup' : 'login';
+        router.push(`/auth/email-login?mode=${newMode}`);
+        setError('');
+        setTouched({ email: false, password: false });
+    };
 
     return (
         <Box className={styles.container}>
-            <Container maxWidth="sm">
-                <Box className={styles.centerWrapper}>
-                    <Card className={styles.card}>
-                        <Box className={styles.header}>
-                            <EmailIcon className={styles.icon} />
-                            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-                                {isChoosing ? 'Welcome' : (mode === 'login' ? 'Login' : 'Email Sign Up')}
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary">
-                                {isChoosing
-                                    ? 'Create an account or log in to continue.'
-                                    : (mode === 'login'
-                                        ? 'Enter your username or email'
-                                        : 'Enter your email and password to receive an OTP')}
-                            </Typography>
-                        </Box>
-                        {isChoosing ? (
-                            <Box className={styles.choiceWrapper}>
-                                <Button
-                                    fullWidth
-                                    variant="contained"
-                                    className={styles.continueButton}
-                                    onClick={() => router.push('/auth/email-login?mode=signup')}
-                                >
-                                    Create Account
-                                </Button>
+            {/* Left Side - Branding */}
+            <Box className={styles.brandingSide}>
+                <Box className={styles.logoSection}>
+                    <Typography className={styles.logoText}>
+                        M4Hub
+                    </Typography>
+                    <Typography className={styles.tagline}>
+                        Music, Messages, Money, News - All in One Place
+                    </Typography>
+                </Box>
 
+                <Box className={styles.featuresGrid}>
+                    <Box className={styles.featureCard}>
+                        <MusicNoteIcon className={styles.featureIcon} />
+                        <Typography className={styles.featureTitle}>Music</Typography>
+                        <Typography className={styles.featureDesc}>Stream unlimited tracks</Typography>
+                    </Box>
+                    <Box className={styles.featureCard}>
+                        <ChatBubbleIcon className={styles.featureIcon} />
+                        <Typography className={styles.featureTitle}>Messages</Typography>
+                        <Typography className={styles.featureDesc}>Connect with friends</Typography>
+                    </Box>
+                    <Box className={styles.featureCard}>
+                        <AccountBalanceWalletIcon className={styles.featureIcon} />
+                        <Typography className={styles.featureTitle}>Money</Typography>
+                        <Typography className={styles.featureDesc}>Manage finances</Typography>
+                    </Box>
+                    <Box className={styles.featureCard}>
+                        <NewspaperIcon className={styles.featureIcon} />
+                        <Typography className={styles.featureTitle}>News</Typography>
+                        <Typography className={styles.featureDesc}>Stay updated daily</Typography>
+                    </Box>
+                </Box>
+            </Box>
+
+            {/* Right Side - Login Form */}
+            <Box className={styles.formSide}>
+                <Box className={styles.formContainer}>
+                    <Box className={styles.formHeader}>
+                        <Typography
+                            variant="h1"
+                            className={styles.formTitle}
+                            sx={{
+                                fontSize: '36px !important',
+                                fontWeight: '800 !important',
+                                color: '#0f172a !important',
+                                marginBottom: '12px !important',
+                                letterSpacing: '-1px !important',
+                                lineHeight: '1.1 !important',
+                                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important',
+                                WebkitBackgroundClip: 'text !important',
+                                WebkitTextFillColor: 'transparent !important',
+                                backgroundClip: 'text !important',
+                            }}
+                        >
+                            {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+                        </Typography>
+                        <Typography
+                            variant="body1"
+                            className={styles.formSubtitle}
+                            sx={{
+                                fontSize: '16px !important',
+                                color: '#64748b !important',
+                                fontWeight: '500 !important',
+                                letterSpacing: '0.3px !important',
+                                lineHeight: '1.5 !important',
+                            }}
+                        >
+                            {mode === 'login'
+                                ? 'Sign in to access your account'
+                                : 'Join M4Hub and start your journey'}
+                        </Typography>
+                    </Box>
+
+                    <form onSubmit={handleSubmit} className={styles.form}>
+                        <Box className={styles.inputGroup}>
+                            <label htmlFor="email-input" className={styles.fieldLabel}>
+                                {mode === 'login' ? 'Email or Username' : 'Email Address'} *
+                            </label>
+                            <TextField
+                                id="email-input"
+                                fullWidth
+                                type={mode === 'login' ? 'text' : 'email'}
+                                placeholder={mode === 'login' ? "Enter your email or username" : "Enter your email address"}
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                onBlur={() => handleBlur('email')}
+                                error={touched.email && !!errors.email}
+                                helperText={touched.email && errors.email}
+                                autoFocus
+                                autoComplete="off"
+                                className={styles.emailField}
+                                required
+                                InputProps={{
+                                    sx: {
+                                        backgroundColor: '#f8fafc',
+                                        '& input': {
+                                            backgroundColor: 'transparent !important',
+                                            color: '#1e293b !important',
+                                            WebkitBoxShadow: '0 0 0 1000px #f8fafc inset !important',
+                                            WebkitTextFillColor: '#1e293b !important'
+                                        }
+                                    }
+                                }}
+                            />
+                        </Box>
+
+                        <Box className={styles.passwordWrapper}>
+                            <label htmlFor="password-input" className={styles.fieldLabel}>
+                                Password *
+                            </label>
+                            <TextField
+                                id="password-input"
+                                fullWidth
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="Enter your password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onBlur={() => handleBlur('password')}
+                                error={touched.password && !!errors.password}
+                                helperText={touched.password && errors.password}
+                                className={styles.passwordField}
+                                required
+                                autoComplete="new-password"
+                                InputProps={{
+                                    sx: {
+                                        backgroundColor: '#f8fafc',
+                                        '& input': {
+                                            backgroundColor: 'transparent !important',
+                                            color: '#1e293b !important',
+                                            WebkitBoxShadow: '0 0 0 1000px #f8fafc inset !important',
+                                            WebkitTextFillColor: '#1e293b !important'
+                                        }
+                                    },
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                edge="end"
+                                            >
+                                                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            {password.length > 0 && mode === 'signup' && (
+                                <Box className={styles.passwordValidationSide}>
+                                    <Typography variant="caption" fontWeight="bold" display="block" mb={1} color="text.secondary">
+                                        Password Requirements:
+                                    </Typography>
+                                    <Box className={styles.checkItem}>
+                                        <Typography variant="caption" color={passwordChecks.length ? 'success.main' : 'text.disabled'}>
+                                            {passwordChecks.length ? '✓' : '○'} At least 8 characters
+                                        </Typography>
+                                    </Box>
+                                    <Box className={styles.checkItem}>
+                                        <Typography variant="caption" color={passwordChecks.upper ? 'success.main' : 'text.disabled'}>
+                                            {passwordChecks.upper ? '✓' : '○'} One uppercase letter
+                                        </Typography>
+                                    </Box>
+                                    <Box className={styles.checkItem}>
+                                        <Typography variant="caption" color={passwordChecks.lower ? 'success.main' : 'text.disabled'}>
+                                            {passwordChecks.lower ? '✓' : '○'} One lowercase letter
+                                        </Typography>
+                                    </Box>
+                                    <Box className={styles.checkItem}>
+                                        <Typography variant="caption" color={passwordChecks.number ? 'success.main' : 'text.disabled'}>
+                                            {passwordChecks.number ? '✓' : '○'} One number
+                                        </Typography>
+                                    </Box>
+                                    <Box className={styles.checkItem}>
+                                        <Typography variant="caption" color={passwordChecks.special ? 'success.main' : 'text.disabled'}>
+                                            {passwordChecks.special ? '✓' : '○'} One special character
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            )}
+                        </Box>
+
+                        {mode === 'login' && (
+                            <Box className={styles.forgotPassword}>
                                 <Button
-                                    fullWidth
-                                    variant="outlined"
-                                    className={styles.choiceLoginButton}
-                                    onClick={() => router.push('/auth/email-login?mode=login')}
+                                    variant="text"
+                                    className={styles.forgotPasswordLink}
+                                    disabled={!validateEmail(email)}
+                                    onClick={() => {
+                                        if (!validateEmail(email)) return;
+                                        const q = `?email=${encodeURIComponent(email)}`;
+                                        router.push(`/auth/forgot-password${q}`);
+                                    }}
                                 >
-                                    I already have an account
+                                    Forgot password?
                                 </Button>
                             </Box>
-                        ) : (
-                            <form onSubmit={handleSubmit} className={styles.form}>
-                                <TextField
-                                    fullWidth
-                                    type={mode === 'login' ? 'text' : 'email'}
-                                    placeholder={mode === 'login' ? "Username or Email" : "your@email.com"}
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    onBlur={() => handleBlur('email')}
-                                    error={touched.email && !!errors.email}
-                                    helperText={touched.email && errors.email}
-                                    autoFocus
-                                    autoComplete="off"
-                                    className={styles.emailField}
-                                    required
-                                    InputProps={{
-                                        sx: {
-                                            backgroundColor: 'white !important',
-                                            '& input': {
-                                                backgroundColor: 'white !important',
-                                                color: 'black !important',
-                                                WebkitBoxShadow: '0 0 0 1000px white inset !important',
-                                                WebkitTextFillColor: 'black !important'
-                                            }
-                                        }
-                                    }}
-                                />
-
-                                <Box className={styles.passwordWrapper}>
-                                    <TextField
-                                        fullWidth
-                                        type={showPassword ? 'text' : 'password'}
-                                        placeholder="Password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        onBlur={() => handleBlur('password')}
-                                        error={touched.password && !!errors.password}
-                                        helperText={touched.password && errors.password}
-                                        className={styles.passwordField}
-                                        required
-                                        autoComplete="new-password"
-                                        InputProps={{
-                                            sx: {
-                                                backgroundColor: 'white !important',
-                                                '& input': {
-                                                    backgroundColor: 'white !important',
-                                                    color: 'black !important',
-                                                    WebkitBoxShadow: '0 0 0 1000px white inset !important',
-                                                    WebkitTextFillColor: 'black !important'
-                                                }
-                                            },
-                                            endAdornment: (
-                                                <InputAdornment position="end">
-                                                    <IconButton
-                                                        onClick={() => setShowPassword(!showPassword)}
-                                                        edge="end"
-                                                    >
-                                                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-
-                                    {password.length > 0 && mode === 'signup' && (
-                                        <Box className={styles.passwordValidationSide}>
-                                            <Typography variant="caption" fontWeight="bold" display="block" mb={1} color="text.secondary">
-                                                Password Requirements:
-                                            </Typography>
-                                            <Box className={styles.checkItem}>
-                                                <Typography variant="caption" color={passwordChecks.length ? 'success.main' : 'text.disabled'}>
-                                                    {passwordChecks.length ? '✓' : '○'} At least 8 characters
-                                                </Typography>
-                                            </Box>
-                                            <Box className={styles.checkItem}>
-                                                <Typography variant="caption" color={passwordChecks.upper ? 'success.main' : 'text.disabled'}>
-                                                    {passwordChecks.upper ? '✓' : '○'} One uppercase letter
-                                                </Typography>
-                                            </Box>
-                                            <Box className={styles.checkItem}>
-                                                <Typography variant="caption" color={passwordChecks.number ? 'success.main' : 'text.disabled'}>
-                                                    {passwordChecks.number ? '✓' : '○'} One number
-                                                </Typography>
-                                            </Box>
-                                            <Box className={styles.checkItem}>
-                                                <Typography variant="caption" color={passwordChecks.special ? 'success.main' : 'text.disabled'}>
-                                                    {passwordChecks.special ? '✓' : '○'} One special character
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    )}
-                                </Box>
-
-                                {error && (
-                                    <Alert severity="error" className={styles.alert}>
-                                        {error}
-                                    </Alert>
-                                )}
-
-                                <Button
-                                    type="submit"
-                                    fullWidth
-                                    variant="contained"
-                                    disabled={!validateIdentifier(email) || (mode === 'signup' && (!validateEmail(email) || !isPasswordValid)) || (mode === 'login' && password.length < 6) || loading}
-                                    className={styles.continueButton}
-                                >
-                                    {mode === 'login' ? (loading ? 'Logging in...' : 'Login') : (loading ? 'Sending OTP...' : 'Send OTP')}
-                                </Button>
-
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    textAlign="center"
-                                    className={styles.infoText}
-                                >
-                                    {mode === 'login'
-                                        ? "Enter your credentials to access your account"
-                                        : "We\\'ll send a 6-digit verification code to your email"}
-                                </Typography>
-
-                                {(mode === 'login' || mode === 'signup') && (
-                                    <Box textAlign="center" mt={2}>
-                                        {mode === 'login' && (
-                                            <Button
-                                                variant="text"
-                                                color="primary"
-                                                disabled={!validateEmail(email)}
-                                                onClick={() => {
-                                                    if (!validateEmail(email)) return;
-                                                    const q = `?email=${encodeURIComponent(email)}`;
-                                                    router.push(`/auth/forgot-password${q}`);
-                                                }}
-                                            >
-                                                Forgot password?
-                                            </Button>
-                                        )}
-                                        {mode === 'login' && (
-                                            <Button
-                                                variant="text"
-                                                color="secondary"
-                                                sx={{ ml: 2 }}
-                                                onClick={() => router.push('/auth/email-login?mode=signup')}
-                                            >
-                                                Sign Up
-                                            </Button>
-                                        )}
-                                        {mode === 'signup' && (
-                                            <Button
-                                                variant="text"
-                                                color="secondary"
-                                                sx={{ ml: 2 }}
-                                                onClick={() => router.push('/auth/email-login?mode=login')}
-                                            >
-                                                Login
-                                            </Button>
-                                        )}
-                                    </Box>
-                                )}
-                            </form>
                         )}
-                    </Card>
+
+                        {error && (
+                            <Alert severity="error" className={styles.alert}>
+                                {error}
+                            </Alert>
+                        )}
+
+                        <Button
+                            type="submit"
+                            fullWidth
+                            variant="contained"
+                            disabled={!validateIdentifier(email) || (mode === 'signup' && (!validateEmail(email) || !isPasswordValid)) || (mode === 'login' && password.length < 6) || loading}
+                            className={styles.continueButton}
+                        >
+                            {mode === 'login' ? (loading ? 'Signing in...' : 'Sign In') : (loading ? 'Creating Account...' : 'Create Account')}
+                        </Button>
+
+                        <Box className={styles.switchModeText}>
+                            {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
+                            <span className={styles.switchModeLink} onClick={switchMode}>
+                                {mode === 'login' ? 'Sign Up' : 'Sign In'}
+                            </span>
+                        </Box>
+                    </form>
                 </Box>
-            </Container>
+            </Box>
         </Box>
     );
 }

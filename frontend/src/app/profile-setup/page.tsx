@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/slices/authSlice';
@@ -8,19 +8,20 @@ import axios from 'axios';
 import logger from '@/utils/logger';
 import {
     Box,
-    Card,
     TextField,
     Button,
     Typography,
     Alert,
-    Container,
     ToggleButton,
     ToggleButtonGroup,
     FormControl
 } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import styles from './profile-setup.module.css';
-
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import AuthLayout from '../auth/AuthLayout';
+import styles from '../auth/email-login/email-login.module.css';
 import { env } from '@/utils/env';
 
 export default function ProfileSetupPage() {
@@ -32,10 +33,17 @@ export default function ProfileSetupPage() {
     const [username, setUsername] = useState('');
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [email, setEmail] = useState('');
-    const [dateOfBirth, setDateOfBirth] = useState('');
+    const [dateOfBirth, setDateOfBirth] = useState<Dayjs | null>(null);
     const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            router.push('/auth/email-login');
+        }
+    }, [router]);
 
     const checkUsername = async (value: string) => {
         if (value.length < 3) {
@@ -50,7 +58,7 @@ export default function ProfileSetupPage() {
             } else {
                 setUsernameStatus('taken');
             }
-        } catch (err) {
+        } catch {
             setUsernameStatus('idle');
         }
     };
@@ -96,7 +104,7 @@ export default function ProfileSetupPage() {
                     firstName: firstName.trim(),
                     lastName: lastName.trim(),
                     username: username.toLowerCase().trim(),
-                    dateOfBirth,
+                    dateOfBirth: dateOfBirth?.format('YYYY-MM-DD'),
                     gender,
                     email: email.trim() || null,
                 },
@@ -109,7 +117,6 @@ export default function ProfileSetupPage() {
             );
 
             if (response.data.success && response.data.data) {
-                // Update Redux store with new user data
                 dispatch(setCredentials({
                     token: token,
                     user: response.data.data,
@@ -129,188 +136,366 @@ export default function ProfileSetupPage() {
     };
 
     return (
-        <Box className={styles.container}>
-            <Container maxWidth="sm">
-                <Box className={styles.centerWrapper}>
-                    <Card className={styles.card}>
-                        <Box className={styles.header}>
-                            <PersonIcon className={styles.icon} />
-                            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-                                Complete Your Profile
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary">
-                                Tell us a bit about yourself
-                            </Typography>
-                        </Box>
+        <AuthLayout>
+            <Box className={styles.formHeader}>
+                <Typography
+                    variant="h1"
+                    className={styles.formTitle}
+                    sx={{
+                        fontSize: '36px !important',
+                        fontWeight: '800 !important',
+                        color: '#0f172a !important',
+                        marginBottom: '12px !important',
+                        letterSpacing: '-1px !important',
+                        lineHeight: '1.1 !important',
+                        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important',
+                        WebkitBackgroundClip: 'text !important',
+                        WebkitTextFillColor: 'transparent !important',
+                        backgroundClip: 'text !important',
+                    }}
+                >
+                    Complete Your Profile
+                </Typography>
+                <Typography
+                    variant="body1"
+                    className={styles.formSubtitle}
+                    sx={{
+                        fontSize: '16px !important',
+                        color: '#64748b !important',
+                        fontWeight: '500 !important',
+                        letterSpacing: '0.3px !important',
+                        lineHeight: '1.5 !important',
+                    }}
+                >
+                    Tell us a bit about yourself
+                </Typography>
+            </Box>
 
-                        <form onSubmit={handleSubmit} className={styles.form}>
-                            <TextField
-                                fullWidth
-                                label="First Name *"
-                                placeholder="Enter first name"
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                required
-                                autoComplete="off"
-                                className={styles.textField}
-                                InputProps={{
-                                    sx: {
-                                        backgroundColor: 'white !important',
-                                        '& input': {
-                                            backgroundColor: 'white !important',
-                                            color: 'black !important',
-                                            WebkitBoxShadow: '0 0 0 1000px white inset !important',
-                                            WebkitTextFillColor: 'black !important'
-                                        }
-                                    }
-                                }}
-                            />
-
-                            <TextField
-                                fullWidth
-                                label="Last Name *"
-                                placeholder="Enter last name"
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                required
-                                autoComplete="off"
-                                className={styles.textField}
-                                InputProps={{
-                                    sx: {
-                                        backgroundColor: 'white !important',
-                                        '& input': {
-                                            backgroundColor: 'white !important',
-                                            color: 'black !important',
-                                            WebkitBoxShadow: '0 0 0 1000px white inset !important',
-                                            WebkitTextFillColor: 'black !important'
-                                        }
-                                    }
-                                }}
-                            />
-
-                            <TextField
-                                fullWidth
-                                label="Username (Unique ID) *"
-                                placeholder="e.g. johndoe123"
-                                value={username}
-                                onChange={(e) => {
-                                    const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                                    setUsername(val);
-                                    checkUsername(val);
-                                }}
-                                required
-                                autoComplete="off"
-                                className={styles.textField}
-                                helperText={
-                                    usernameStatus === 'checking' ? 'Checking...' :
-                                        usernameStatus === 'available' ? '✓ Username available' :
-                                            usernameStatus === 'taken' ? '✗ Username already taken' :
-                                                'Username will be used to find you'
+            <form onSubmit={handleSubmit} className={styles.form}>
+                <Box className={styles.inputGroup}>
+                    <label htmlFor="first-name-input" className={styles.fieldLabel}>
+                        First Name *
+                    </label>
+                    <TextField
+                        id="first-name-input"
+                        fullWidth
+                        placeholder="Enter your first name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                        autoComplete="off"
+                        className={styles.emailField}
+                        InputProps={{
+                            sx: {
+                                backgroundColor: '#f8fafc',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '&:hover fieldset': {
+                                    borderColor: '#3b82f6',
+                                },
+                                '&.Mui-focused': {
+                                    backgroundColor: 'white',
+                                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                                    transform: 'translateY(-1px)',
+                                },
+                                '& input': {
+                                    backgroundColor: 'transparent !important',
+                                    color: '#1e293b !important',
+                                    WebkitBoxShadow: '0 0 0 1000px #f8fafc inset !important',
+                                    WebkitTextFillColor: '#1e293b !important'
                                 }
-                                error={usernameStatus === 'taken'}
-                                FormHelperTextProps={{
-                                    sx: { color: usernameStatus === 'available' ? 'green' : undefined }
-                                }}
-                                InputProps={{
-                                    sx: {
-                                        backgroundColor: 'white !important',
-                                        '& input': {
-                                            backgroundColor: 'white !important',
-                                            color: 'black !important',
-                                            WebkitBoxShadow: '0 0 0 1000px white inset !important',
-                                            WebkitTextFillColor: 'black !important'
-                                        }
-                                    }
-                                }}
-                            />
-
-                            <TextField
-                                fullWidth
-                                type="date"
-                                label="Date of Birth *"
-                                value={dateOfBirth}
-                                onChange={(e) => setDateOfBirth(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
-                                inputProps={{ max: new Date().toISOString().split('T')[0] }}
-                                required
-                                autoComplete="off"
-                                className={styles.textField}
-                                InputProps={{
-                                    sx: {
-                                        backgroundColor: 'white !important',
-                                        '& input': {
-                                            backgroundColor: 'white !important',
-                                            color: 'black !important',
-                                            WebkitBoxShadow: '0 0 0 1000px white inset !important',
-                                            WebkitTextFillColor: 'black !important'
-                                        },
-                                        '& input::-webkit-calendar-picker-indicator': {
-                                            filter: 'invert(0)',
-                                            cursor: 'pointer',
-                                            opacity: 1
-                                        }
-                                    }
-                                }}
-                            />
-
-                            <FormControl fullWidth className={styles.formControl}>
-                                <Typography variant="body2" fontWeight="bold" className={styles.genderLabel}>
-                                    Gender *
-                                </Typography>
-                                <ToggleButtonGroup
-                                    value={gender}
-                                    exclusive
-                                    onChange={(e, newGender) => newGender && setGender(newGender)}
-                                    fullWidth
-                                    className={styles.genderGroup}
-                                >
-                                    <ToggleButton value="male">Male</ToggleButton>
-                                    <ToggleButton value="female">Female</ToggleButton>
-                                    <ToggleButton value="other">Other</ToggleButton>
-                                </ToggleButtonGroup>
-                            </FormControl>
-
-                            <TextField
-                                fullWidth
-                                type="email"
-                                label="Email (Optional)"
-                                placeholder="Enter email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                autoComplete="off"
-                                className={styles.textField}
-                                InputProps={{
-                                    sx: {
-                                        backgroundColor: 'white !important',
-                                        '& input': {
-                                            backgroundColor: 'white !important',
-                                            color: 'black !important',
-                                            WebkitBoxShadow: '0 0 0 1000px white inset !important',
-                                            WebkitTextFillColor: 'black !important'
-                                        }
-                                    }
-                                }}
-                            />
-
-                            {error && (
-                                <Alert severity="error" className={styles.alert}>
-                                    {error}
-                                </Alert>
-                            )}
-
-                            <Button
-                                type="submit"
-                                fullWidth
-                                variant="contained"
-                                disabled={isLoading}
-                                className={styles.submitButton}
-                            >
-                                {isLoading ? 'Setting up...' : 'Complete Profile'}
-                            </Button>
-                        </form>
-                    </Card>
+                            }
+                        }}
+                    />
                 </Box>
-            </Container>
-        </Box>
+
+                <Box className={styles.inputGroup}>
+                    <label htmlFor="last-name-input" className={styles.fieldLabel}>
+                        Last Name *
+                    </label>
+                    <TextField
+                        id="last-name-input"
+                        fullWidth
+                        placeholder="Enter your last name"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        autoComplete="off"
+                        className={styles.emailField}
+                        InputProps={{
+                            sx: {
+                                backgroundColor: '#f8fafc',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '&:hover fieldset': {
+                                    borderColor: '#3b82f6',
+                                },
+                                '&.Mui-focused': {
+                                    backgroundColor: 'white',
+                                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                                    transform: 'translateY(-1px)',
+                                },
+                                '& input': {
+                                    backgroundColor: 'transparent !important',
+                                    color: '#1e293b !important',
+                                    WebkitBoxShadow: '0 0 0 1000px #f8fafc inset !important',
+                                    WebkitTextFillColor: '#1e293b !important'
+                                }
+                            }
+                        }}
+                    />
+                </Box>
+
+                <Box className={styles.inputGroup}>
+                    <label htmlFor="username-input" className={styles.fieldLabel}>
+                        Username (Unique ID) *
+                    </label>
+                    <TextField
+                        id="username-input"
+                        fullWidth
+                        placeholder="e.g. johndoe123"
+                        value={username}
+                        onChange={(e) => {
+                            const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                            setUsername(val);
+                            checkUsername(val);
+                        }}
+                        required
+                        autoComplete="off"
+                        className={styles.emailField}
+                        helperText={
+                            usernameStatus === 'checking' ? 'Checking...' :
+                                usernameStatus === 'available' ? '✓ Username available' :
+                                    usernameStatus === 'taken' ? '✗ Username already taken' :
+                                        'Username will be used to find you'
+                        }
+                        error={usernameStatus === 'taken'}
+                        FormHelperTextProps={{
+                            sx: { color: usernameStatus === 'available' ? 'green' : undefined }
+                        }}
+                        InputProps={{
+                            sx: {
+                                backgroundColor: '#f8fafc',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '&:hover fieldset': {
+                                    borderColor: '#3b82f6',
+                                },
+                                '&.Mui-focused': {
+                                    backgroundColor: 'white',
+                                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                                    transform: 'translateY(-1px)',
+                                },
+                                '& input': {
+                                    backgroundColor: 'transparent !important',
+                                    color: '#1e293b !important',
+                                    WebkitBoxShadow: '0 0 0 1000px #f8fafc inset !important',
+                                    WebkitTextFillColor: '#1e293b !important'
+                                }
+                            }
+                        }}
+                    />
+                </Box>
+
+                <Box className={styles.inputGroup}>
+                    <label htmlFor="dob-input" className={styles.fieldLabel}>
+                        Date of Birth *
+                    </label>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            value={dateOfBirth}
+                            onChange={(newValue) => setDateOfBirth(newValue)}
+                            maxDate={dayjs()}
+                            slotProps={{
+                                textField: {
+                                    id: 'dob-input',
+                                    fullWidth: true,
+                                    required: true,
+                                    placeholder: 'Select your date of birth',
+                                    className: styles.emailField,
+                                    InputProps: {
+                                        sx: {
+                                            backgroundColor: '#f8fafc',
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            '&:hover': {
+                                                backgroundColor: '#f1f5f9',
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: 'white',
+                                                boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                                                transform: 'translateY(-1px)',
+                                            },
+                                            '& input': {
+                                                backgroundColor: 'transparent !important',
+                                                color: '#1e293b !important',
+                                                WebkitBoxShadow: '0 0 0 1000px #f8fafc inset !important',
+                                                WebkitTextFillColor: '#1e293b !important',
+                                                cursor: 'pointer',
+                                            },
+                                        }
+                                    }
+                                },
+                                openPickerButton: {
+                                    sx: {
+                                        color: '#3b82f6',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                        }
+                                    }
+                                },
+                                popper: {
+                                    sx: {
+                                        '& .MuiPaper-root': {
+                                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                                            borderRadius: '12px',
+                                            border: '1px solid #e2e8f0',
+                                            marginTop: '8px',
+                                        },
+                                        '& .MuiPickersCalendarHeader-root': {
+                                            paddingLeft: '16px',
+                                            paddingRight: '16px',
+                                            marginTop: '8px',
+                                        },
+                                        '& .MuiPickersCalendarHeader-label': {
+                                            fontSize: '16px',
+                                            fontWeight: '600',
+                                            color: '#0f172a',
+                                        },
+                                        '& .MuiPickersArrowSwitcher-button': {
+                                            color: '#64748b',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                                color: '#3b82f6',
+                                            }
+                                        },
+                                        '& .MuiDayCalendar-weekDayLabel': {
+                                            fontSize: '13px',
+                                            fontWeight: '600',
+                                            color: '#64748b',
+                                        },
+                                        '& .MuiPickersDay-root': {
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            color: '#334155',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                            },
+                                            '&.Mui-selected': {
+                                                backgroundColor: '#3b82f6 !important',
+                                                color: 'white !important',
+                                                fontWeight: '600',
+                                                '&:hover': {
+                                                    backgroundColor: '#2563eb !important',
+                                                }
+                                            },
+                                            '&.MuiPickersDay-today': {
+                                                border: '2px solid #3b82f6',
+                                                backgroundColor: 'transparent',
+                                            }
+                                        },
+                                        '& .MuiPickersYear-yearButton': {
+                                            fontSize: '14px',
+                                            '&.Mui-selected': {
+                                                backgroundColor: '#3b82f6 !important',
+                                                color: 'white !important',
+                                                fontWeight: '600',
+                                            }
+                                        }
+                                    }
+                                }
+                            }}
+                        />
+                    </LocalizationProvider>
+                </Box>
+
+                <FormControl fullWidth>
+                    <label className={styles.fieldLabel}>
+                        Gender *
+                    </label>
+                    <ToggleButtonGroup
+                        value={gender}
+                        exclusive
+                        onChange={(e, newGender) => newGender && setGender(newGender)}
+                        fullWidth
+                        sx={{
+                            '& .MuiToggleButton-root': {
+                                padding: '12px 16px',
+                                borderColor: '#e2e8f0',
+                                color: '#64748b',
+                                fontSize: '15px',
+                                fontWeight: '500',
+                                textTransform: 'none',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '&:hover': {
+                                    backgroundColor: '#f8fafc',
+                                    borderColor: '#cbd5e1',
+                                    transform: 'translateY(-1px)',
+                                },
+                                '&.Mui-selected': {
+                                    backgroundColor: '#3b82f6',
+                                    color: 'white',
+                                    borderColor: '#3b82f6',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+                                    transform: 'translateY(-1px)',
+                                    '&:hover': {
+                                        backgroundColor: '#2563eb',
+                                        borderColor: '#2563eb',
+                                        boxShadow: '0 6px 16px rgba(59, 130, 246, 0.35)',
+                                    }
+                                }
+                            }
+                        }}
+                    >
+                        <ToggleButton value="male">Male</ToggleButton>
+                        <ToggleButton value="female">Female</ToggleButton>
+                        <ToggleButton value="other">Other</ToggleButton>
+                    </ToggleButtonGroup>
+                </FormControl>
+
+                <TextField
+                    fullWidth
+                    type="email"
+                    label="Email (Optional)"
+                    placeholder="Enter email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="off"
+                    className={styles.emailField}
+                    InputProps={{
+                        sx: {
+                            backgroundColor: '#f8fafc',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover fieldset': {
+                                borderColor: '#3b82f6',
+                            },
+                            '&.Mui-focused': {
+                                backgroundColor: 'white',
+                                boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                                transform: 'translateY(-1px)',
+                            },
+                            '& input': {
+                                backgroundColor: 'transparent !important',
+                                color: '#1e293b !important',
+                                WebkitBoxShadow: '0 0 0 1000px #f8fafc inset !important',
+                                WebkitTextFillColor: '#1e293b !important'
+                            }
+                        }
+                    }}
+                />
+
+                {error && (
+                    <Alert severity="error" className={styles.alert}>
+                        {error}
+                    </Alert>
+                )}
+
+                <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    disabled={isLoading}
+                    className={styles.continueButton}
+                >
+                    {isLoading ? 'Setting up...' : 'Complete Profile'}
+                </Button>
+            </form>
+        </AuthLayout>
     );
 }

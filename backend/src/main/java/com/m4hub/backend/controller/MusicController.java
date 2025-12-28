@@ -39,12 +39,21 @@ public class MusicController {
     }
 
     @GetMapping("/songs")
-    public ResponseEntity<List<Song>> getAllSongs() {
+    public ResponseEntity<List<Song>> getAllSongs(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader == null || authHeader.isEmpty() || authService.getUserFromToken(authHeader) == null) {
+            return ResponseEntity.status(401).build();
+        }
         return ResponseEntity.ok(musicService.getAllSongs());
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Song>> searchSongs(@RequestParam String q) {
+    public ResponseEntity<List<Song>> searchSongs(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam String q) {
+        if (authHeader == null || authHeader.isEmpty() || authService.getUserFromToken(authHeader) == null) {
+            return ResponseEntity.status(401).build();
+        }
         return ResponseEntity.ok(musicService.searchSongs(q));
     }
 

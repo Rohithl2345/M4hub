@@ -107,27 +107,20 @@ export const PortalTutorial = () => {
 
     const finishTutorial = async () => {
         try {
-            const token = await axios.get(API_URL); // Just a dummy to check connection if needed, but we rely on sessionStorage in web.
-            // In mobile we use storageService.
-            // The actual API call is better handled with the authenticated instance.
-            // For now I'll use a simple axios post with the token from storage if available.
-
-            // Note: Since I don't have the auth instance here, I'll assume we can get it.
-            // But to be safe and consistent with web implementation:
             dispatch(markTutorialSeen());
             setIsVisible(false);
 
-            // Attempt to notify backend
-            const authToken = await require('@/services/storage.service').storageService.getAuthToken();
+            // Notify backend
+            const { storageService } = require('@/services/storage.service');
+            const authToken = await storageService.getAuthToken();
             if (authToken) {
                 await axios.post(`${API_URL}/api/users/tutorial-seen`, {}, {
-                    headers: { 'Authorization': authToken }
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
             }
         } catch (error) {
             console.error("Failed to finish tutorial:", error);
-            dispatch(markTutorialSeen());
-            setIsVisible(false);
+            // Redux state already updated above, just hide
         }
     };
 

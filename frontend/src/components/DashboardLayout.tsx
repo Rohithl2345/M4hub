@@ -18,8 +18,6 @@ import NewspaperIcon from '@mui/icons-material/Newspaper';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
-import RestaurantIcon from '@mui/icons-material/Restaurant';
-import LocalActivityIcon from '@mui/icons-material/LocalActivity';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 import SnakeGame from './SnakeGame';
 
@@ -160,6 +158,19 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         }
         return () => window.removeEventListener('click', handleClickOutside);
     }, [showProfileDropdown]);
+
+    if (isLoading) {
+        return (
+            <div className={styles.loadingContainer}>
+                <div className={styles.loader}></div>
+                <p>Authenticating...</p>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null; // The useEffect will handle the redirect
+    }
 
     return (
         <div className={styles.container}>

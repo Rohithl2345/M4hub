@@ -81,7 +81,7 @@ export default function MoneyScreen() {
             const [account, history, banksList] = await Promise.all([
                 paymentService.getAccount(savedToken),
                 paymentService.getHistory(savedToken),
-                paymentService.getSupportedBanks()
+                paymentService.getSupportedBanks(savedToken)
             ]);
             setBankAccount(account);
             setTransactions(history);
@@ -144,10 +144,10 @@ export default function MoneyScreen() {
     };
 
     const handleSearchUser = async () => {
-        if (!searchPhone) return;
+        if (!searchPhone || !token) return;
         setIsProcessing(true);
         try {
-            const user = await paymentService.searchUserByPhone(searchPhone);
+            const user = await paymentService.searchUserByPhone(token, searchPhone);
             setTargetUser(user);
             setTransferStep(2);
         } catch (error) {

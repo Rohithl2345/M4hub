@@ -74,7 +74,10 @@ class MusicService {
      */
     async getPopularTracks(limit: number = 20): Promise<Track[]> {
         try {
-            const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.MUSIC.SONGS}`);
+            const headers = await this.getHeaders();
+            const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.MUSIC.SONGS}`, {
+                headers
+            });
             const songs = await response.json();
             return songs.map(this.mapSongToTrack).slice(0, limit);
         } catch (error) {
@@ -92,8 +95,10 @@ class MusicService {
                 return this.getPopularTracks(limit);
             }
 
+            const headers = await this.getHeaders();
             const response = await fetch(
-                `${this.baseUrl}${API_ENDPOINTS.MUSIC.SEARCH}?q=${encodeURIComponent(query)}`
+                `${this.baseUrl}${API_ENDPOINTS.MUSIC.SEARCH}?q=${encodeURIComponent(query)}`,
+                { headers }
             );
             const songs = await response.json();
             return songs.map(this.mapSongToTrack).slice(0, limit);

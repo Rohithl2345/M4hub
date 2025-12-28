@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { newsStyles as styles } from '../_styles/news.styles';
 import { APP_CONFIG } from '../../constants';
+import { storageService } from '../../services/storage.service';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -29,9 +30,12 @@ export default function NewsScreen() {
         setLoading(true);
         setError(null);
         try {
+            const token = await storageService.getAuthToken();
             const baseUrl = `${APP_CONFIG.API_URL}/api/news`;
             const url = category === 'All' ? `${baseUrl}/latest` : `${baseUrl}/category/${category}`;
-            const response = await axios.get(url);
+            const response = await axios.get(url, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             setNewsArticles(response.data);
         } catch (error) {
             console.error("Error fetching news:", error);

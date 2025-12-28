@@ -29,9 +29,10 @@ export interface Transaction {
 }
 
 class PaymentService {
-    async getSupportedBanks(): Promise<BankInfo[]> {
+    async getSupportedBanks(token?: string): Promise<BankInfo[]> {
         try {
-            const response = await axios.get(`${API_URL}/api/payments/banks`);
+            const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+            const response = await axios.get(`${API_URL}/api/payments/banks`, config);
             return response.data;
         } catch (error) {
             console.error('Error fetching banks:', error);
@@ -60,9 +61,10 @@ class PaymentService {
         return response.data;
     }
 
-    async searchUserByPhone(phone: string): Promise<any> {
+    async searchUserByPhone(token: string, phone: string): Promise<any> {
         const response = await axios.get(`${API_URL}/api/payments/search`, {
-            params: { phone }
+            params: { phone },
+            headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;
     }

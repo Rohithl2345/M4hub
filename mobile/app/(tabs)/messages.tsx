@@ -392,31 +392,40 @@ export default function MessagesScreen() {
                     <Text style={styles.headerSubtitle}>Connect with friends and groups</Text>
                 </LinearGradient>
 
-                {/* Tab Selection */}
-                <View style={styles.statsContainer}>
+                {/* Tab Selection - Segmented Control Style */}
+                <View style={styles.segmentContainer}>
                     <TouchableOpacity
-                        style={[styles.statCard, activeTab === 0 && styles.activeStatCard]}
+                        style={[styles.segmentButton, activeTab === 0 && styles.segmentButtonActive]}
                         onPress={() => setActiveTab(0)}
                     >
-                        <Ionicons name="people" size={32} color={activeTab === 0 ? '#4c669f' : '#999'} />
-                        <Text style={[styles.statValue, activeTab === 0 && styles.activeStatValue]}>{friends.length}</Text>
-                        <Text style={styles.statLabel}>Friends</Text>
+                        <Text style={[styles.segmentText, activeTab === 0 && styles.segmentTextActive]}>Friends</Text>
+                        {friends.length > 0 && (
+                            <View style={styles.tabBadge}>
+                                <Text style={styles.tabBadgeText}>{friends.length}</Text>
+                            </View>
+                        )}
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.statCard, activeTab === 1 && styles.activeStatCard]}
+                        style={[styles.segmentButton, activeTab === 1 && styles.segmentButtonActive]}
                         onPress={() => setActiveTab(1)}
                     >
-                        <Ionicons name="grid" size={32} color={activeTab === 1 ? '#4c669f' : '#999'} />
-                        <Text style={[styles.statValue, activeTab === 1 && styles.activeStatValue]}>{groups.length}</Text>
-                        <Text style={styles.statLabel}>Groups</Text>
+                        <Text style={[styles.segmentText, activeTab === 1 && styles.segmentTextActive]}>Groups</Text>
+                        {groups.length > 0 && (
+                            <View style={styles.tabBadge}>
+                                <Text style={styles.tabBadgeText}>{groups.length}</Text>
+                            </View>
+                        )}
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.statCard, activeTab === 2 && styles.activeStatCard]}
+                        style={[styles.segmentButton, activeTab === 2 && styles.segmentButtonActive]}
                         onPress={() => setActiveTab(2)}
                     >
-                        <Ionicons name="mail-unread" size={32} color={activeTab === 2 ? '#4c669f' : '#999'} />
-                        <Text style={[styles.statValue, activeTab === 2 && styles.activeStatValue]}>{pendingRequests.length + sentRequests.length}</Text>
-                        <Text style={styles.statLabel}>Requests</Text>
+                        <Text style={[styles.segmentText, activeTab === 2 && styles.segmentTextActive]}>Requests</Text>
+                        {(pendingRequests.length + sentRequests.length) > 0 && (
+                            <View style={[styles.tabBadge, { backgroundColor: '#ef4444' }]}>
+                                <Text style={styles.tabBadgeText}>{pendingRequests.length + sentRequests.length}</Text>
+                            </View>
+                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -1486,6 +1495,45 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         marginTop: 4,
         textAlign: 'center',
+    },
+    // Segmented Tabs
+    segmentContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#f1f5f9',
+        borderRadius: 16,
+        padding: 6,
+        marginHorizontal: 20,
+        marginVertical: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    segmentButton: {
+        flex: 1,
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 12,
+        flexDirection: 'row',
+        gap: 6,
+    },
+    segmentButtonActive: {
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 4,
+    },
+    segmentText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#64748b',
+    },
+    segmentTextActive: {
+        color: '#4c669f',
     },
     noResultsContainer: {
         padding: 30,

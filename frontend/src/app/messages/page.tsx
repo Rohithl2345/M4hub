@@ -46,12 +46,15 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import SearchIcon from '@mui/icons-material/Search';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 import { env } from '@/utils/env';
 
 const API_URL = env.apiUrl;
 
 export default function MessagesPage() {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const user = useSelector((state: RootState) => state.auth.user);
     const [friends, setFriends] = useState<UserSearchResult[]>([]);
     const [groups, setGroups] = useState<any[]>([]);
@@ -445,57 +448,87 @@ export default function MessagesPage() {
                         </div>
 
                         <div className={styles.tabsContainer}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 2 }}>
+                            <div className={styles.headerTabsRow}>
                                 <Tabs
                                     value={tabValue}
                                     onChange={(_, v) => setTabValue(v)}
                                     textColor="inherit"
-                                    variant="scrollable"
-                                    scrollButtons="auto"
-                                    allowScrollButtonsMobile
+                                    variant={isMobile ? "fullWidth" : "standard"}
                                     className={styles.tabs}
                                     TabIndicatorProps={{
                                         style: { display: 'none' }
                                     }}
-                                    sx={{ flex: 1 }}
+                                    sx={{
+                                        minHeight: '44px',
+                                        '& .MuiTabs-flexContainer': {
+                                            gap: isMobile ? '0px' : '12px'
+                                        }
+                                    }}
                                 >
-                                    <Tab icon={<PeopleIcon />} label="Friends" iconPosition="start" className={styles.headerTab} />
-                                    <Tab icon={<GroupsIcon />} label="Groups" iconPosition="start" className={styles.headerTab} />
+                                    <Tab
+                                        icon={<PeopleIcon />}
+                                        label={isMobile ? "" : "Friends"}
+                                        iconPosition="start"
+                                        className={styles.headerTab}
+                                        title="Friends"
+                                    />
+                                    <Tab
+                                        icon={<GroupsIcon />}
+                                        label={isMobile ? "" : "Groups"}
+                                        iconPosition="start"
+                                        className={styles.headerTab}
+                                        title="Groups"
+                                    />
                                     <Tab
                                         icon={
                                             <Badge badgeContent={pendingRequests.length} color="error">
                                                 <PersonAddIcon />
                                             </Badge>
                                         }
-                                        label="Requests"
+                                        label={isMobile ? "" : "Requests"}
                                         iconPosition="start"
                                         className={styles.headerTab}
+                                        title="Requests"
                                     />
                                 </Tabs>
 
-                                {tabValue === 0 && (
-                                    <Button
-                                        className="btn-primary"
-                                        startIcon={<PersonAddIcon />}
-                                        onClick={() => setSearchDialogOpen(true)}
-                                        sx={{ borderRadius: '50px', px: 2.5, py: 1, whiteSpace: 'nowrap', minWidth: 'auto' }}
-                                        size="small"
-                                    >
-                                        Add Friend
-                                    </Button>
-                                )}
-                                {tabValue === 1 && (
-                                    <Button
-                                        className="btn-primary"
-                                        startIcon={<GroupAddIcon />}
-                                        onClick={() => setGroupDialogOpen(true)}
-                                        sx={{ borderRadius: '50px', px: 2.5, py: 1, whiteSpace: 'nowrap', minWidth: 'auto' }}
-                                        size="small"
-                                    >
-                                        Create Group
-                                    </Button>
-                                )}
-                            </Box>
+                                <Box sx={{ ml: isMobile ? 1 : 2, width: 'auto' }}>
+                                    {tabValue === 0 && (
+                                        <Button
+                                            className="btn-primary"
+                                            startIcon={<PersonAddIcon />}
+                                            onClick={() => setSearchDialogOpen(true)}
+                                            sx={{
+                                                borderRadius: '50px',
+                                                px: isMobile ? 1.5 : 3,
+                                                py: 0.8,
+                                                whiteSpace: 'nowrap',
+                                                fontWeight: 800,
+                                                fontSize: isMobile ? '0.7rem' : '0.875rem'
+                                            }}
+                                        >
+                                            Add
+                                        </Button>
+                                    )}
+                                    {tabValue === 1 && (
+                                        <Button
+                                            className="btn-primary"
+                                            startIcon={<GroupAddIcon />}
+                                            onClick={() => setGroupDialogOpen(true)}
+                                            sx={{
+                                                borderRadius: '50px',
+                                                px: isMobile ? 1.5 : 3,
+                                                py: 0.8,
+                                                whiteSpace: 'nowrap',
+                                                fontWeight: 800,
+                                                fontSize: isMobile ? '0.7rem' : '0.875rem'
+                                            }}
+                                        >
+                                            New
+                                        </Button>
+                                    )}
+                                </Box>
+                            </div>
                         </div>
                     </>
                 ) : (
@@ -899,18 +932,13 @@ export default function MessagesPage() {
 
             <Dialog
                 open={searchDialogOpen}
-                onClose={() => {
-                    setSearchDialogOpen(false);
-                    setHasSearched(false);
-                    setSearchResults([]);
-                    setSearchQuery('');
-                    setSearchError(null);
-                }}
+                onClose={() => setSearchDialogOpen(false)}
                 maxWidth="sm"
                 fullWidth
+                fullScreen={isMobile}
                 PaperProps={{
                     className: styles.dialogPaper,
-                    sx: { p: 1 }
+                    sx: { p: isMobile ? 0 : 1 }
                 }}
             >
                 <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Search Friends</DialogTitle>
@@ -1053,9 +1081,10 @@ export default function MessagesPage() {
                 onClose={resetGroupForm}
                 maxWidth="sm"
                 fullWidth
+                fullScreen={isMobile}
                 PaperProps={{
                     className: styles.dialogPaper,
-                    sx: { p: 1 }
+                    sx: { p: isMobile ? 0 : 1 }
                 }}
             >
                 <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Create Group</DialogTitle>

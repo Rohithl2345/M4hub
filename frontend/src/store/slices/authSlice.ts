@@ -45,8 +45,8 @@ const authSlice = createSlice({
 
             // Persist to localStorage
             if (typeof window !== 'undefined') {
-                sessionStorage.setItem('authToken', action.payload.token);
-                sessionStorage.setItem('user', JSON.stringify(action.payload.user));
+                localStorage.setItem('authToken', action.payload.token);
+                localStorage.setItem('user', JSON.stringify(action.payload.user));
             }
         },
         logout: (state) => {
@@ -55,10 +55,10 @@ const authSlice = createSlice({
             state.isAuthenticated = false;
             state.isLoading = false;
 
-            // Clear from sessionStorage
+            // Clear from localStorage
             if (typeof window !== 'undefined') {
-                sessionStorage.removeItem('authToken');
-                sessionStorage.removeItem('user');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
             }
         },
         setLoading: (state, action: PayloadAction<boolean>) => {
@@ -84,18 +84,18 @@ const authSlice = createSlice({
         updateUsername: (state, action: PayloadAction<string>) => {
             if (state.user) {
                 state.user.username = action.payload;
-                // Update sessionStorage
+                // Update localStorage
                 if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('user', JSON.stringify(state.user));
+                    localStorage.setItem('user', JSON.stringify(state.user));
                 }
             }
         },
         updateUserPhone: (state, action: PayloadAction<string>) => {
             if (state.user) {
                 state.user.phoneNumber = action.payload;
-                // Update sessionStorage
+                // Update localStorage
                 if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('user', JSON.stringify(state.user));
+                    localStorage.setItem('user', JSON.stringify(state.user));
                 }
             }
         },
@@ -103,7 +103,7 @@ const authSlice = createSlice({
             if (state.user) {
                 state.user.hasSeenTutorial = true;
                 if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('user', JSON.stringify(state.user));
+                    localStorage.setItem('user', JSON.stringify(state.user));
                 }
             }
         },

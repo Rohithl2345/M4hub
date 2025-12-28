@@ -25,10 +25,13 @@ export default function NewsPage() {
         const fetchNews = async () => {
             setLoading(true);
             try {
+                const token = localStorage.getItem('authToken');
                 const url = category === 'All'
                     ? `${env.apiUrl}/api/news/latest`
                     : `${env.apiUrl}/api/news/category/${category}`;
-                const response = await axios.get(url);
+                const response = await axios.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 setNewsArticles(response.data);
             } catch (error) {
                 console.error("Error fetching news:", error);
