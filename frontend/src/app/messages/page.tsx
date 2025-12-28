@@ -959,11 +959,11 @@ export default function MessagesPage() {
                     sx: { p: 0 } // Classes handle padding
                 }}
             >
-                <DialogTitle className={styles.dialogHeader}>
-                    <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.5px', color: '#1e293b' }}>
+                <DialogTitle className={styles.dialogHeader} component="div">
+                    <Typography variant="h5" component="div" fontWeight={800} sx={{ letterSpacing: '-0.5px', color: '#1e293b' }}>
                         Search Friends
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+                    <Typography variant="body2" component="div" sx={{ color: '#64748b', mt: 0.5 }}>
                         Search for people by their name or username to start a conversation.
                     </Typography>
                 </DialogTitle>
