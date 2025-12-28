@@ -22,7 +22,7 @@ export default function DashboardPage() {
     // DashboardLayout handles the authentication checks and redirects
 
     return (
-        <DashboardLayout title="">
+        <DashboardLayout title="Dashboard">
             {user && (
                 <div className={styles.container}>
                     <div className={styles.welcomeCard}>

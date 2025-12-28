@@ -11,7 +11,35 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import LogoutIcon from '@mui/icons-material/Logout';
 import HubIcon from '@mui/icons-material/Hub';
-import { Avatar } from '@mui/material';
+import { Avatar, Switch } from '@mui/material';
+import { useState } from 'react';
+
+function FloatingSidebarIcons({ Icon }: { Icon: any }) {
+    const items = Array.from({ length: 15 }).map((_, i) => ({
+        id: i,
+        left: `${(i * 17) % 80 + 10}%`,
+        delay: `-${(i * 1.5) % 15}s`,
+        duration: `${10 + (i % 8)}s`,
+        size: `${18 + (i % 4) * 8}px`
+    }));
+
+    return (
+        <div className={styles.sidebarIconsContainer}>
+            {items.map((item) => (
+                <Icon
+                    key={item.id}
+                    className={styles.sidebarFloatIcon}
+                    style={{
+                        left: item.left,
+                        fontSize: item.size,
+                        animationDelay: item.delay,
+                        animationDuration: item.duration,
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -23,17 +51,41 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const pathname = usePathname();
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.auth.user);
+    const [animationsEnabled, setAnimationsEnabled] = useState(false);
 
     const handleLogout = () => {
         dispatch(logout());
         router.push('/auth/email-login');
     };
 
-    const isActive = (path: string) => pathname === path;
+    const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
+
+    const getSidebarGradient = () => {
+        if (pathname.startsWith('/music')) return 'linear-gradient(180deg, #064e3b 0%, #065f46 100%)';
+        if (pathname.startsWith('/messages')) return 'linear-gradient(180deg, #1e3a8a 0%, #172554 100%)';
+        if (pathname.startsWith('/money')) return 'linear-gradient(180deg, #78350f 0%, #451a03 100%)';
+        if (pathname.startsWith('/news')) return 'linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)';
+        return 'linear-gradient(180deg, #4c1d95 0%, #2e1065 100%)'; // Dashboard Purple
+    };
+
+    const getSidebarIcon = () => {
+        if (pathname.startsWith('/music')) return MusicNoteIcon;
+        if (pathname.startsWith('/messages')) return ChatBubbleIcon;
+        if (pathname.startsWith('/money')) return AccountBalanceWalletIcon;
+        if (pathname.startsWith('/news')) return NewspaperIcon;
+        return DashboardIcon;
+    };
 
     return (
         <div className={styles.container}>
-            <div className={styles.sidebar}>
+            <div
+                className={styles.sidebar}
+                style={{ background: getSidebarGradient() }}
+            >
+                {animationsEnabled && (
+                    <FloatingSidebarIcons Icon={getSidebarIcon()} />
+                )}
+
                 <div className={styles.logo}>
                     <div className={styles.logoIconWrapper}>
                         <HubIcon className={styles.logoIcon} />
@@ -93,6 +145,19 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     <h1 className={styles.title}>{title}</h1>
 
                     <div className={styles.headerRight}>
+                        <div className={styles.animationToggle}>
+                            <span className={styles.toggleLabel}>Animations</span>
+                            <Switch
+                                size="small"
+                                checked={animationsEnabled}
+                                onChange={(e) => setAnimationsEnabled(e.target.checked)}
+                                sx={{
+                                    '& .MuiSwitch-switchBase.Mui-checked': { color: '#3b82f6' },
+                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#3b82f6' }
+                                }}
+                            />
+                        </div>
+
                         <div
                             className={`${styles.profilePreview} ${isActive('/profile') ? styles.profileActive : ''}`}
                             onClick={() => router.push('/profile')}

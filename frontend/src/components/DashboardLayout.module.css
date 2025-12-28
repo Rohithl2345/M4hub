@@ -8,7 +8,7 @@
 /* ===== GLASSMORPHIC SIDEBAR ===== */
 .sidebar {
     width: 280px;
-    background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
+    /* Background handled dynamically via inline styles */
     padding: 32px 20px;
     display: flex;
     flex-direction: column;
@@ -17,10 +17,12 @@
     left: 0;
     bottom: 0;
     z-index: 1000;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background 1s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    /* Added for background icons */
 }
 
 /* Logo Section */
@@ -136,33 +138,28 @@
 }
 
 /* Active State */
+/* Active State - Glass Box Style */
 .navItemActive {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.25) !important;
     color: white !important;
-    font-weight: 600;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(8px);
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(12px);
+    transform: scale(1.02);
 }
 
 .navItemActive .navIcon {
     opacity: 1;
-    color: var(--tab-color, #3b82f6);
+    color: white !important;
+    /* Force white icon in box */
     transform: scale(1.1);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-/* Active Tab Indicators */
+/* Active Tab Indicators - Removed */
 .navItemActive::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 4px;
-    height: 20px;
-    border-radius: 0 4px 4px 0;
-    background-color: var(--tab-color, #3b82f6);
-    box-shadow: 0 0 8px var(--tab-color, #3b82f6);
+    display: none;
 }
 
 /* Per-Tab Colors - CLEANED: Removed nth-child to avoid index issues */
@@ -480,16 +477,95 @@
 }
 
 .loadingContainer {
+    width: 100vw;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    background: #f8fafc;
-    gap: 16px;
-    color: #64748b;
-    font-weight: 600;
 }
+
+/* Sidebar Floating Icons */
+.sidebarIconsContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.sidebarFloatIcon {
+    position: absolute;
+    bottom: -50px;
+    color: rgba(255, 255, 255, 0.2);
+    animation: floatUpSidebar linear infinite;
+}
+
+@keyframes floatUpSidebar {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 0.3;
+    }
+
+    85% {
+        opacity: 0.3;
+    }
+
+    100% {
+        transform: translateY(-110vh) rotate(180deg);
+        opacity: 0;
+    }
+}
+
+/* Ensure Nav is clicking above icons */
+.nav,
+.logo {
+    position: relative;
+    z-index: 10;
+}
+
+/* Sidebar Footer containing Toggle */
+.sidebarFooter {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebarToggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.sidebarToggle:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.toggleLabel {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 600px) {
+    .animationToggle {
+        display: none;
+    }
+}
+
 
 .loader {
     width: 48px;

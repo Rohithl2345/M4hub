@@ -4,9 +4,36 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout, selectIsLoading } from '@/store/slices/authSlice';
-import { Badge } from '@mui/material';
+import { Badge, Switch } from '@mui/material';
 import chatService from '@/services/chat.service';
 import styles from './DashboardLayout.module.css';
+
+function FloatingSidebarIcons({ Icon }: { Icon: any }) {
+    const items = Array.from({ length: 15 }).map((_, i) => ({
+        id: i,
+        left: `${(i * 17) % 80 + 10}%`,
+        delay: `-${(i * 1.5) % 15}s`,
+        duration: `${10 + (i % 8)}s`,
+        size: `${18 + (i % 4) * 8}px`
+    }));
+
+    return (
+        <div className={styles.sidebarIconsContainer}>
+            {items.map((item) => (
+                <Icon
+                    key={item.id}
+                    className={styles.sidebarFloatIcon}
+                    style={{
+                        left: item.left,
+                        fontSize: item.size,
+                        animationDelay: item.delay,
+                        animationDuration: item.duration,
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
 import { logger } from '@/utils/logger';
 import PortalTutorial from './PortalTutorial';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -38,7 +65,46 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const [chatStatus, setChatStatus] = useState({ isConnected: false, isConnecting: false });
     const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
     const [isGameOpen, setIsGameOpen] = useState(false);
+    const [animationsEnabled, setAnimationsEnabled] = useState(false);
+
+    // Persist Animation State
+    useEffect(() => {
+        const saved = localStorage.getItem('animationsEnabled');
+        if (saved === 'true') setAnimationsEnabled(true);
+    }, []);
+
+    const handleAnimationToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = e.target.checked;
+        setAnimationsEnabled(isChecked);
+        localStorage.setItem('animationsEnabled', String(isChecked));
+    };
+
+    // Sidebar Themes
+    const getSidebarGradient = () => {
+        if (pathname.startsWith('/music')) return 'linear-gradient(180deg, #064e3b 0%, #065f46 100%)';
+        if (pathname.startsWith('/messages')) return 'linear-gradient(180deg, #1e3a8a 0%, #172554 100%)';
+        if (pathname.startsWith('/money')) return 'linear-gradient(180deg, #78350f 0%, #451a03 100%)';
+        if (pathname.startsWith('/news')) return 'linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)';
+        return 'linear-gradient(180deg, #4c1d95 0%, #2e1065 100%)';
+    };
+
+    const getAccentGradient = () => {
+        if (pathname.startsWith('/music')) return 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        if (pathname.startsWith('/messages')) return 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+        if (pathname.startsWith('/money')) return 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)';
+        if (pathname.startsWith('/news')) return 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
+        return 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
+    };
+
+    const getSidebarIcon = () => {
+        if (pathname.startsWith('/music')) return MusicNoteIcon;
+        if (pathname.startsWith('/messages')) return ChatBubbleIcon;
+        if (pathname.startsWith('/money')) return AccountBalanceWalletIcon;
+        if (pathname.startsWith('/news')) return NewspaperIcon;
+        return DashboardIcon;
+    };
 
     // Global Chat Connection and Presence
     useEffect(() => {
@@ -176,9 +242,19 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                 {isSidebarOpen ? <CloseIcon /> : <MenuIcon />}
             </button>
 
-            <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+            <aside
+                className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}
+                style={{ background: getSidebarGradient() }}
+            >
+                {animationsEnabled && (
+                    <FloatingSidebarIcons Icon={getSidebarIcon()} />
+                )}
+
                 <div className={styles.logo} onClick={() => router.push('/dashboard')}>
-                    <div className={styles.logoIconWrapper}>
+                    <div
+                        className={styles.logoIconWrapper}
+                        style={{ background: getAccentGradient() }}
+                    >
                         <HubIcon className={styles.logoIcon} />
                     </div>
                     <div>
@@ -242,6 +318,21 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                         <span>News</span>
                     </div>
                 </nav>
+
+                <div className={styles.sidebarFooter}>
+                    <div className={styles.sidebarToggle}>
+                        <span className={styles.toggleLabel}>{animationsEnabled ? 'Theme On' : 'Theme Off'}</span>
+                        <Switch
+                            size="small"
+                            checked={animationsEnabled}
+                            onChange={handleAnimationToggle}
+                            sx={{
+                                '& .MuiSwitch-switchBase.Mui-checked': { color: '#ffffff' },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#ffffff', opacity: 0.5 }
+                            }}
+                        />
+                    </div>
+                </div>
             </aside>
 
             {isSidebarOpen && <div className={styles.overlay} onClick={() => setIsSidebarOpen(false)} />}
@@ -262,12 +353,12 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                                 <div className={styles.headerUserInfo}>
                                     <div className={styles.avatarWrapper}>
                                         <div className={styles.userAvatar}>
-                                            {(user.name || user.username).charAt(0).toUpperCase()}
+                                            {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
                                         </div>
                                         <div className={`${styles.statusBadge} ${isOnline && chatStatus.isConnected ? styles.statusOnline : styles.statusOffline}`} />
                                     </div>
                                     <div className={styles.headerUserDetails}>
-                                        <span className={styles.headerUsername}>{user.name || user.username}</span>
+                                        <span className={styles.headerUsername}>{user?.name || user?.username}</span>
                                         <span className={styles.headerStatusText}>
                                             {!isOnline || !chatStatus.isConnected ? (
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }} onClick={() => setIsGameOpen(true)}>

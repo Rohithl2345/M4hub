@@ -8,7 +8,7 @@
 /* ===== GLASSMORPHIC SIDEBAR ===== */
 .sidebar {
     width: 280px;
-    background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
+    /* Background handled via inline style for dynamic switching */
     padding: 32px 20px;
     display: flex;
     flex-direction: column;
@@ -16,10 +16,11 @@
     height: 100vh;
     left: 0;
     top: 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
     z-index: 50;
     backdrop-filter: blur(10px);
+    transition: background 1s ease;
 }
 
 /* Logo Section */
@@ -129,34 +130,28 @@
 }
 
 /* Active State */
+/* Active State - Glass Box Style */
 .navItemActive {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.25) !important;
     color: white !important;
-    font-weight: 600;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(8px);
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(12px);
+    transform: scale(1.02);
 }
 
 .navItemActive .navIcon {
     opacity: 1;
-    color: var(--tab-color, #3b82f6);
+    color: white !important;
+    /* Force white icon in box */
     transform: scale(1.1);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-/* Active Tab Indicators */
+/* Active Tab Indicators - Removed for Box Look */
 .navItemActive::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 4px;
-    height: 20px;
-    border-radius: 0 4px 4px 0;
-    /* Updated default to Blue */
-    background-color: var(--tab-color, #3b82f6);
-    box-shadow: 0 0 8px var(--tab-color, #3b82f6);
+    display: none;
 }
 
 /* Per-Tab Colors - Updated Dashboard to Blue */
@@ -393,5 +388,75 @@
             width: 100%;
             justify-content: space-between;
         }
+
+        .animationToggle {
+            display: none;
+            /* Hide on mobile to save space */
+        }
     }
+}
+
+/* Sidebar Floating Icons */
+.sidebarIconsContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.sidebarFloatIcon {
+    position: absolute;
+    bottom: -50px;
+    color: rgba(255, 255, 255, 0.2);
+    animation: floatUpSidebar linear infinite;
+}
+
+@keyframes floatUpSidebar {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 0.3;
+    }
+
+    85% {
+        opacity: 0.3;
+    }
+
+    100% {
+        transform: translateY(-110vh) rotate(180deg);
+        opacity: 0;
+    }
+}
+
+/* Ensure Nav is clicking above icons */
+.nav,
+.logo {
+    position: relative;
+    z-index: 10;
+}
+
+/* Animation Toggle */
+.animationToggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 20px;
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    height: 36px;
+}
+
+.toggleLabel {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
 }
