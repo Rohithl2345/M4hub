@@ -319,8 +319,8 @@ export default function MessagesPage() {
     };
 
     const AVATAR_COLORS = [
-        '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e',
-        '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#4f46e5'
+        '#3b82f6', '#2563eb', '#1d4ed8', '#0ea5e9', '#06b6d4',
+        '#6366f1', '#64748b', '#94a3b8'
     ];
 
     const getAvatarColor = (id: number | string) => {
@@ -395,7 +395,9 @@ export default function MessagesPage() {
         }
     };
 
-    const renderEmptyState = (type: 'friends' | 'groups' | 'requests' | 'general' = 'general') => {
+    const renderEmptyState = (type: 'friends' | 'groups' | 'requests' | 'general' | 'incoming' | 'outgoing' = 'general') => {
+        const isSubSection = type === 'incoming' || type === 'outgoing';
+
         const configs = {
             friends: {
                 icon: <PersonAddIcon className={styles.emptyIcon} />,
@@ -412,6 +414,16 @@ export default function MessagesPage() {
                 title: 'No Pending Requests',
                 subtitle: 'When people want to connect with you, they will appear here.'
             },
+            incoming: {
+                icon: <PersonAddIcon className={styles.emptyIcon} sx={{ fontSize: isSubSection ? 48 : 72, mb: 2, color: '#cbd5e1' }} />,
+                title: 'No Incoming Friend Requests',
+                subtitle: "When people send you friend requests, they'll appear here"
+            },
+            outgoing: {
+                icon: <SendIcon className={styles.emptyIcon} sx={{ fontSize: isSubSection ? 48 : 72, mb: 2, color: '#cbd5e1' }} />,
+                title: 'No Outgoing Friend Requests',
+                subtitle: 'Friend requests you send will appear here'
+            },
             general: {
                 icon: <ForumIcon className={styles.emptyIcon} />,
                 title: 'Start a conversation',
@@ -419,10 +431,10 @@ export default function MessagesPage() {
             }
         };
 
-        const config = configs[type];
+        const config = configs[type] || configs.general;
 
         return (
-            <div className={styles.emptyState}>
+            <div className={`${styles.emptyState} ${isSubSection ? styles.emptySectionState : ''}`}>
                 {config.icon}
                 <Typography variant="h6" fontWeight={800} color="#1e293b">{config.title}</Typography>
                 <Typography variant="body2" sx={{ mt: 1, color: '#64748b' }}>{config.subtitle}</Typography>
@@ -492,42 +504,42 @@ export default function MessagesPage() {
                                     />
                                 </Tabs>
 
-                                <Box sx={{ ml: isMobile ? 1 : 2, width: 'auto' }}>
+                                <div className={styles.headerActions}>
                                     {tabValue === 0 && (
                                         <Button
-                                            className="btn-primary"
+                                            className={styles.primaryBtn}
                                             startIcon={<PersonAddIcon />}
                                             onClick={() => setSearchDialogOpen(true)}
                                             sx={{
                                                 borderRadius: '50px',
-                                                px: isMobile ? 1.5 : 3,
+                                                px: 3,
                                                 py: 0.8,
                                                 whiteSpace: 'nowrap',
                                                 fontWeight: 800,
-                                                fontSize: isMobile ? '0.7rem' : '0.875rem'
+                                                fontSize: '0.875rem'
                                             }}
                                         >
-                                            Add
+                                            Add Friend
                                         </Button>
                                     )}
                                     {tabValue === 1 && (
                                         <Button
-                                            className="btn-primary"
+                                            className={styles.primaryBtn}
                                             startIcon={<GroupAddIcon />}
                                             onClick={() => setGroupDialogOpen(true)}
                                             sx={{
                                                 borderRadius: '50px',
-                                                px: isMobile ? 1.5 : 3,
+                                                px: 3,
                                                 py: 0.8,
                                                 whiteSpace: 'nowrap',
                                                 fontWeight: 800,
-                                                fontSize: isMobile ? '0.7rem' : '0.875rem'
+                                                fontSize: '0.875rem'
                                             }}
                                         >
-                                            New
+                                            Create Group
                                         </Button>
                                     )}
-                                </Box>
+                                </div>
                             </div>
                         </div>
                     </>
@@ -696,89 +708,93 @@ export default function MessagesPage() {
                             )}
 
                             {tabValue === 2 && (
-                                <div className={styles.gridList}>
+                                <div className={styles.requestsWrapper}>
                                     {/* Incoming Friend Requests Section */}
                                     <div className={styles.requestSection}>
-                                        <div className={styles.sectionHeader} style={{ borderBottomColor: '#e0e7ff' }}>
+                                        <div className={styles.sectionHeader}>
                                             <Badge badgeContent={pendingRequests.length} color="primary" sx={{ mr: 2 }}>
-                                                <PersonAddIcon sx={{ fontSize: 28, color: '#6366f1' }} />
+                                                <PersonAddIcon sx={{ fontSize: 24, color: '#3b82f6' }} />
                                             </Badge>
-                                            <Typography variant="h5" fontWeight={900} sx={{ color: '#1e293b', letterSpacing: '-0.5px' }}>Incoming Friend Requests</Typography>
+                                            <Typography variant="h6" fontWeight={800} color="#1e293b" sx={{ letterSpacing: '-0.5px' }}>INCOMING REQUESTS</Typography>
                                         </div>
 
                                         {pendingRequests.length > 0 ? (
-                                            pendingRequests.map((request) => (
-                                                <div key={request.id} className={styles.gridItem}>
-                                                    <Avatar sx={{ width: 80, height: 80, bgcolor: '#10b981', fontSize: 32, fontWeight: 800 }}>
-                                                        {(request.sender.name || request.sender.username || 'U').charAt(0).toUpperCase()}
-                                                    </Avatar>
-                                                    <div className={styles.gridItemText}>
-                                                        <Typography variant="h5" fontWeight={800}>{request.sender.name || (request.sender.username ? `@${request.sender.username}` : request.sender.email)}</Typography>
-                                                        <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>wants to connect with you</Typography>
+                                            <div className={styles.requestGrid}>
+                                                {pendingRequests.map((request) => (
+                                                    <div key={request.id} className={`${styles.requestCard} ${styles.incoming}`}>
+                                                        <div className={styles.requestHeader}>
+                                                            <Avatar sx={{ width: 56, height: 56, bgcolor: '#10b981', fontSize: 24, fontWeight: 800, border: '2px solid #fff', boxShadow: '0 4px 6px rgba(16, 185, 129, 0.2)' }}>
+                                                                {(request.sender.name || request.sender.username || 'U').charAt(0).toUpperCase()}
+                                                            </Avatar>
+                                                            <div>
+                                                                <Typography variant="subtitle1" fontWeight={800} color="#1e293b">
+                                                                    {request.sender.name || request.sender.username}
+                                                                </Typography>
+                                                                <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 600 }}>
+                                                                    Wants to connect
+                                                                </Typography>
+                                                            </div>
+                                                        </div>
+                                                        <Button
+                                                            className={styles.successBtn}
+                                                            onClick={() => handleAcceptRequest(request.id)}
+                                                            startIcon={<CheckIcon />}
+                                                            sx={{ borderRadius: '12px', py: 1.5 }}
+                                                        >
+                                                            Accept Request
+                                                        </Button>
                                                     </div>
-                                                    <Button
-                                                        variant="contained"
-                                                        onClick={() => handleAcceptRequest(request.id)}
-                                                        sx={{
-                                                            borderRadius: '12px',
-                                                            padding: '14px 32px',
-                                                            fontSize: '1.1rem',
-                                                        }}
-                                                        className="btn-primary"
-                                                    >
-                                                        Accept
-                                                    </Button>
-                                                </div>
-                                            ))
+                                                ))}
+                                            </div>
                                         ) : (
-                                            <Box sx={{ py: 6, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: '24px', border: '2px dashed #cbd5e1' }}>
-                                                <PersonAddIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
-                                                <Typography variant="h6" fontWeight={700} color="#64748b">No Incoming Friend Requests</Typography>
-                                                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>When people send you friend requests, they'll appear here</Typography>
-                                            </Box>
+                                            renderEmptyState('incoming')
                                         )}
                                     </div>
 
                                     {/* Outgoing Friend Requests Section */}
                                     <div className={styles.requestSection}>
-                                        <div className={styles.sectionHeader} style={{ borderBottomColor: '#fef3c7' }}>
+                                        <div className={styles.sectionHeader}>
                                             <Badge badgeContent={sentRequests.length} color="warning" sx={{ mr: 2 }}>
-                                                <SendIcon sx={{ fontSize: 28, color: '#f59e0b' }} />
+                                                <SendIcon sx={{ fontSize: 20, color: '#f59e0b' }} />
                                             </Badge>
-                                            <Typography variant="h5" fontWeight={900} sx={{ color: '#1e293b', letterSpacing: '-0.5px' }}>Outgoing Friend Requests</Typography>
+                                            <Typography variant="h6" fontWeight={800} color="#1e293b" sx={{ letterSpacing: '-0.5px' }}>OUTGOING REQUESTS</Typography>
                                         </div>
 
                                         {sentRequests.length > 0 ? (
-                                            sentRequests.map((request) => (
-                                                <div key={request.id} className={styles.gridItem}>
-                                                    <Avatar sx={{ width: 80, height: 80, bgcolor: '#f59e0b', fontSize: 32, fontWeight: 800 }}>
-                                                        {(request.receiver.name || request.receiver.username || 'U').charAt(0).toUpperCase()}
-                                                    </Avatar>
-                                                    <div className={styles.gridItemText}>
-                                                        <Typography variant="h5" fontWeight={800}>{request.receiver.name || (request.receiver.username ? `@${request.receiver.username}` : request.receiver.email)}</Typography>
-                                                        <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 500 }}>waiting for response</Typography>
+                                            <div className={styles.requestGrid}>
+                                                {sentRequests.map((request) => (
+                                                    <div key={request.id} className={`${styles.requestCard} ${styles.outgoing}`}>
+                                                        <div className={styles.requestHeader}>
+                                                            <Avatar sx={{ width: 56, height: 56, bgcolor: '#f59e0b', fontSize: 24, fontWeight: 800, border: '2px solid #fff', boxShadow: '0 4px 6px rgba(245, 158, 11, 0.2)' }}>
+                                                                {(request.receiver.name || request.receiver.username || 'U').charAt(0).toUpperCase()}
+                                                            </Avatar>
+                                                            <div>
+                                                                <Typography variant="subtitle1" fontWeight={800} color="#1e293b">
+                                                                    {request.receiver.name || request.receiver.username}
+                                                                </Typography>
+                                                                <Typography variant="body2" sx={{ color: '#f59e0b', fontWeight: 600 }}>
+                                                                    Request Pending
+                                                                </Typography>
+                                                            </div>
+                                                        </div>
+                                                        <Chip
+                                                            label="Waiting for response"
+                                                            variant="outlined"
+                                                            sx={{
+                                                                borderColor: '#fbbf24',
+                                                                color: '#d97706',
+                                                                fontWeight: 700,
+                                                                width: '100%',
+                                                                borderRadius: '12px',
+                                                                bgcolor: '#fffbeb',
+                                                                height: '42px'
+                                                            }}
+                                                        />
                                                     </div>
-                                                    <Chip
-                                                        label="Pending"
-                                                        variant="outlined"
-                                                        sx={{
-                                                            borderRadius: '12px',
-                                                            height: '48px',
-                                                            px: 2,
-                                                            fontWeight: 800,
-                                                            color: '#f59e0b',
-                                                            borderColor: '#fbbf24',
-                                                            bgcolor: '#fef3c7'
-                                                        }}
-                                                    />
-                                                </div>
-                                            ))
+                                                ))}
+                                            </div>
                                         ) : (
-                                            <Box sx={{ py: 6, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: '24px', border: '2px dashed #cbd5e1' }}>
-                                                <SendIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
-                                                <Typography variant="h6" fontWeight={700} color="#64748b">No Outgoing Friend Requests</Typography>
-                                                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>Friend requests you send will appear here</Typography>
-                                            </Box>
+                                            renderEmptyState('outgoing')
                                         )}
                                     </div>
                                 </div>
@@ -814,7 +830,7 @@ export default function MessagesPage() {
                                                     width: 32,
                                                     height: 32,
                                                     fontSize: '0.75rem',
-                                                    bgcolor: isSent ? '#6366f1' : '#e2e8f0',
+                                                    bgcolor: isSent ? '#3b82f6' : '#e2e8f0',
                                                     color: isSent ? '#fff' : '#64748b',
                                                     fontWeight: 700,
                                                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -921,7 +937,7 @@ export default function MessagesPage() {
                                         <Typography variant="body2" fontWeight={700}>Send Photo</Typography>
                                     </MenuItem>
                                 </Menu>
-                                <IconButton className={`btn-primary ${styles.sendBtn}`} onClick={handleSendMessage} disabled={!messageInput.trim()}>
+                                <IconButton className={`${styles.primaryBtn} ${styles.sendBtn}`} onClick={handleSendMessage} disabled={!messageInput.trim()}>
                                     <SendIcon sx={{ fontSize: '1.4rem' }} />
                                 </IconButton>
                             </div>
@@ -956,7 +972,7 @@ export default function MessagesPage() {
                                 setSearchQuery(e.target.value);
                             }}
                             onKeyPress={(e) => e.key === 'Enter' && searchQuery.length >= 3 && handleSearch()}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#f1f5f9' } }}
+                            className={styles.modernInput}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -990,7 +1006,7 @@ export default function MessagesPage() {
                                         className={styles.searchResultItem}
                                     >
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Avatar sx={{ width: 48, height: 48, bgcolor: isSelf ? '#64748b' : '#6366f1', fontSize: '1.2rem', fontWeight: 800 }}>
+                                            <Avatar sx={{ width: 48, height: 48, bgcolor: isSelf ? '#64748b' : '#3b82f6', fontSize: '1.2rem', fontWeight: 800 }}>
                                                 {(result.name || result.username || 'U').charAt(0).toUpperCase()}
                                             </Avatar>
                                             <Box>
@@ -1046,7 +1062,7 @@ export default function MessagesPage() {
                                                             borderRadius: '50px',
                                                             px: 3
                                                         }}
-                                                        className="btn-primary"
+                                                        className={styles.primaryBtn}
                                                     >
                                                         Add Friend
                                                     </Button>
@@ -1068,7 +1084,7 @@ export default function MessagesPage() {
                             setSearchResults([]);
                             setSearchQuery('');
                         }}
-                        className="btn-primary"
+                        className={styles.primaryBtn}
                         sx={{ px: 4, py: 1, borderRadius: '50px' }}
                     >
                         Close
@@ -1100,7 +1116,8 @@ export default function MessagesPage() {
                             size="small"
                             value={groupSearchQuery}
                             onChange={(e) => setGroupSearchQuery(e.target.value)}
-                            sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#f1f5f9' } }}
+                            className={styles.modernInput}
+                            sx={{ mb: 2 }}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -1209,8 +1226,8 @@ export default function MessagesPage() {
                             }}
                             error={!!groupFormError?.name}
                             helperText={groupFormError?.name}
+                            className={styles.modernInput}
                             sx={{
-                                '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#f1f5f9' },
                                 '& .MuiFormHelperText-root': { fontWeight: 600, ml: 1 }
                             }}
                         />
@@ -1221,7 +1238,7 @@ export default function MessagesPage() {
                             rows={3}
                             value={newGroupDesc}
                             onChange={(e) => setNewGroupDesc(e.target.value)}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#f1f5f9' } }}
+                            className={styles.modernInput}
                         />
                     </Box>
                 </DialogContent>
@@ -1235,7 +1252,7 @@ export default function MessagesPage() {
                     </Button>
                     <Button
                         onClick={handleCreateGroup}
-                        className="btn-primary"
+                        className={styles.primaryBtn}
                         sx={{ px: 4, borderRadius: '50px' }}
                     >
                         Create Group

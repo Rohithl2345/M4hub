@@ -8,14 +8,15 @@ import AudioPlayer from '@/components/AudioPlayer';
 import styles from './music.module.css';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import QueueMusicIcon from '@mui/icons-material/QueueMusic';
-import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
+import QueueMusicIcon from '@mui/icons-material/QueueMusic'; // For favorites
 import { Track, musicService } from '@/services/music.service';
 
 type FilterType = 'all' | 'favorites' | 'wishlist';
@@ -140,49 +141,30 @@ export default function MusicPage() {
                                 if (e.target.value.trim()) setSearchError(null);
                             }}
                             className={`${styles.searchInput} ${searchError ? styles.inputError : ''}`}
-                            style={searchError ? { border: '1px solid #ef4444' } : {}}
                         />
                         {searchQuery && (
                             <button type="button" onClick={handleResetSearch} className={styles.resetButton}>
-                                <CloseIcon />
+                                <CloseIcon fontSize="small" />
                             </button>
                         )}
-                        <button type="submit" className={`btn-primary ${styles.searchButton}`}>Search</button>
                     </div>
-                    {searchError && (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            backgroundColor: '#fee2e2',
-                            color: '#b91c1c',
-                            fontSize: '13px',
-                            marginTop: '10px',
-                            marginLeft: '4px',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            fontWeight: '500'
-                        }}>
-                            <span style={{ marginRight: '6px', fontSize: '16px', display: 'flex' }}>⚠️</span>
-                            {searchError}
-                        </div>
-                    )}
                 </form>
 
                 <div className={styles.tabs}>
                     <button
-                        className={`tab-pill ${styles.tab} ${filter === 'all' ? `tab-pill-active ${styles.tabActive}` : ''}`}
+                        className={`${styles.tab} ${filter === 'all' ? styles.tabActive : ''}`}
                         onClick={() => setFilter('all')}
                     >
                         All Songs
                     </button>
                     <button
-                        className={`tab-pill ${styles.tab} ${filter === 'favorites' ? `tab-pill-active ${styles.tabActive}` : ''}`}
+                        className={`${styles.tab} ${filter === 'favorites' ? styles.tabActive : ''}`}
                         onClick={() => setFilter('favorites')}
                     >
                         Favorites
                     </button>
                     <button
-                        className={`tab-pill ${styles.tab} ${filter === 'wishlist' ? `tab-pill-active ${styles.tabActive}` : ''}`}
+                        className={`${styles.tab} ${filter === 'wishlist' ? styles.tabActive : ''}`}
                         onClick={() => setFilter('wishlist')}
                     >
                         Wishlist
@@ -194,8 +176,44 @@ export default function MusicPage() {
                         <div className={styles.loading}>Loading songs...</div>
                     ) : tracks.length === 0 ? (
                         <div className={styles.noResults}>
-                            {filter === 'favorites' ? 'No favorites yet.' :
-                                filter === 'wishlist' ? 'Wishlist is empty.' : 'No songs found.'}
+                            {filter === 'favorites' ? (
+                                <QueueMusicIcon className={styles.emptyStateIcon} />
+                            ) : filter === 'wishlist' ? (
+                                <LibraryMusicIcon className={styles.emptyStateIcon} />
+                            ) : (
+                                <SearchOffIcon className={styles.emptyStateIcon} />
+                            )}
+
+                            <h3>
+                                {filter === 'favorites' ? 'No Favorites Yet' :
+                                    filter === 'wishlist' ? 'Your Wishlist is Empty' :
+                                        searchQuery ? 'No Songs Found' : 'No Songs Available'}
+                            </h3>
+                            <p>
+                                {filter === 'favorites' ? 'Mark songs as favorite to see them here.' :
+                                    filter === 'wishlist' ? 'Save songs for later to build your collection.' :
+                                        searchQuery ? `We couldn't find any matches for "${searchQuery}".` : 'Explore our library to start listening.'}
+                            </p>
+                            {searchQuery && (
+                                <button
+                                    onClick={handleResetSearch}
+                                    style={{
+                                        marginTop: '24px',
+                                        padding: '12px 32px',
+                                        background: '#10b981',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        fontSize: '15px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    Clear Search
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className={styles.tracksList}>
@@ -207,9 +225,9 @@ export default function MusicPage() {
                                 >
                                     <div className={styles.trackIcon}>
                                         {track.album_image ? (
-                                            <Image src={track.album_image} alt={track.name} width={50} height={50} className={styles.trackImage} unoptimized />
+                                            <Image src={track.album_image} alt={track.name} width={56} height={56} className={styles.trackImage} unoptimized />
                                         ) : (
-                                            <MusicNoteIcon />
+                                            <MusicNoteIcon style={{ fontSize: '28px' }} />
                                         )}
                                     </div>
                                     <div className={styles.trackInfo}>
@@ -221,18 +239,20 @@ export default function MusicPage() {
                                     </div>
                                     <div className={styles.trackActions}>
                                         <button
-                                            className={`${styles.actionButton} ${track.isFavorite ? styles.favoriteButtonActive : ''}`}
-                                            onClick={(e) => toggleFavorite(e, track)}
-                                            title={track.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                                            className={styles.playButton}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                playTrack(track, index);
+                                            }}
                                         >
-                                            {track.isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                                            <PlayCircleOutlineIcon />
                                         </button>
                                         <button
-                                            className={`${styles.actionButton} ${track.isInWishlist ? styles.wishlistButtonActive : ''}`}
-                                            onClick={(e) => toggleWishlist(e, track)}
-                                            title={track.isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                                            className={`${styles.actionButton} ${track.isFavorite ? styles.favoriteButtonActive : ''}`}
+                                            onClick={(e) => toggleFavorite(e, track)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                                         >
-                                            {track.isInWishlist ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+                                            {track.isFavorite ? <FavoriteIcon sx={{ color: '#ef4444' }} /> : <FavoriteBorderIcon sx={{ color: '#94a3b8' }} />}
                                         </button>
                                     </div>
                                 </div>

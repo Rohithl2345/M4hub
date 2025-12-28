@@ -89,7 +89,7 @@ export default function NewsPage() {
 
                 {loading ? (
                     <div className={styles.loadingContainer}>
-                        <CircularProgress sx={{ color: '#fa709a' }} />
+                        <CircularProgress sx={{ color: '#ef4444' }} />
                     </div>
                 ) : (
                     <div className={styles.mainLayout}>

@@ -1,31 +1,93 @@
+/* ===== PREMIUM DASHBOARD LAYOUT ===== */
 .container {
     display: flex;
     min-height: 100vh;
-    background: var(--background);
+    background: #f8fafc;
 }
 
+/* ===== GLASSMORPHIC SIDEBAR ===== */
 .sidebar {
-    width: 260px;
-    background: linear-gradient(180deg, #5433ff 0%, #20bdff 100%);
-    padding: 24px;
+    width: 280px;
+    background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
+    padding: 32px 20px;
     display: flex;
     flex-direction: column;
     position: fixed;
     height: 100vh;
     left: 0;
     top: 0;
-    box-shadow: 2px 0 12px rgba(84, 51, 255, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.3);
+    z-index: 50;
+    backdrop-filter: blur(10px);
 }
 
+/* Logo Section */
 .logo {
-    font-size: 28px;
-    font-weight: 700;
-    color: white;
+    display: flex;
+    align-items: center;
+    gap: 16px;
     margin-bottom: 48px;
-    font-family: 'Poppins', sans-serif;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-left: 8px;
 }
 
+/* Icon Wrapper */
+.logoIconWrapper {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.logoIconWrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
+}
+
+.logoIcon {
+    font-size: 28px !important;
+    color: white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Logo Typography */
+.logoText {
+    font-size: 28px;
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+    margin-bottom: 4px;
+    font-family: 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.5px;
+    background: linear-gradient(to right, #ffffff, #e2e8f0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.logoTagline {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Navigation */
 .nav {
     display: flex;
     flex-direction: column;
@@ -33,38 +95,103 @@
 }
 
 .navItem {
-    padding: 14px 20px;
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.9);
+    padding: 14px 16px;
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.65);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 15px;
     font-weight: 500;
     display: flex;
     align-items: center;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    border: 1px solid transparent;
 }
 
 .navIcon {
     font-size: 20px;
-    margin-right: 12px;
+    margin-right: 14px;
+    transition: all 0.3s ease;
+    opacity: 0.8;
 }
 
+/* Hover State */
 .navItem:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
     color: white;
-    transform: translateX(4px);
+    border-color: rgba(255, 255, 255, 0.05);
 }
 
+.navItem:hover .navIcon {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Active State */
 .navItemActive {
-    background: white;
-    color: #5433ff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(8px);
 }
 
+.navItemActive .navIcon {
+    opacity: 1;
+    color: var(--tab-color, #3b82f6);
+    transform: scale(1.1);
+}
+
+/* Active Tab Indicators */
+.navItemActive::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 20px;
+    border-radius: 0 4px 4px 0;
+    /* Updated default to Blue */
+    background-color: var(--tab-color, #3b82f6);
+    box-shadow: 0 0 8px var(--tab-color, #3b82f6);
+}
+
+/* Per-Tab Colors - Updated Dashboard to Blue */
+.navItemActive[data-tab="dashboard"] {
+    --tab-color: #8b5cf6;
+    /* Updated to Purple */
+}
+
+/* Profile Removed from sidebar list but leaving css if needed later */
+.navItemActive[data-tab="profile"] {
+    --tab-color: #8b5cf6;
+}
+
+.navItemActive[data-tab="music"] {
+    --tab-color: #10b981;
+}
+
+.navItemActive[data-tab="messages"] {
+    --tab-color: #3b82f6;
+}
+
+.navItemActive[data-tab="money"] {
+    --tab-color: #f59e0b;
+}
+
+.navItemActive[data-tab="news"] {
+    --tab-color: #ef4444;
+}
+
+/* ===== MAIN CONTENT AREA ===== */
 .main {
     flex: 1;
-    margin-left: 260px;
-    padding: 32px;
+    margin-left: 280px;
+    padding: 32px 48px;
+    background: #f8fafc;
 }
 
 .header {
@@ -72,43 +199,199 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.profilePreview {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 8px 6px 16px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+}
+
+.profilePreview:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #e2e8f0;
+    transform: translateY(-1px);
+}
+
+.profileActive {
+    background: white;
+    border-color: #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.profileInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.profileName {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+}
+
+.profileRole {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.divider {
+    width: 1px;
+    height: 28px;
+    background: #e2e8f0;
 }
 
 .title {
     font-size: 32px;
-    font-weight: 700;
-    color: var(--text-primary);
-    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    color: #1e293b;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -1px;
     margin: 0;
 }
 
+/* Logout Button - Compact Icon Style */
 .logoutButton {
-    padding: 12px 28px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: white;
+    color: #ef4444;
+    border: 1px solid #fee2e2;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .logoutIcon {
-    font-size: 18px;
-    margin-right: 8px;
+    font-size: 20px;
+    margin: 0;
 }
 
 .logoutButton:hover {
-    background: #20bdff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    transform: translateY(-1px);
+    background: #fef2f2;
+    border-color: #fecaca;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
 }
 
-.content {
-    width: 100%;
+/* Responsive */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 240px;
+    }
+
+    .main {
+        margin-left: 240px;
+        padding: 24px 32px;
+    }
+
+    .logoText {
+        font-size: 22px;
+    }
+
+    .logoIconWrapper {
+        width: 40px;
+        height: 40px;
+    }
+
+    .logoIcon {
+        font-size: 24px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 72px;
+        padding: 24px 12px;
+    }
+
+    .logo {
+        flex-direction: column;
+        gap: 8px;
+        padding-left: 0;
+        justify-content: center;
+    }
+
+    .logoText,
+    .logoTagline {
+        display: none;
+    }
+
+    .navItem {
+        justify-content: center;
+        padding: 12px;
+        font-size: 0;
+    }
+
+    .navIcon {
+        margin-right: 0;
+        font-size: 24px;
+    }
+
+    .navItemActive::before {
+        display: none;
+    }
+
+    .navItemActive {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-radius: 16px;
+    }
+
+    .main {
+        margin-left: 72px;
+        padding: 20px;
+    }
+
+    .profileInfo {
+        display: none;
+    }
+
+    .profilePreview {
+        padding: 6px;
+    }
+
+    .header {
+        flex-direction: row;
+        /* Keep row on mobile for logo/profile split? */
+        /* Actually sidebar is fixed left, so Header has room */
+        /* But small screens... */
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    /* On mobile, title might wrapping or stack */
+    @media (max-width: 600px) {
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .headerRight {
+            width: 100%;
+            justify-content: space-between;
+        }
+    }
 }

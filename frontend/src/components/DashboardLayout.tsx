@@ -19,6 +19,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
+import HubIcon from '@mui/icons-material/Hub';
 import SnakeGame from './SnakeGame';
 
 interface DashboardLayoutProps {
@@ -38,10 +39,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
     const [isGameOpen, setIsGameOpen] = useState(false);
-
-
-
-
 
     // Global Chat Connection and Presence
     useEffect(() => {
@@ -67,7 +64,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
             const handleOffline = () => {
                 logger.info('Internet connection lost');
-                // The WebSocket will naturally disconnect, but we could explicitly handle UI here if needed
             };
 
             window.addEventListener('online', handleOnline);
@@ -95,7 +91,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         };
     }, []);
 
-
     // Tab Usage Tracking
     useEffect(() => {
         if (!user?.id) return;
@@ -107,7 +102,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             const endTime = Date.now();
             const durationSeconds = Math.round((endTime - startTime) / 1000);
 
-            // Only log if they spent at least 1 second
             if (durationSeconds > 0) {
                 import('@/services/analytics.service').then(({ default: analyticsService }) => {
                     analyticsService.logUsage(currentTab, durationSeconds);
@@ -129,7 +123,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             }
         };
         loadPendingCount();
-        // Refresh count every 30 seconds
         const interval = setInterval(loadPendingCount, 30000);
         return () => clearInterval(interval);
     }, [user?.id]);
@@ -169,7 +162,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     }
 
     if (!user) {
-        return null; // The useEffect will handle the redirect
+        return null;
     }
 
     return (
@@ -184,8 +177,15 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             </button>
 
             <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
-                <div className={styles.logo} onClick={() => router.push('/dashboard')}>M4Hub</div>
-
+                <div className={styles.logo} onClick={() => router.push('/dashboard')}>
+                    <div className={styles.logoIconWrapper}>
+                        <HubIcon className={styles.logoIcon} />
+                    </div>
+                    <div>
+                        <div className={styles.logoText}>M4Hub</div>
+                        <div className={styles.logoTagline}>Your Digital Hub</div>
+                    </div>
+                </div>
 
                 <nav className={styles.nav}>
                     <div
@@ -193,15 +193,18 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                         onClick={() => handleNavigation('/dashboard')}
                         role="button"
                         tabIndex={0}
+                        data-tab="dashboard"
                     >
                         <DashboardIcon className={styles.navIcon} />
                         <span>Dashboard</span>
                     </div>
+
                     <div
                         className={`${styles.navItem} ${isActive('/music') ? styles.navItemActive : ''}`}
                         onClick={() => handleNavigation('/music')}
                         role="button"
                         tabIndex={0}
+                        data-tab="music"
                     >
                         <MusicNoteIcon className={styles.navIcon} />
                         <span>Music</span>
@@ -211,6 +214,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                         onClick={() => handleNavigation('/messages')}
                         role="button"
                         tabIndex={0}
+                        data-tab="messages"
                     >
                         <Badge badgeContent={pendingCount} color="error" max={99}>
                             <ChatBubbleIcon className={styles.navIcon} />
@@ -222,6 +226,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                         onClick={() => handleNavigation('/money')}
                         role="button"
                         tabIndex={0}
+                        data-tab="money"
                     >
                         <AccountBalanceWalletIcon className={styles.navIcon} />
                         <span>Money</span>
@@ -231,12 +236,12 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                         onClick={() => handleNavigation('/news')}
                         role="button"
                         tabIndex={0}
+                        data-tab="news"
                     >
                         <NewspaperIcon className={styles.navIcon} />
                         <span>News</span>
                     </div>
                 </nav>
-
             </aside>
 
             {isSidebarOpen && <div className={styles.overlay} onClick={() => setIsSidebarOpen(false)} />}
