@@ -115,7 +115,9 @@ public class ChatController {
                     com.m4hub.backend.dto.FriendDto dto = com.m4hub.backend.dto.FriendDto.fromEntity(f);
 
                     // Fetch last message
-                    ChatMessage lastMsg = chatMessageRepository.findLastMessage(user.getId(), f.getId());
+                    List<ChatMessage> lastMsgs = chatMessageRepository.findLastMessages(user.getId(), f.getId(),
+                            org.springframework.data.domain.PageRequest.of(0, 1));
+                    ChatMessage lastMsg = lastMsgs.isEmpty() ? null : lastMsgs.get(0);
                     if (lastMsg != null) {
                         dto.setLastMessageContent(lastMsg.getContent());
                         dto.setLastMessageAt(lastMsg.getCreatedAt());

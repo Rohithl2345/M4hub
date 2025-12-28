@@ -126,6 +126,7 @@ public class ChatService {
         friendRequestRepository.save(request);
     }
 
+    @Transactional(readOnly = true)
     public List<User> getFriends(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         List<FriendRequest> connections = friendRequestRepository.findAcceptedRequests(user);

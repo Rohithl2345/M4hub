@@ -28,6 +28,7 @@ import {
     Chip,
     InputAdornment,
     Tooltip,
+    CircularProgress
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
@@ -38,6 +39,8 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PeopleIcon from '@mui/icons-material/People';
+import EmojiPeopleIcon from '@mui/icons-material/EmojiPeople';
+import SearchIcon from '@mui/icons-material/Search';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
@@ -45,7 +48,6 @@ import InsertPhotoIcon from '@mui/icons-material/InsertPhoto';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import SearchIcon from '@mui/icons-material/Search';
 import { useTheme, useMediaQuery } from '@mui/material';
 
 import { env } from '@/utils/env';
@@ -954,23 +956,26 @@ export default function MessagesPage() {
                 fullScreen={isMobile}
                 PaperProps={{
                     className: styles.dialogPaper,
-                    sx: { p: isMobile ? 0 : 1 }
+                    sx: { p: 0 } // Classes handle padding
                 }}
             >
-                <DialogTitle sx={{ fontWeight: 800, fontSize: '1.5rem', pb: 1 }}>Search Friends</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                <DialogTitle className={styles.dialogHeader}>
+                    <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.5px', color: '#1e293b' }}>
+                        Search Friends
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
                         Search for people by their name or username to start a conversation.
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                </DialogTitle>
+
+                <DialogContent className={styles.searchContent}>
+                    <Box sx={{ mt: 1 }}>
                         <TextField
-                            placeholder="Type at least 3 characters to search..."
+                            placeholder="Type a name or username..."
                             fullWidth
                             size="small"
                             value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                            }}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && searchQuery.length >= 3 && handleSearch()}
                             className={styles.modernInput}
                             InputProps={{
@@ -982,11 +987,30 @@ export default function MessagesPage() {
                             }}
                         />
                     </Box>
-                    <List sx={{ mt: 3, minHeight: '100px' }}>
-                        {isSearching ? (
-                            <Typography color="textSecondary" sx={{ py: 4, textAlign: 'center', fontStyle: 'italic' }}>Searching...</Typography>
+
+                    <List sx={{ mt: 2 }}>
+                        {!hasSearched ? (
+                            <div className={styles.searchPlaceholder}>
+                                <SearchIcon sx={{ fontSize: 64, color: '#cbd5e1', mb: 2 }} />
+                                <Typography variant="h6" fontWeight={800} color="#64748b" gutterBottom>
+                                    Start Searching
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary" align="center" sx={{ maxWidth: 280 }}>
+                                    Enter a name or username in the field above to find people to connect with.
+                                </Typography>
+                            </div>
+                        ) : isSearching ? (
+                            <Box sx={{ py: 6, textAlign: 'center' }}>
+                                <CircularProgress size={32} sx={{ mb: 2 }} />
+                                <Typography color="textSecondary" variant="body2" fontWeight={600}>Searching for users...</Typography>
+                            </Box>
                         ) : hasSearched && searchResults.length === 0 ? (
-                            <Typography color="textSecondary" sx={{ py: 4, textAlign: 'center', fontStyle: 'italic' }}>No users found for "{searchQuery}"</Typography>
+                            <Box sx={{ py: 6, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: '20px', border: '2px dashed #e2e8f0' }}>
+                                <EmojiPeopleIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 1.5 }} />
+                                <Typography color="textSecondary" variant="body2" fontWeight={700}>
+                                    No users found for "{searchQuery}"
+                                </Typography>
+                            </Box>
                         ) : (
                             searchResults.map((result) => {
                                 const isFriend = friends.some(f => f.id === result.id);
@@ -994,89 +1018,90 @@ export default function MessagesPage() {
                                 const isSent = sentRequests.some(r => r.receiver.id === result.id);
                                 const isSelf = user?.id === result.id;
 
-                                let statusText = '';
-                                if (isFriend) statusText = 'Friend';
-                                else if (isPending) statusText = 'Accept Request';
-                                else if (isSent) statusText = 'Pending';
-                                else if (isSelf) statusText = 'You';
+                                let statusTag = null;
+                                if (isFriend) statusTag = <Chip label="Friend" size="small" color="success" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800 }} />;
+                                else if (isPending) statusTag = <Chip label="Req Sent to You" size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800 }} />;
+                                else if (isSent) statusTag = <Chip label="Pending" size="small" color="warning" variant="outlined" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800 }} />;
 
                                 return (
-                                    <Box
-                                        key={result.id}
-                                        className={styles.searchResultItem}
-                                    >
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Avatar sx={{ width: 48, height: 48, bgcolor: isSelf ? '#64748b' : '#3b82f6', fontSize: '1.2rem', fontWeight: 800 }}>
+                                    <div key={result.id} className={styles.searchResultItem}>
+                                        <div className={styles.resultInfo}>
+                                            <Avatar sx={{
+                                                width: 52,
+                                                height: 52,
+                                                bgcolor: getAvatarColor(result.id),
+                                                fontSize: '1.3rem',
+                                                fontWeight: 800,
+                                                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                                                border: '2px solid #fff'
+                                            }}>
                                                 {(result.name || result.username || 'U').charAt(0).toUpperCase()}
                                             </Avatar>
-                                            <Box>
-                                                <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1 }}>
+                                            <div className={styles.resultDetails}>
+                                                <Typography className={styles.resultName}>
                                                     {result.name || result.username}
                                                 </Typography>
-                                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.2 }}>
-                                                    @{result.username} {statusText ? `• ${statusText}` : ''}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
+                                                    <Typography className={styles.resultUsername}>
+                                                        @{result.username}
+                                                    </Typography>
+                                                    {statusTag}
+                                                </Box>
+                                            </div>
+                                        </div>
 
-                                        {!isSelf && (
-                                            <Box>
-                                                {isFriend ? (
-                                                    <Chip label="Friend" color="success" size="small" sx={{ fontWeight: 700, color: '#fff' }} />
-                                                ) : isPending ? (
-                                                    <Button
-                                                        variant="contained"
-                                                        size="small"
-                                                        onClick={() => handleAcceptRequest(result.id)}
-                                                        sx={{
-                                                            borderRadius: '50px',
-                                                            px: 3,
-                                                            textTransform: 'none',
-                                                            fontWeight: 700,
-                                                            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-                                                            color: '#fff !important',
-                                                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
-                                                        }}
-                                                    >
-                                                        Accept
-                                                    </Button>
-                                                ) : isSent ? (
-                                                    <Chip label="Pending" variant="outlined" size="small" sx={{ fontWeight: 700 }} />
-                                                ) : (
-                                                    <Button
-                                                        variant="contained"
-                                                        size="small"
-                                                        startIcon={<PersonAddIcon />}
-                                                        onClick={async () => {
-                                                            try {
-                                                                await chatService.sendFriendRequest(undefined, result.id);
-                                                                loadPendingRequests();
-                                                                // Refresh status
-                                                                const updated = await chatService.searchUsers(searchQuery);
-                                                                setSearchResults(updated);
-                                                            } catch (error) {
-                                                                console.error('Add friend error:', error);
-                                                            }
-                                                        }}
-                                                        sx={{
-                                                            borderRadius: '50px',
-                                                            px: 3
-                                                        }}
-                                                        className={styles.primaryBtn}
-                                                    >
-                                                        Add Friend
-                                                    </Button>
-                                                )}
-                                            </Box>
-                                        )}
-                                        {isSelf && <Chip label="You" size="small" variant="outlined" />}
-                                    </Box>
+                                        <div className={styles.resultAction}>
+                                            {!isSelf && (
+                                                <>
+                                                    {isFriend ? (
+                                                        <IconButton disabled sx={{ bgcolor: 'rgba(16, 185, 129, 0.1) !important', color: '#10b981 !important' }}>
+                                                            <CheckIcon />
+                                                        </IconButton>
+                                                    ) : isPending ? (
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            className={styles.successBtn}
+                                                            onClick={() => handleAcceptRequest(result.id)}
+                                                            sx={{ borderRadius: '50px', px: 2, height: 36 }}
+                                                        >
+                                                            Accept
+                                                        </Button>
+                                                    ) : isSent ? (
+                                                        <Chip label="Requested" variant="outlined" sx={{ fontWeight: 700 }} />
+                                                    ) : (
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            startIcon={<PersonAddIcon />}
+                                                            onClick={async () => {
+                                                                try {
+                                                                    await chatService.sendFriendRequest(undefined, result.id);
+                                                                    loadPendingRequests();
+                                                                    // Refresh status
+                                                                    const updated = await chatService.searchUsers(searchQuery);
+                                                                    setSearchResults(updated);
+                                                                } catch (error) {
+                                                                    console.error('Add friend error:', error);
+                                                                }
+                                                            }}
+                                                            className={styles.primaryBtn}
+                                                            sx={{ borderRadius: '50px', px: 2, height: 36 }}
+                                                        >
+                                                            Add Friend
+                                                        </Button>
+                                                    )}
+                                                </>
+                                            )}
+                                            {isSelf && <Chip label="You" size="small" variant="outlined" sx={{ fontWeight: 700 }} />}
+                                        </div>
+                                    </div>
                                 );
                             })
                         )}
                     </List>
                 </DialogContent>
-                <DialogActions sx={{ p: 2, justifyContent: 'flex-end' }}>
+                <DialogActions sx={{ p: 3, borderTop: '1px solid #f1f5f9' }}>
                     <Button
                         onClick={() => {
                             setSearchDialogOpen(false);
