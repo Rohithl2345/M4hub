@@ -2,148 +2,161 @@
 .container {
     min-height: 100vh;
     display: flex;
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
-    background-size: 200% 200%;
-    animation: gradientShift 15s ease infinite;
     position: relative;
     overflow: hidden;
 }
 
-/* Animated gradient */
-@keyframes gradientShift {
-
-    0%,
-    100% {
-        background-position: 0% 50%;
-    }
-
-    50% {
-        background-position: 100% 50%;
-    }
-}
-
-/* Enhanced grid pattern */
-.container::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-    background-size: 50px 50px;
-    pointer-events: none;
-}
-
-/* Left side - Branding */
+/* Left side - Branding - Dynamic BG is handled inline */
 .brandingSide {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-    padding: 60px;
+    align-items: flex-start;
+    /* Left Align */
+    padding: 80px;
     color: white;
     position: relative;
     z-index: 1;
-}
-
-.logoSection {
-    text-align: center;
-    margin-bottom: 64px;
-}
-
-.logoText {
-    font-size: 68px !important;
-    font-weight: 900 !important;
-    color: #ffffff;
-    margin-bottom: 20px;
-    letter-spacing: -1px;
-    line-height: 1;
-    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.tagline {
-    font-size: 20px !important;
-    font-weight: 500 !important;
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 0;
-    letter-spacing: 0.5px;
-    line-height: 1.5;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.featuresGrid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin-top: 0;
-    max-width: 480px;
-}
-
-.featureCard {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
-    padding: 24px 20px;
-    text-align: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    position: relative;
+    transition: background 1s ease;
+    /* Smooth Color Shift */
     overflow: hidden;
 }
 
-.featureCard::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+/* Grid Removed per user request */
+.brandingSide::before {
+    display: none;
 }
 
-.featureCard:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-4px);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.1);
+@keyframes panGrid {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(-60px, -60px);
+    }
 }
 
-.featureCard:hover::before {
+.logoSection {
+    margin-bottom: 80px;
+}
+
+.logoText {
+    font-size: 64px !important;
+    font-weight: 900 !important;
+    color: white;
+    letter-spacing: -2px;
+    margin-bottom: 8px;
+    line-height: 1;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tagline {
+    font-size: 18px !important;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500 !important;
+    letter-spacing: 0.5px;
+}
+
+/* Feature Vertical List */
+.featureList {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.featureRow {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.6;
+
+    /* Box Styles */
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 16px 20px;
+}
+
+.activeRow {
     opacity: 1;
+    transform: scale(1.05) translateX(10px);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    z-index: 2;
+}
+
+/* Hover effect for inactive items */
+.inactiveRow:hover {
+    opacity: 0.9;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.iconWrapper {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s ease;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.activeRow .iconWrapper {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(1.1);
 }
 
 .featureIcon {
-    font-size: 36px !important;
-    margin-bottom: 12px;
-    color: rgba(255, 255, 255, 0.95);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    font-size: 28px !important;
+    transition: transform 0.3s ease;
 }
 
-.featureCard:hover .featureIcon {
-    transform: scale(1.1) translateY(-2px);
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+.activeRow:hover .featureIcon {
+    transform: rotate(10deg);
+}
+
+.textWrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
 .featureTitle {
-    font-size: 17px;
-    font-weight: 700;
-    color: #ffffff;
-    margin: 0 0 6px 0;
-    letter-spacing: 0.3px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    color: white;
+    line-height: 1.2 !important;
+    letter-spacing: -0.5px;
 }
 
+.descWrapper {
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.4s ease;
+}
+
+.activeRow .descWrapper {
+    height: auto;
+    max-height: 40px;
+    opacity: 1;
+    margin-top: 4px;
+}
+
+
 .featureDesc {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 0;
-    font-weight: 400;
+    font-size: 15px !important;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500 !important;
 }
 
 /* Colored accents for each card */
@@ -177,6 +190,49 @@
 
 .newsCard:hover {
     box-shadow: 0 8px 24px rgba(251, 146, 60, 0.2), 0 0 0 1px rgba(251, 146, 60, 0.3);
+}
+
+/* Floating Background Icons */
+.floatingIconsContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+    /* Behind content */
+}
+
+.floatingIcon {
+    position: absolute;
+    bottom: -100px;
+    /* Start below screen */
+    color: rgba(255, 255, 255, 0.3);
+    /* Increased Visibility */
+    animation: floatUp linear infinite;
+    z-index: 0;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.5;
+    }
+
+    90% {
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: translateY(-120vh) rotate(360deg);
+        opacity: 0;
+    }
 }
 
 /* Right side - Form */
