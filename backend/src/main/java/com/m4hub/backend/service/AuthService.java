@@ -180,13 +180,17 @@ public class AuthService {
         emailOtpRepository.save(emailOtp);
 
         // Log OTP prominently for development
-        logger.info("╔════════════════════════════════════════════════════════════╗");
-        logger.info("║                    🔐 EMAIL OTP GENERATED                  ║");
-        logger.info("╠════════════════════════════════════════════════════════════╣");
-        logger.info("║  Email: {}", String.format("%-45s", email) + "║");
-        logger.info("║  OTP Code: {}", String.format("%-42s", otpCode) + "║");
-        logger.info("║  Expires: 5 minutes                                        ║");
-        logger.info("╚════════════════════════════════════════════════════════════╝");
+        String otpLog = "\n" +
+                "╔════════════════════════════════════════════════════════════╗\n" +
+                "║                    🔐 EMAIL OTP GENERATED                  ║\n" +
+                "╠════════════════════════════════════════════════════════════╣\n" +
+                "║  Email: " + String.format("%-45s", email) + "║\n" +
+                "║  OTP Code: " + String.format("%-42s", otpCode) + "║\n" +
+                "║  Expires: 5 minutes                                        ║\n" +
+                "╚════════════════════════════════════════════════════════════╝\n";
+
+        logger.info(otpLog);
+        System.out.println(otpLog);
 
         // Send OTP via email
         emailService.sendOtp(email, otpCode);
@@ -289,13 +293,17 @@ public class AuthService {
         }
 
         // Log OTP prominently for development
-        logger.info("╔════════════════════════════════════════════════════════════╗");
-        logger.info("║                 🔄 EMAIL OTP RESENT                        ║");
-        logger.info("╠════════════════════════════════════════════════════════════╣");
-        logger.info("║  Email: {}", String.format("%-45s", email) + "║");
-        logger.info("║  OTP Code: {}", String.format("%-42s", otpCode) + "║");
-        logger.info("║  Expires: 5 minutes                                        ║");
-        logger.info("╚════════════════════════════════════════════════════════════╝");
+        String resendLog = "\n" +
+                "╔════════════════════════════════════════════════════════════╗\n" +
+                "║                 🔄 EMAIL OTP RESENT                        ║\n" +
+                "╠════════════════════════════════════════════════════════════╣\n" +
+                "║  Email: " + String.format("%-45s", email) + "║\n" +
+                "║  OTP Code: " + String.format("%-42s", otpCode) + "║\n" +
+                "║  Expires: 5 minutes                                        ║\n" +
+                "╚════════════════════════════════════════════════════════════╝\n";
+
+        logger.info(resendLog);
+        System.out.println(resendLog);
 
         // Send OTP via email
         emailService.sendOtp(email, otpCode);
@@ -407,52 +415,40 @@ public class AuthService {
         // Verify password matches
         String passwordHash = hashPassword(password);
         if (!passwordHash.equals(emailOtp.getPasswordHash())) {
+            logger.warn("Verification failed: Password hash mismatch for email: {}", normalizedEmail);
             return new AuthResponse(false, "Invalid password");
         }
 
-        // Mark OTP as used
-        emailOtp.setIsUsed(true);
-        emailOtpRepository.save(emailOtp);
-
         // Find or create user
-        logger.info("Verifying OTP for email: {}. Attempting to find/create user.", normalizedEmail);
-        User user = userRepository.findByEmail(normalizedEmail)
-                .orElseGet(() -> {
-                    logger.info("User not found for email: {}. Creating new user.", normalizedEmail);
-                    User newUser = new User();
-                    newUser.setEmail(normalizedEmail);
-                    newUser.setPhoneNumber(null); // Null phone number for email users
-                    newUser.setIsVerified(true);
-                    // Persist provided password hash for future direct logins
-                    newUser.setPasswordHash(passwordHash);
-                    User savedUser = userRepository.save(newUser);
-                    logger.info("New user saved with ID: {}", savedUser.getId());
-                    return savedUser;
-                });
+        logger.info("Verification success for {}. Proceeding to find/create user.", normalizedEmail);
 
-        // If user exists but has no password set, set it now (user registered via OTP)
-        if (user.getPasswordHash() == null) {
+        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
+
+        if (user == null) {
+            logger.info("User not found for email: {}. Creating new record.", normalizedEmail);
+            user = new User();
+            user.setEmail(normalizedEmail);
+            user.setIsVerified(true);
             user.setPasswordHash(passwordHash);
+            user = userRepository.save(user);
+        } else {
+            logger.info("User already exists for email: {}. Updating verification status.", normalizedEmail);
+            user.setIsVerified(true);
+            if (user.getPasswordHash() == null) {
+                user.setPasswordHash(passwordHash);
+            }
         }
 
-        // Update last login
+        // Update session and login time
         user.setLastLoginAt(Instant.now());
-        user.setIsVerified(true);
-        user.setEmail(normalizedEmail);
-        userRepository.save(user);
-
-        // Generate auth token
         String token = UUID.randomUUID().toString();
         user.setSessionToken(token);
 
-        // Save user with new token
-        userRepository.save(user);
-
-        // Store token -> email mapping (Removed in favor of DB)
-        // tokenStorage.put(token, normalizedEmail);
+        User savedUser = userRepository.save(user);
+        logger.info("User session established for: {}. Token: {}", normalizedEmail, token);
 
         // Create user DTO
-        UserDto userDto = UserDto.fromEntity(user);
+        UserDto userDto = UserDto.fromEntity(savedUser);
 
         return new AuthResponse(true, "Login successful", token, userDto);
     }

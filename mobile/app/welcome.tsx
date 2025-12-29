@@ -1,55 +1,161 @@
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, View, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withRepeat,
+    withTiming,
+    Easing,
+    interpolateColor
+} from 'react-native-reanimated';
+
+const { width, height } = Dimensions.get('window');
+
+const FEATURES = [
+    {
+        icon: 'musical-notes',
+        title: 'Music',
+        desc: 'Stream unlimited tracks',
+        colors: ['#064e3b', '#065f46'] as [string, string],
+        accent: '#10b981'
+    },
+    {
+        icon: 'chatbubble-ellipses',
+        title: 'Messages',
+        desc: 'Connect with friends',
+        colors: ['#172554', '#1e40af'] as [string, string],
+        accent: '#3b82f6'
+    },
+    {
+        icon: 'wallet',
+        title: 'Money',
+        desc: 'Manage finances securely',
+        colors: ['#451a03', '#92400e'] as [string, string],
+        accent: '#f59e0b'
+    },
+    {
+        icon: 'newspaper',
+        title: 'News',
+        desc: 'Stay updated daily',
+        colors: ['#450a0a', '#991b1b'] as [string, string],
+        accent: '#ef4444'
+    }
+];
+
+function FloatingIcon({ icon, delay }: { icon: any, delay: number }) {
+    const translateY = useSharedValue(0);
+    const opacity = useSharedValue(0.1);
+    const posX = Math.random() * width;
+    const posY = Math.random() * height * 0.6;
+
+    useEffect(() => {
+        translateY.value = withRepeat(
+            withTiming(translateY.value - 50, {
+                duration: 3000 + Math.random() * 2000,
+                easing: Easing.inOut(Easing.ease),
+            }),
+            -1,
+            true
+        );
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+        opacity: opacity.value,
+        position: 'absolute',
+        left: posX,
+        top: posY,
+    }));
+
+    return (
+        <Animated.View style={animatedStyle}>
+            <Ionicons name={icon} size={30 + Math.random() * 30} color="white" />
+        </Animated.View>
+    );
+}
 
 export default function WelcomeScreen() {
     const router = useRouter();
+    const [activeFeature, setActiveFeature] = useState(0);
+    const fadeAnim = useSharedValue(1);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fadeAnim.value = withTiming(0, { duration: 500 }, () => {
+                setActiveFeature((prev) => (prev + 1) % FEATURES.length);
+                fadeAnim.value = withTiming(1, { duration: 500 });
+            });
+        }, 3500);
+        return () => clearInterval(interval);
+    }, []);
+
+    const contentStyle = useAnimatedStyle(() => ({
+        opacity: fadeAnim.value,
+        transform: [{ scale: 0.95 + 0.05 * fadeAnim.value }]
+    }));
+
+    const current = FEATURES[activeFeature];
 
     return (
         <ThemedView style={styles.container}>
             <LinearGradient
-                colors={['#5433ff', '#20bdff', '#a5fecb']}
+                colors={current.colors}
+                style={styles.gradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.gradient}
             >
-                <View style={styles.content}>
-                    <View style={styles.logoContainer}>
-                        <Image
-                            source={require('@/assets/images/icon.png')}
-                            style={styles.logo}
-                        />
-                    </View>
-                    <ThemedText style={styles.title}>Welcome to M4Hub</ThemedText>
-                    <ThemedText style={styles.subtitle}>
-                        Your all-in-one digital platform for music, messages, money, and news
-                    </ThemedText>
+                {/* Floating Icons Background */}
+                <View style={StyleSheet.absoluteFill}>
+                    {Array.from({ length: 15 }).map((_, i) => (
+                        <FloatingIcon key={i} icon={current.icon} delay={i * 200} />
+                    ))}
+                </View>
 
-                    <View style={styles.methodContainer}>
+                <View style={styles.content}>
+                    <Animated.View style={[styles.mainContent, contentStyle]}>
+                        <View style={styles.logoBadge}>
+                            <Ionicons name={current.icon as any} size={60} color="white" />
+                        </View>
+                        <ThemedText style={styles.title}>M4Hub</ThemedText>
+                        <ThemedText style={styles.subtitle}>
+                            Your premium digital ecosystem for {current.title.toLowerCase()} and more.
+                        </ThemedText>
+
+                        <View style={styles.featureIndicator}>
+                            {FEATURES.map((_, i) => (
+                                <View
+                                    key={i}
+                                    style={[
+                                        styles.dot,
+                                        i === activeFeature && styles.activeDot,
+                                        i === activeFeature && { backgroundColor: 'white' }
+                                    ]}
+                                />
+                            ))}
+                        </View>
+                    </Animated.View>
+
+                    <View style={styles.actionContainer}>
                         <TouchableOpacity
-                            style={styles.methodCard}
+                            style={styles.primaryButton}
                             onPress={() => router.push('/auth/email-login')}
                         >
-                            <View style={styles.iconCircle}>
-                                <Ionicons name="mail" size={32} color="#5433ff" />
+                            <ThemedText style={styles.primaryButtonText}>Get Started</ThemedText>
+                            <View style={styles.buttonIcon}>
+                                <Ionicons name="arrow-forward" size={20} color={current.accent} />
                             </View>
-                            <ThemedText style={styles.methodTitle}>
-                                Email Login
-                            </ThemedText>
-                            <ThemedText style={styles.methodDescription}>
-                                Sign in with your email and password
-                            </ThemedText>
-                            <Ionicons name="arrow-forward" size={24} color="#5433ff" style={styles.arrow} />
                         </TouchableOpacity>
-                    </View>
 
-                    <ThemedText style={styles.footerText}>
-                        Secure • Fast • Reliable
-                    </ThemedText>
+                        <ThemedText style={styles.footerText}>
+                            SECURE • FAST • RELIABLE
+                        </ThemedText>
+                    </View>
                 </View>
             </LinearGradient>
         </ThemedView>
@@ -65,82 +171,92 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 24,
-        justifyContent: 'center',
+        paddingHorizontal: 32,
+        justifyContent: 'space-between',
+        paddingTop: 100,
+        paddingBottom: 60,
     },
-    logoContainer: {
-        alignSelf: 'center',
-        marginBottom: 40,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 8,
+    mainContent: {
+        alignItems: 'center',
     },
-    logo: {
+    logoBadge: {
         width: 120,
         height: 120,
-        borderRadius: 30,
-    },
-    title: {
-        marginBottom: 12,
-        textAlign: 'center',
-        fontSize: 36,
-        fontWeight: '800',
-        color: '#ffffff',
-        letterSpacing: -0.5,
-    },
-    subtitle: {
-        textAlign: 'center',
-        color: 'rgba(255, 255, 255, 0.9)',
-        fontSize: 16,
-        marginBottom: 48,
-        lineHeight: 24,
-        paddingHorizontal: 20,
-    },
-    methodContainer: {
-        gap: 16,
-        marginBottom: 32,
-    },
-    methodCard: {
-        backgroundColor: '#ffffff',
-        borderRadius: 24,
-        padding: 32,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
-        elevation: 8,
-    },
-    iconCircle: {
-        width: 80,
-        height: 80,
         borderRadius: 40,
-        backgroundColor: '#f0edff',
+        backgroundColor: 'rgba(255,255,255,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 20,
+        marginBottom: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
-    methodTitle: {
-        fontSize: 22,
-        marginBottom: 8,
-        fontWeight: '700',
-        color: '#1a1a1a',
-    },
-    methodDescription: {
+    title: {
+        fontSize: 48,
+        fontWeight: '900',
+        color: '#ffffff',
         textAlign: 'center',
-        color: '#6b7280',
-        fontSize: 15,
-        lineHeight: 22,
+        marginBottom: 12,
+        letterSpacing: -1,
     },
-    arrow: {
-        marginTop: 16,
+    subtitle: {
+        fontSize: 18,
+        color: 'rgba(255, 255, 255, 0.85)',
+        textAlign: 'center',
+        lineHeight: 28,
+        fontWeight: '600',
+        paddingHorizontal: 10,
+    },
+    featureIndicator: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 40,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'rgba(255,255,255,0.3)',
+    },
+    activeDot: {
+        width: 24,
+    },
+    actionContainer: {
+        width: '100%',
+        alignItems: 'center',
+    },
+    primaryButton: {
+        backgroundColor: '#ffffff',
+        width: '100%',
+        height: 64,
+        borderRadius: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+        marginBottom: 24,
+    },
+    primaryButtonText: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#0f172a',
+    },
+    buttonIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 14,
+        backgroundColor: '#f1f5f9',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     footerText: {
-        textAlign: 'center',
-        color: 'rgba(255, 255, 255, 0.8)',
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 12,
+        fontWeight: '800',
+        color: 'rgba(255, 255, 255, 0.6)',
+        letterSpacing: 2,
     },
 });

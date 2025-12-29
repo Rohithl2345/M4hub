@@ -1,8 +1,13 @@
 package com.m4hub.backend.controller;
 
+import com.m4hub.backend.dto.ApiResponse;
+import com.m4hub.backend.dto.HubAnalyticsDto;
 import com.m4hub.backend.model.User;
 import com.m4hub.backend.service.AuthService;
 import com.m4hub.backend.service.TabUsageService;
+import com.m4hub.backend.service.AnalyticsService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,8 +19,13 @@ import java.util.Map;
 @RequestMapping("/api/analytics")
 public class AnalyticsController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AnalyticsController.class);
+
     @Autowired
     private TabUsageService tabUsageService;
+
+    @Autowired
+    private AnalyticsService analyticsService;
 
     @Autowired
     private AuthService authService;
@@ -40,6 +50,7 @@ public class AnalyticsController {
             tabUsageService.logUsage(user, tabName, durationSeconds);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
+            logger.error("Error logging usage", e);
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
@@ -53,7 +64,22 @@ public class AnalyticsController {
             List<Map<String, Object>> analytics = tabUsageService.getAnalytics(user, timeframe);
             return ResponseEntity.ok(analytics);
         } catch (Exception e) {
+            logger.error("Error fetching usage", e);
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/hub")
+    public ResponseEntity<ApiResponse<HubAnalyticsDto>> getHubAnalytics(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            User user = getUserFromToken(authHeader);
+            HubAnalyticsDto analytics = analyticsService.getHubAnalytics(user);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Analytics retrieved successfully", analytics));
+        } catch (Exception e) {
+            logger.error("Error fetching hub analytics", e);
+            return ResponseEntity.status(500)
+                    .body(new ApiResponse<>(false, "Error fetching analytics: " + e.getMessage(), null));
         }
     }
 }

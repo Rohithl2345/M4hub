@@ -49,11 +49,14 @@ public class EmailService {
     }
 
     private void sendOtpConsole(String email, String otpCode) {
-        logger.info("=".repeat(60));
-        logger.info("📧 EMAIL OTP FOR: {}", email);
-        logger.info("🔐 OTP CODE: {}", otpCode);
-        logger.info("⏰ Valid for: 5 minutes");
-        logger.info("=".repeat(60));
+        String logLine = "=".repeat(60);
+        String msg = "\n" + logLine + "\n" +
+                "📧 EMAIL OTP FOR: " + email + "\n" +
+                "🔐 OTP CODE: " + otpCode + "\n" +
+                "⏰ Valid for: 5 minutes\n" +
+                logLine + "\n";
+        logger.info(msg);
+        System.out.println(msg);
     }
 
     private void sendOtpViaSmtp(String email, String otpCode) {

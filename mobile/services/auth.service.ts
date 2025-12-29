@@ -210,6 +210,38 @@ class AuthService {
         }
         return { valid: true };
     }
+
+    /**
+     * Reset Password (Forgot Password)
+     */
+    async resetPassword(email: string, newPassword: string, confirmPassword: string): Promise<AuthResponse> {
+        try {
+            config.log('Resetting password for:', email);
+
+            const url = `${this.baseUrl}/api/auth/forgot-password`;
+            const payload = { email, newPassword, confirmPassword };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data: AuthResponse = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to reset password');
+            }
+
+            config.log('Password reset successfully');
+            return data;
+        } catch (err) {
+            config.error('Error resetting password:', err);
+            throw err;
+        }
+    }
 }
 
 // Export singleton instance

@@ -396,7 +396,12 @@ export default function MessagesScreen() {
                 <View style={styles.segmentContainer}>
                     <TouchableOpacity
                         style={[styles.segmentButton, activeTab === 0 && styles.segmentButtonActive]}
-                        onPress={() => setActiveTab(0)}
+                        onPress={() => {
+                            setActiveTab(0);
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setHasSearched(false);
+                        }}
                     >
                         <Text style={[styles.segmentText, activeTab === 0 && styles.segmentTextActive]}>Friends</Text>
                         {friends.length > 0 && (
@@ -407,7 +412,12 @@ export default function MessagesScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.segmentButton, activeTab === 1 && styles.segmentButtonActive]}
-                        onPress={() => setActiveTab(1)}
+                        onPress={() => {
+                            setActiveTab(1);
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setHasSearched(false);
+                        }}
                     >
                         <Text style={[styles.segmentText, activeTab === 1 && styles.segmentTextActive]}>Groups</Text>
                         {groups.length > 0 && (
@@ -418,7 +428,12 @@ export default function MessagesScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.segmentButton, activeTab === 2 && styles.segmentButtonActive]}
-                        onPress={() => setActiveTab(2)}
+                        onPress={() => {
+                            setActiveTab(2);
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setHasSearched(false);
+                        }}
                     >
                         <Text style={[styles.segmentText, activeTab === 2 && styles.segmentTextActive]}>Requests</Text>
                         {(pendingRequests.length + sentRequests.length) > 0 && (

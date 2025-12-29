@@ -124,15 +124,15 @@ export const PortalTutorial = () => {
         }
     };
 
-    if (!isVisible) return null;
-
-    const step = STEPS[currentStep];
-
     const animatedIconStyle = useAnimatedStyle(() => {
         return {
             transform: [{ rotate: `${iconRotation.value}deg` }]
         };
     });
+
+    if (!isVisible) return null;
+
+    const step = STEPS[currentStep];
 
     return (
         <Modal
