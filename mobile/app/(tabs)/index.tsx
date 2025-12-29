@@ -214,42 +214,40 @@ export default function DashboardScreen() {
                 <Ionicons name="menu" size={28} color="#0f172a" />
               </TouchableOpacity>
             ),
-            headerRight: () => null,
             headerStyle: {
               backgroundColor: '#ffffff',
             },
-            headerTitleAlign: 'center',
+            headerTitleAlign: 'left',
             headerShadowVisible: false,
           }}
         />
 
-        {/* Professional Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.profileInfoMain}>
-            <View style={styles.avatarContainer}>
-              <LinearGradient
-                colors={['#6366f1', '#4f46e5']}
-                style={styles.avatarGradient}
-              >
-                <ThemedText style={styles.avatarText}>
-                  {(user?.name || user?.username || user?.email || 'U').charAt(0).toUpperCase()}
-                </ThemedText>
-              </LinearGradient>
-              <View style={styles.onlineBadge} />
+        {/* Professional Dashboard Header (Indigo Sync) */}
+        <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
+          <LinearGradient
+            colors={['#4338ca', '#6366f1']}
+            style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 20 }}
+          >
+            <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
+              <ThemedText style={{ fontSize: 28, fontWeight: '800', color: 'white' }}>
+                {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
+              </ThemedText>
             </View>
-            <View>
-              <ThemedText style={styles.welcomeText}>Welcome back,</ThemedText>
-              <ThemedText style={styles.profileNameText}>{user?.name || user?.username || 'User'}</ThemedText>
-              <View style={styles.statusPill}>
-                <View style={styles.statusDot} />
-                <ThemedText style={styles.statusText}>Active Now</ThemedText>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
+                Welcome Back
+              </ThemedText>
+              <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>
+                {user?.name || user?.username || 'User'}
+              </ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start', marginTop: 8 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', marginRight: 6 }} />
+                <ThemedText style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                  {currentDate.day} {currentDate.month} • Active
+                </ThemedText>
               </View>
             </View>
-          </View>
-          <TouchableOpacity style={styles.dateControl} onPress={onRefresh}>
-            <Ionicons name="calendar-outline" size={16} color="#64748b" />
-            <ThemedText style={styles.dateControlText}>{currentDate.day} {currentDate.month}</ThemedText>
-          </TouchableOpacity>
+          </LinearGradient>
         </View>
 
         {/* Quick Stats Summary */}

@@ -272,11 +272,10 @@ export default function MoneyScreen() {
                             <Ionicons name="menu" size={28} color="#0f172a" />
                         </TouchableOpacity>
                     ),
-                    headerRight: () => null,
                     headerStyle: {
                         backgroundColor: '#ffffff',
                     },
-                    headerTitleAlign: 'center',
+                    headerTitleAlign: 'left',
                     headerShadowVisible: false,
                 }}
             />
