@@ -11,6 +11,7 @@ import Animated, {
     withSequence,
     withDelay,
 } from 'react-native-reanimated';
+import { useAppSelector } from '@/store/hooks';
 
 const { width, height } = Dimensions.get('window');
 
@@ -104,6 +105,7 @@ interface AuthBackgroundProps {
 
 export function AuthBackground({ currentThemeIndex }: AuthBackgroundProps) {
     const theme = authThemes[currentThemeIndex];
+    const magicEnabled = useAppSelector((state) => state.ui.magicEnabled);
     const backgroundOpacity = useSharedValue(1);
 
     useEffect(() => {
@@ -127,11 +129,13 @@ export function AuthBackground({ currentThemeIndex }: AuthBackgroundProps) {
                 style={StyleSheet.absoluteFill}
             >
                 {/* Floating Icons - Increased to 80 for ultra-rich background */}
-                <View style={StyleSheet.absoluteFill}>
-                    {[...Array(80)].map((_, i) => (
-                        <FloatingIcon key={`${currentThemeIndex}-${i}`} icon={theme.icon} index={i} />
-                    ))}
-                </View>
+                {magicEnabled && (
+                    <View style={StyleSheet.absoluteFill}>
+                        {[...Array(80)].map((_, i) => (
+                            <FloatingIcon key={`${currentThemeIndex}-${i}`} icon={theme.icon} index={i} />
+                        ))}
+                    </View>
+                )}
             </LinearGradient>
         </Animated.View>
     );

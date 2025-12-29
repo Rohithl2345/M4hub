@@ -10,7 +10,8 @@ import {
     Animated,
     Dimensions,
     ActivityIndicator,
-    FlatList
+    FlatList,
+    StyleSheet
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
@@ -21,9 +22,19 @@ import { moneyStyles as styles } from '../_styles/money.styles';
 import paymentService, { BankAccount, Transaction, BankInfo } from '../../services/payment.service';
 import storageService from '../../services/storage.service';
 
+import { useAppSelector } from '@/store/hooks';
+import { Sidebar } from '@/components/Sidebar';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRouter } from 'expo-router';
+
 const { width, height } = Dimensions.get('window');
 
 export default function MoneyScreen() {
+    const user = useAppSelector((state) => state.auth.user);
+    const theme = useAppTheme();
+    const router = useRouter();
+    const isDark = theme === 'dark';
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     // States
     const [token, setToken] = useState<string | null>(null);
     const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
@@ -241,64 +252,100 @@ export default function MoneyScreen() {
         );
     }
 
-    const currentUserId = token ? JSON.parse(atob(token.split('.')[1])).id : null;
+    const currentUserId = user?.id;
 
     return (
         <ThemedView style={styles.container}>
-            <Stack.Screen options={{ title: 'Money', headerShown: false }} />
-
-            <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]}>
-                {/* Header */}
-                <LinearGradient
-                    colors={['#4c669f', '#3b5998', '#192f6a']}
-                    style={styles.header}
-                >
-                    <View style={{ position: 'absolute', top: 50, right: 24, zIndex: 10 }}>
-                        <TouchableOpacity onPress={loadData}>
-                            <Ionicons name="refresh-circle" size={32} color="rgba(255,255,255,0.4)" />
+            <Stack.Screen
+                options={{
+                    headerTitle: '',
+                    headerShown: true,
+                    headerLeft: () => (
+                        <View style={{ marginLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={{ padding: 8 }}>
+                                <Ionicons name="arrow-back" size={24} color="#0f172a" />
+                            </TouchableOpacity>
+                            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#f59e0b', justifyContent: 'center', alignItems: 'center' }}>
+                                <Ionicons name="wallet" size={18} color="white" />
+                            </View>
+                            <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 16, letterSpacing: -0.5 }}>Wallet</ThemedText>
+                        </View>
+                    ),
+                    headerRight: () => (
+                        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginRight: 16 }}>
+                            <Ionicons name="menu" size={28} color="#0f172a" />
                         </TouchableOpacity>
-                    </View>
-                    <View style={{ alignItems: 'center' }}>
-                        <Ionicons name="wallet" size={64} color="white" />
-                        <Text style={styles.headerTitle}>Money</Text>
-                        <Text style={styles.headerSubtitle}>Manage your personal wallet</Text>
-                    </View>
-                </LinearGradient>
+                    ),
+                    headerStyle: {
+                        backgroundColor: '#ffffff',
+                    },
+                    headerTitleStyle: {
+                        fontWeight: '800',
+                        color: '#0f172a',
+                        fontSize: 18,
+                    },
+                    headerShadowVisible: false,
+                }}
+            />
 
-                {/* Card */}
-                <View style={styles.balanceHeader}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={styles.headerLabel}>Active Balance</Text>
-                        {bankAccount && (
-                            <TouchableOpacity onPress={() => showBalance ? setShowBalance(false) : setShowBalanceModal(true)}>
-                                <Ionicons
-                                    name={showBalance ? "eye-off-outline" : "refresh-circle-outline"}
-                                    size={22}
-                                    color="rgba(255,255,255,0.6)"
-                                />
+            <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Professional Header Section (Gold Sync) */}
+                <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
+                    <LinearGradient
+                        colors={['#d97706', '#f59e0b']}
+                        style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+                    >
+                        <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}>
+                            <Ionicons name="wallet" size={30} color="white" />
+                        </View>
+                        <View>
+                            <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>Money Manager</ThemedText>
+                            <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>Securely manage your global funds</ThemedText>
+                        </View>
+                    </LinearGradient>
+                </View>
+
+                {/* Interactive Money Card (Hero Section) */}
+                <View style={[styles.balanceHeader, { backgroundColor: '#78350f', overflow: 'hidden' }]}>
+                    <LinearGradient
+                        colors={['#78350f', '#b45309']}
+                        style={StyleSheet.absoluteFill}
+                    />
+                    <View style={{ position: 'relative', zIndex: 1 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: '700' }]}>Available Balance</Text>
+                            {bankAccount && (
+                                <TouchableOpacity onPress={() => showBalance ? setShowBalance(false) : setShowBalanceModal(true)}>
+                                    <Ionicons
+                                        name={showBalance ? "eye-off" : "refresh"}
+                                        size={20}
+                                        color="rgba(255,255,255,0.6)"
+                                    />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                        <Text style={[styles.headerBalance, { color: '#ffffff', fontWeight: '900' }]}>
+                            <Text style={{ fontSize: 24, opacity: 0.6, fontWeight: '600' }}>$ </Text>
+                            {bankAccount ? (
+                                showBalance ? bankAccount.balance.toLocaleString() : '••••••'
+                            ) : '0.00'}
+                        </Text>
+
+                        {bankAccount && !showBalance && (
+                            <TouchableOpacity onPress={() => setShowBalanceModal(true)} style={{ marginTop: 12, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
+                                <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 12 }}>Check live balance</Text>
                             </TouchableOpacity>
                         )}
+
+                        {bankAccount && (
+                            <View style={[styles.bankTag, { backgroundColor: 'rgba(0,0,0,0.2)', borderWidth: 0, alignSelf: 'flex-start', paddingHorizontal: 16, marginTop: 24 }]}>
+                                <Ionicons name="business" size={14} color="white" />
+                                <Text style={styles.bankTagName}>
+                                    {bankAccount.bankName} • {bankAccount.accountNumber.slice(-4).padStart(8, '*')}
+                                </Text>
+                            </View>
+                        )}
                     </View>
-                    <Text style={styles.headerBalance}>
-                        {bankAccount ? (
-                            showBalance ? `$${bankAccount.balance.toLocaleString()}` : '••••••'
-                        ) : '$0.00'}
-                    </Text>
-
-                    {bankAccount && !showBalance && (
-                        <TouchableOpacity onPress={() => setShowBalanceModal(true)} style={{ marginTop: 8 }}>
-                            <Text style={{ color: '#3b82f6', fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 }}>Check live balance</Text>
-                        </TouchableOpacity>
-                    )}
-
-                    {bankAccount && (
-                        <View style={styles.bankTag}>
-                            <Ionicons name="shield-checkmark" size={14} color="white" />
-                            <Text style={styles.bankTagName}>
-                                {bankAccount.bankName} • {bankAccount.accountNumber.slice(-4).padStart(8, '*')}
-                            </Text>
-                        </View>
-                    )}
                 </View>
 
                 {/* Actions */}
@@ -677,6 +724,7 @@ export default function MoneyScreen() {
                     )}
                 </View>
             </Modal>
+
             <TouchableOpacity
                 style={styles.fab}
                 onPress={() => {
@@ -686,6 +734,11 @@ export default function MoneyScreen() {
             >
                 <Ionicons name="add" size={32} color="white" />
             </TouchableOpacity>
+
+            <Sidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+            />
         </ThemedView >
     );
 }

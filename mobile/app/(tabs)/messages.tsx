@@ -21,7 +21,10 @@ import chatService, { ChatMessage, FriendRequest, UserSearchResult } from '../..
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, Stack, useRouter } from 'expo-router';
+import { ThemedText } from '@/components/themed-text';
+import { Sidebar } from '@/components/Sidebar';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,6 +39,10 @@ export default function MessagesScreen() {
     const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
     const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
     const [activeTab, setActiveTab] = useState(0); // 0: Friends, 1: Groups, 2: Requests
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const theme = useAppTheme();
+    const router = useRouter();
+    const isDark = theme === 'dark';
 
     // Dialog/Search states
     const [showSearch, setShowSearch] = useState(false);
@@ -378,19 +385,53 @@ export default function MessagesScreen() {
     if (!selectedEntity) {
         return (
             <View style={styles.container}>
-                {/* Header - Exact same structure as Money tab */}
-                <LinearGradient
-                    colors={['#4c669f', '#3b5998', '#192f6a']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.header}
-                >
-                    <View style={styles.headerTopActions}>
-                    </View>
-                    <Ionicons name="chatbubble-ellipses" size={64} color="white" />
-                    <Text style={styles.headerTitle}>Messenger</Text>
-                    <Text style={styles.headerSubtitle}>Connect with friends and groups</Text>
-                </LinearGradient>
+                <Stack.Screen
+                    options={{
+                        headerTitle: '',
+                        headerShown: true,
+                        headerLeft: () => (
+                            <View style={{ marginLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={{ padding: 8 }}>
+                                    <Ionicons name="arrow-back" size={24} color="#0f172a" />
+                                </TouchableOpacity>
+                                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#3b82f6', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Ionicons name="chatbubbles" size={18} color="white" />
+                                </View>
+                                <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 16, letterSpacing: -0.5 }}>Messenger</ThemedText>
+                            </View>
+                        ),
+                        headerRight: () => (
+                            <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginRight: 16 }}>
+                                <Ionicons name="menu" size={28} color="#0f172a" />
+                            </TouchableOpacity>
+                        ),
+                        headerStyle: {
+                            backgroundColor: '#ffffff',
+                        },
+                        headerTitleStyle: {
+                            fontWeight: '800',
+                            color: '#0f172a',
+                            fontSize: 18,
+                        },
+                        headerShadowVisible: false,
+                    }}
+                />
+
+                {/* Professional Header (Blue Sync) */}
+                <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
+                    <LinearGradient
+                        colors={['#1e40af', '#3b82f6']}
+                        style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+                    >
+                        <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}>
+                            <Ionicons name="chatbubbles" size={30} color="white" />
+                        </View>
+                        <View>
+                            <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>Messenger Hub</ThemedText>
+                            <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>Stay connected with your network</ThemedText>
+                        </View>
+                    </LinearGradient>
+                </View>
 
                 {/* Tab Selection - Segmented Control Style */}
                 <View style={styles.segmentContainer}>
@@ -827,6 +868,11 @@ export default function MessagesScreen() {
                         </View>
                     </TouchableOpacity>
                 </Modal>
+
+                <Sidebar
+                    isOpen={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
+                />
             </View>
         );
     }

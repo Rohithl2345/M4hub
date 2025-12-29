@@ -10,6 +10,9 @@ import axios from 'axios';
 import { APP_CONFIG } from '@/constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Sidebar } from '@/components/Sidebar';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { Stack } from 'expo-router';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -17,8 +20,13 @@ export default function ProfileScreen() {
   const user = useAppSelector((state) => state.auth.user);
   const token = useAppSelector(selectToken);
   const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phoneNumber || '');
   const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const theme = useAppTheme();
+  const isDark = theme === 'dark';
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Not set';
@@ -69,6 +77,49 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleUpdatePhone = async () => {
+    if (!phone.trim()) {
+      Alert.alert('Error', 'Phone number cannot be empty');
+      return;
+    }
+
+    if (phone.trim().length < 10) {
+      Alert.alert('Error', 'Please enter a valid phone number');
+      return;
+    }
+
+    setIsUpdating(true);
+
+    try {
+      const response = await axios.put(
+        `${APP_CONFIG.API_URL}/api/users/profile/update-phone`,
+        { phoneNumber: phone.trim() },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.success && response.data.data) {
+        dispatch(setCredentials({
+          token: token!,
+          user: response.data.data,
+        }));
+        setIsEditingPhone(false);
+        Alert.alert('Success', 'Phone number updated successfully');
+      } else {
+        Alert.alert('Error', response.data.message || 'Failed to update phone number');
+      }
+    } catch (error: any) {
+      console.error('Update phone error:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to update phone number');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -89,26 +140,58 @@ export default function ProfileScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <LinearGradient
-        colors={['#4c669f', '#3b5998', '#192f6a']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <ThemedText style={styles.avatarText}>
-              {user?.firstName?.charAt(0) || 'U'}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerLeft: () => (
+            <View style={{ marginLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={{ padding: 8 }}>
+                <Ionicons name="arrow-back" size={24} color="#0f172a" />
+              </TouchableOpacity>
+              <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#6366f1', justifyContent: 'center', alignItems: 'center' }}>
+                <Ionicons name="person" size={18} color="white" />
+              </View>
+              <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 16, letterSpacing: -0.5 }}>Account</ThemedText>
+            </View>
+          ),
+          headerRight: () => (
+            <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginRight: 16 }}>
+              <Ionicons name="menu" size={28} color="#0f172a" />
+            </TouchableOpacity>
+          ),
+          headerStyle: {
+            backgroundColor: '#ffffff',
+          },
+          headerTitleStyle: {
+            fontWeight: '800',
+            color: '#0f172a',
+            fontSize: 18,
+          },
+          headerShadowVisible: false,
+          headerTitle: '',
+        }}
+      />
+      {/* Professional Profile Header (Purple Sync) */}
+      <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
+        <LinearGradient
+          colors={['#4c1d95', '#6366f1']}
+          style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 20 }}
+        >
+          <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
+            <ThemedText style={{ fontSize: 28, fontWeight: '800', color: 'white' }}>
+              {(user?.firstName || user?.name || 'U').charAt(0).toUpperCase()}
             </ThemedText>
           </View>
-          <View style={styles.headerInfo}>
-            <ThemedText style={styles.userName}>
-              {user?.firstName} {user?.lastName}
+          <View>
+            <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>
+              {user?.firstName} {user?.lastName || user?.username}
             </ThemedText>
-            <ThemedText style={styles.userPhone}>{user?.phoneNumber}</ThemedText>
+            <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>
+              {user?.email || 'M4Hub Premium Member'}
+            </ThemedText>
           </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
@@ -156,8 +239,9 @@ export default function ProfileScreen() {
           <ThemedText style={styles.sectionTitle}>Contact Information</ThemedText>
 
           <View style={styles.infoCard}>
+            {/* Email Section */}
             <View style={styles.infoRow}>
-              <View style={styles.emailContainer}>
+              <View style={styles.fieldHeader}>
                 <ThemedText style={styles.infoLabel}>Email</ThemedText>
                 {!isEditingEmail && (
                   <TouchableOpacity onPress={() => setIsEditingEmail(true)}>
@@ -167,9 +251,9 @@ export default function ProfileScreen() {
               </View>
 
               {isEditingEmail ? (
-                <View style={styles.emailEditContainer}>
+                <View style={styles.fieldEditContainer}>
                   <TextInput
-                    style={styles.emailInput}
+                    style={styles.fieldInput}
                     value={email}
                     onChangeText={setEmail}
                     placeholder="Enter email"
@@ -177,7 +261,7 @@ export default function ProfileScreen() {
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
-                  <View style={styles.emailActions}>
+                  <View style={styles.fieldActions}>
                     <TouchableOpacity
                       style={styles.cancelButton}
                       onPress={() => {
@@ -202,6 +286,57 @@ export default function ProfileScreen() {
                 </View>
               ) : (
                 <ThemedText style={styles.infoValue}>{user?.email || 'Not set'}</ThemedText>
+              )}
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Phone Number Section */}
+            <View style={styles.infoRow}>
+              <View style={styles.fieldHeader}>
+                <ThemedText style={styles.infoLabel}>Phone Number</ThemedText>
+                {!isEditingPhone && (
+                  <TouchableOpacity onPress={() => setIsEditingPhone(true)}>
+                    <ThemedText style={styles.editButton}>Edit</ThemedText>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {isEditingPhone ? (
+                <View style={styles.fieldEditContainer}>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="Enter phone number"
+                    placeholderTextColor={COLORS.TEXT_TERTIARY}
+                    keyboardType="phone-pad"
+                  />
+                  <View style={styles.fieldActions}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => {
+                        setPhone(user?.phoneNumber || '');
+                        setIsEditingPhone(false);
+                      }}
+                    >
+                      <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]}
+                      onPress={handleUpdatePhone}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? (
+                        <ActivityIndicator color={COLORS.WHITE} size="small" />
+                      ) : (
+                        <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <ThemedText style={styles.infoValue}>{user?.phoneNumber || 'Not set'}</ThemedText>
               )}
             </View>
           </View>
@@ -236,6 +371,11 @@ export default function ProfileScreen() {
           <ThemedText style={styles.logoutText}>Logout</ThemedText>
         </TouchableOpacity>
       </ScrollView>
+
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
     </ThemedView>
   );
 }
@@ -335,10 +475,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  fieldHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   editButton: {
     fontSize: 14,
     color: '#396afc',
     fontWeight: '600',
+  },
+  fieldEditContainer: {
+    gap: 12,
+  },
+  fieldInput: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e1e4e8',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+  fieldActions: {
+    flexDirection: 'row',
+    gap: 12,
   },
   emailEditContainer: {
     gap: 12,

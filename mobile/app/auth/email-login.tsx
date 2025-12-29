@@ -585,10 +585,16 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
         marginTop: -6,
     },
+    forgotPasswordDisabled: {
+        opacity: 0.4,
+    },
     forgotPasswordText: {
         fontSize: 12,
         color: '#3b82f6',
         fontWeight: '700',
+    },
+    forgotPasswordTextDisabled: {
+        color: '#94a3b8',
     },
     submitButton: {
         marginTop: 10,
@@ -639,19 +645,5 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         letterSpacing: 0.4,
     },
-    forgotPassword: {
-        alignSelf: 'flex-end',
-        marginBottom: 20,
-    },
-    forgotPasswordDisabled: {
-        opacity: 0.4,
-    },
-    forgotPasswordText: {
-        fontSize: 14,
-        color: '#3b82f6',
-        fontWeight: '600',
-    },
-    forgotPasswordTextDisabled: {
-        color: '#94a3b8',
-    },
+
 });

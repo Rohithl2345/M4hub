@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { ScrollView, View, TouchableOpacity, Image, ActivityIndicator, Linking } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { newsStyles as styles } from '../_styles/news.styles';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { APP_CONFIG } from '../../constants';
 import { storageService } from '../../services/storage.service';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { Sidebar } from '@/components/Sidebar';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 dayjs.extend(relativeTime);
 
@@ -19,6 +22,10 @@ export default function NewsScreen() {
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('All');
     const [error, setError] = useState<string | null>(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const theme = useAppTheme();
+    const router = useRouter();
+    const isDark = theme === 'dark';
 
     const categories = ['All', 'Technology', 'Business', 'Science', 'Sports', 'Entertainment', 'World'];
 
@@ -53,25 +60,51 @@ export default function NewsScreen() {
         <ThemedView style={styles.container}>
             <Stack.Screen
                 options={{
-                    title: 'News Hub',
-                    headerShown: false, // Using custom header for gradient
+                    headerLeft: () => (
+                        <View style={{ marginLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={{ padding: 8 }}>
+                                <Ionicons name="arrow-back" size={24} color="#0f172a" />
+                            </TouchableOpacity>
+                            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center' }}>
+                                <Ionicons name="newspaper" size={18} color="white" />
+                            </View>
+                            <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 16, letterSpacing: -0.5 }}>World News</ThemedText>
+                        </View>
+                    ),
+                    headerRight: () => (
+                        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginRight: 16 }}>
+                            <Ionicons name="menu" size={28} color="#0f172a" />
+                        </TouchableOpacity>
+                    ),
+                    headerStyle: {
+                        backgroundColor: '#ffffff',
+                    },
+                    headerTitleStyle: {
+                        fontWeight: '800',
+                        color: '#0f172a',
+                        fontSize: 18,
+                    },
+                    headerShadowVisible: false,
+                    headerTitle: '',
                 }}
             />
 
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Custom Gradient Header */}
-                <LinearGradient
-                    colors={['#fa709a', '#fee140']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.header}
-                >
-                    <View style={styles.headerTextContainer}>
-                        <ThemedText style={styles.headerTitle}>Latest News</ThemedText>
-                        <ThemedText style={styles.headerSubtitle}>Stay updated with world events</ThemedText>
-                    </View>
-                    <Ionicons name="newspaper-outline" size={32} color="white" />
-                </LinearGradient>
+                {/* Professional Header (Red Sync) */}
+                <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
+                    <LinearGradient
+                        colors={['#7f1d1d', '#ef4444']}
+                        style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+                    >
+                        <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}>
+                            <Ionicons name="newspaper" size={30} color="white" />
+                        </View>
+                        <View>
+                            <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>World News</ThemedText>
+                            <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>Real-time global events hub</ThemedText>
+                        </View>
+                    </LinearGradient>
+                </View>
 
                 {error ? (
                     <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 50, padding: 20 }}>
@@ -128,7 +161,20 @@ export default function NewsScreen() {
                         </ScrollView>
 
                         {loading ? (
-                            <ActivityIndicator size="large" color="#fa709a" style={styles.loader} />
+                            <View style={styles.section}>
+                                <Skeleton width={150} height={24} style={{ marginBottom: 16 }} />
+                                {[1, 2, 3].map((i) => (
+                                    <View key={i} style={[styles.newsCard, { padding: 0, overflow: 'hidden' }]}>
+                                        <Skeleton width="100%" height={200} borderRadius={0} />
+                                        <View style={{ padding: 16 }}>
+                                            <Skeleton width="40%" height={14} style={{ marginBottom: 8 }} />
+                                            <Skeleton width="90%" height={20} style={{ marginBottom: 8 }} />
+                                            <Skeleton width="100%" height={16} style={{ marginBottom: 4 }} />
+                                            <Skeleton width="80%" height={16} />
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
                         ) : (
                             <>
                                 {/* Main Feed */}
@@ -200,6 +246,11 @@ export default function NewsScreen() {
                     </>
                 )}
             </ScrollView>
+
+            <Sidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+            />
         </ThemedView>
     );
 }

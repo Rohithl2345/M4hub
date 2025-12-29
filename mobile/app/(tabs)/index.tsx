@@ -1,42 +1,48 @@
-import { TouchableOpacity, View, ScrollView, Dimensions, Platform, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions, RefreshControl, ActivityIndicator, Modal } from 'react-native';
+import { useRouter, Stack } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAppSelector } from '@/store/hooks';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { analyticsService, HubAnalytics, TabAnalytics } from '@/services/analytics.service';
-import Animated, {
+import { useState, useEffect } from 'react';
+import { analyticsService, HubAnalytics } from '@/services/analytics.service';
+import storageService from '@/services/storage.service';
+import BarChart from 'react-native-chart-kit/dist/BarChart';
+import LineChart from 'react-native-chart-kit/dist/line-chart';
+import PieChart from 'react-native-chart-kit/dist/PieChart';
+import { Sidebar } from '@/components/Sidebar';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { Colors } from '@/constants/theme';
+import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   Easing,
-  withSpring,
   withDelay,
 } from 'react-native-reanimated';
-import { StyleSheet } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
-
-function FloatingParticle({ delay = 0 }: { delay?: number }) {
+function MagicParticle({ index }: { index: number }) {
   const translateY = useSharedValue(0);
   const opacity = useSharedValue(0);
-  const posX = Math.random() * width;
-  const posY = Math.random() * 150 + 50;
+  const posX = ((index * 13 + 7) % 100) / 100 * width;
+  const size = 2 + (index % 4) * 2;
+  const duration = 15000 + (index % 12) * 2000;
 
   useEffect(() => {
-    opacity.value = withDelay(delay, withTiming(0.3, { duration: 800 }));
+    const delay = (index * 1200) % 20000;
+    opacity.value = withDelay(delay, withTiming(0.4, { duration: 1000 }));
+    translateY.value = height;
     translateY.value = withDelay(
       delay,
       withRepeat(
-        withTiming(-30, {
-          duration: 3000 + Math.random() * 2000,
-          easing: Easing.inOut(Easing.ease),
+        withTiming(-100, {
+          duration: duration,
+          easing: Easing.linear,
         }),
         -1,
-        true
+        false
       )
     );
   }, []);
@@ -44,347 +50,398 @@ function FloatingParticle({ delay = 0 }: { delay?: number }) {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
     opacity: opacity.value,
-    position: 'absolute',
-    left: posX,
-    top: posY,
   }));
 
   return (
-    <Animated.View style={animatedStyle}>
-      <View style={styles.particle} />
-    </Animated.View>
+    <Reanimated.View
+      style={[
+        {
+          position: 'absolute',
+          left: posX,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#fff',
+        },
+        animatedStyle,
+      ]}
+    />
   );
 }
+// Magic Background removed from page, now restricted to Sidebar only.
 
-function CircularProgress({ percentage, color, size = 80 }: { percentage: number; color: string; size?: number }) {
-  const progress = useSharedValue(0);
+const { width, height } = Dimensions.get('window');
 
-  useEffect(() => {
-    progress.value = withDelay(300, withSpring(percentage, { damping: 15 }));
-  }, [percentage]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${(progress.value / 100) * 360}deg` }],
-  }));
-
-  return (
-    <View style={[styles.circularProgress, { width: size, height: size }]}>
-      <View style={[styles.circularProgressBg, { width: size, height: size, borderColor: color + '20' }]} />
-      <Animated.View style={[styles.circularProgressFill, { width: size, height: size, borderColor: color }, animatedStyle]} />
-      <View style={[styles.circularProgressInner, { width: size - 12, height: size - 12 }]}>
-        <ThemedText style={[styles.circularProgressText, { color }]}>{Math.round(percentage)}%</ThemedText>
-      </View>
-    </View>
-  );
-}
-
-function BarChart({ data, maxValue }: { data: number[]; maxValue: number }) {
-  return (
-    <View style={styles.barChartContainer}>
-      {data.map((value, index) => {
-        const barHeight = useSharedValue(0);
-
-        useEffect(() => {
-          barHeight.value = withDelay(index * 100, withSpring((value / maxValue) * 100, { damping: 12 }));
-        }, [value]);
-
-        const animatedBarStyle = useAnimatedStyle(() => ({
-          height: `${barHeight.value}%`,
-        }));
-
-        return (
-          <View key={index} style={styles.barWrapper}>
-            <View style={styles.barContainer}>
-              <Animated.View style={[styles.bar, animatedBarStyle]}>
-                <LinearGradient
-                  colors={['#10b981', '#059669']}
-                  style={StyleSheet.absoluteFill}
-                />
-              </Animated.View>
-            </View>
-            <ThemedText style={styles.barLabel}>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}</ThemedText>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-export default function HomeScreen() {
+export default function DashboardScreen() {
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
-  const token = useAppSelector((state) => state.auth.token);
-
-  const cardScale = useSharedValue(1);
-  const contentOpacity = useSharedValue(0);
-
+  const [refreshing, setRefreshing] = useState(false);
+  const [greeting, setGreeting] = useState('');
+  const [currentDate, setCurrentDate] = useState({ day: '', month: '' });
   const [analyticsData, setAnalyticsData] = useState<HubAnalytics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedChartType, setSelectedChartType] = useState<'bar' | 'pie' | 'line'>('bar');
+  const theme = useAppTheme();
+  const isDark = theme === 'dark';
+  const magicEnabled = useAppSelector((state) => state.ui.magicEnabled);
 
   useEffect(() => {
-    contentOpacity.value = withTiming(1, { duration: 600 });
+    updateGreeting();
+    updateDate();
+    loadAnalytics();
   }, []);
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      if (!token) return;
+  const updateGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good Morning');
+    else if (hour < 18) setGreeting('Good Afternoon');
+    else setGreeting('Good Evening');
+  };
 
-      setIsLoading(true);
-      const data = await analyticsService.getHubAnalytics(token);
-      if (data) {
-        setAnalyticsData(data);
+  const updateDate = () => {
+    const now = new Date();
+    setCurrentDate({
+      day: now.getDate().toString(),
+      month: now.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
+    });
+  };
+
+  const loadAnalytics = async () => {
+    setLoadingAnalytics(true);
+    try {
+      const token = await storageService.getAuthToken();
+      if (token) {
+        const data = await analyticsService.getHubAnalytics(token);
+        if (data) {
+          setAnalyticsData(data);
+        }
       }
-      setIsLoading(false);
-    };
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
 
-    fetchAnalytics();
-  }, [token]);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    updateGreeting();
+    updateDate();
+    await loadAnalytics();
+    setRefreshing(false);
+  };
 
   const features = [
     {
       id: 'music',
       title: 'Music',
+      subtitle: 'Stream your favorite tracks',
       icon: 'musical-notes',
-      description: 'Stream & Discover',
-      gradientColors: ['#8b5cf6', '#6366f1'] as const,
-      iconBg: 'rgba(139, 92, 246, 0.15)'
+      gradient: ['#10b981', '#059669'],
+      color: '#10b981',
+      route: '/music',
     },
     {
       id: 'messages',
-      title: 'Messages',
+      title: 'Chat',
+      subtitle: 'Stay connected with friends',
       icon: 'chatbubbles',
-      description: 'Connect & Chat',
-      gradientColors: ['#3b82f6', '#2563eb'] as const,
-      iconBg: 'rgba(59, 130, 246, 0.15)'
+      gradient: ['#3b82f6', '#2563eb'],
+      color: '#3b82f6',
+      route: '/messages',
     },
     {
       id: 'money',
       title: 'Money',
+      subtitle: 'Manage your finances',
       icon: 'wallet',
-      description: 'Manage Finances',
-      gradientColors: ['#10b981', '#059669'] as const,
-      iconBg: 'rgba(16, 185, 129, 0.15)'
+      gradient: ['#f59e0b', '#d97706'],
+      color: '#f59e0b',
+      route: '/money',
     },
     {
       id: 'news',
       title: 'News',
+      subtitle: 'Stay informed with updates',
       icon: 'newspaper',
-      description: 'Stay Informed',
-      gradientColors: ['#f59e0b', '#d97706'] as const,
-      iconBg: 'rgba(245, 158, 11, 0.15)'
+      gradient: ['#ef4444', '#dc2626'],
+      color: '#ef4444',
+      route: '/news',
     },
   ];
 
-  const stats = [
-    { label: 'Active Sessions', value: '3', icon: 'pulse', color: '#8b5cf6' },
-    { label: 'Messages', value: '12', icon: 'chatbubble', color: '#3b82f6' },
-    { label: 'Balance', value: '$2.4K', icon: 'trending-up', color: '#10b981' },
-  ];
-
-  // Use real data from API or fallback to defaults
-  const hubAnalytics = analyticsData?.tabAnalytics || [
-    { name: 'Music', percentage: 25, color: '#8b5cf6', icon: 'musical-notes', sessions: 0, totalSeconds: 0 },
-    { name: 'Messages', percentage: 25, color: '#3b82f6', icon: 'chatbubbles', sessions: 0, totalSeconds: 0 },
-    { name: 'Money', percentage: 25, color: '#10b981', icon: 'wallet', sessions: 0, totalSeconds: 0 },
-    { name: 'News', percentage: 25, color: '#f59e0b', icon: 'newspaper', sessions: 0, totalSeconds: 0 },
-  ];
-
-  const weeklyActivity = analyticsData?.weeklyActivity || [0, 0, 0, 0, 0, 0, 0];
-
-  const engagementMetrics = [
-    {
-      label: 'Daily Active Time',
-      value: analyticsData?.engagementMetrics?.dailyActiveTime || '0h',
-      change: analyticsData?.engagementMetrics?.dailyChange || '+0%',
-      trending: 'up'
+  const chartConfig = {
+    backgroundGradientFrom: isDark ? '#1e293b' : '#ffffff',
+    backgroundGradientTo: isDark ? '#1e293b' : '#ffffff',
+    decimalPlaces: 0,
+    color: (opacity = 1) => isDark ? `rgba(129, 140, 248, ${opacity})` : `rgba(99, 102, 241, ${opacity})`,
+    labelColor: (opacity = 1) => isDark ? `rgba(203, 213, 225, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
+    style: {
+      borderRadius: 16,
     },
-    {
-      label: 'Features Used',
-      value: analyticsData?.engagementMetrics?.featuresUsed || '0/12',
-      change: analyticsData?.engagementMetrics?.featuresChange || '+0',
-      trending: 'up'
+    propsForDots: {
+      r: '6',
+      strokeWidth: '2',
+      stroke: '#6366f1',
     },
-    {
-      label: 'Engagement Score',
-      value: analyticsData?.engagementMetrics?.engagementScore || '0%',
-      change: analyticsData?.engagementMetrics?.scoreChange || '+0%',
-      trending: 'up'
-    },
-  ];
-
-  const recentActivity = [
-    { id: '1', title: 'New Message from Alex', time: '2 mins ago', icon: 'chatbubble-ellipses', color: '#3b82f6' },
-    { id: '2', title: 'Wallet Top-up Successful', time: '1 hour ago', icon: 'checkmark-circle', color: '#10b981' },
-    { id: '3', title: 'Breaking: Tech News Update', time: '3 hours ago', icon: 'flash', color: '#f59e0b' },
-  ];
-
-  const animatedContentStyle = useAnimatedStyle(() => ({
-    opacity: contentOpacity.value,
-  }));
+    barPercentage: 0.6,
+  };
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} bounces={true}>
-        {/* Hero Header */}
-        <LinearGradient
-          colors={['#064e3b', '#065f46', '#047857']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroHeader}
-        >
-          {/* Floating Particles */}
-          <View style={StyleSheet.absoluteFill}>
-            {[...Array(8)].map((_, i) => (
-              <FloatingParticle key={i} delay={i * 100} />
-            ))}
-          </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" />
+        }
+      >
+        {/* Header Stack config */}
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            headerTitle: '',
+            headerLeft: () => (
+              <View style={{ marginLeft: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#6366f1', justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name="apps" size={18} color="white" />
+                </View>
+                <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 16, letterSpacing: -0.5 }}>M4Hub</ThemedText>
+              </View>
+            ),
+            headerRight: () => (
+              <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginRight: 16 }}>
+                <Ionicons name="menu" size={28} color="#0f172a" />
+              </TouchableOpacity>
+            ),
+            headerStyle: {
+              backgroundColor: '#ffffff',
+            },
+            headerTitleStyle: {
+              fontWeight: '800',
+              color: '#0f172a',
+              fontSize: 18,
+            },
+            headerShadowVisible: false,
+          }}
+        />
 
-          <View style={styles.heroContent}>
+        {/* Professional Profile Header */}
+        <View style={styles.profileHeader}>
+          <View style={styles.profileInfoMain}>
             <View style={styles.avatarContainer}>
               <LinearGradient
-                colors={['#fff', '#f0fdf4']}
+                colors={['#6366f1', '#4f46e5']}
                 style={styles.avatarGradient}
               >
-                <Ionicons name="person" size={32} color="#059669" />
+                <ThemedText style={styles.avatarText}>
+                  {(user?.name || user?.username || user?.email || 'U').charAt(0).toUpperCase()}
+                </ThemedText>
               </LinearGradient>
+              <View style={styles.onlineBadge} />
             </View>
-            <ThemedText style={styles.heroGreeting}>
-              Welcome back,
-            </ThemedText>
-            <ThemedText style={styles.heroName}>
-              {user?.firstName || user?.username || 'Explorer'}
-            </ThemedText>
-            <ThemedText style={styles.heroSubtitle}>
-              YOUR DIGITAL COMMAND CENTER
-            </ThemedText>
-          </View>
-        </LinearGradient>
-
-        <Animated.View style={[styles.mainContent, animatedContentStyle]}>
-          {/* Quick Stats */}
-          <View style={styles.statsContainer}>
-            {stats.map((stat, index) => (
-              <View key={index} style={styles.statCard}>
-                <View style={[styles.statIconContainer, { backgroundColor: stat.color + '15' }]}>
-                  <Ionicons name={stat.icon as any} size={20} color={stat.color} />
-                </View>
-                <ThemedText style={styles.statValue}>{stat.value}</ThemedText>
-                <ThemedText style={styles.statLabel}>{stat.label}</ThemedText>
+            <View>
+              <ThemedText style={styles.welcomeText}>Welcome back,</ThemedText>
+              <ThemedText style={styles.profileNameText}>{user?.name || user?.username || 'User'}</ThemedText>
+              <View style={styles.statusPill}>
+                <View style={styles.statusDot} />
+                <ThemedText style={styles.statusText}>Active Now</ThemedText>
               </View>
-            ))}
-          </View>
-
-          {/* Hub Analytics Section */}
-          <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Hub Analytics</ThemedText>
-            <View style={styles.sectionBadge}>
-              <Ionicons name="analytics" size={12} color="#8b5cf6" />
-              <ThemedText style={[styles.sectionBadgeText, { color: '#6b21a8' }]}>INSIGHTS</ThemedText>
             </View>
           </View>
+          <TouchableOpacity style={styles.dateControl} onPress={onRefresh}>
+            <Ionicons name="calendar-outline" size={16} color="#64748b" />
+            <ThemedText style={styles.dateControlText}>{currentDate.day} {currentDate.month}</ThemedText>
+          </TouchableOpacity>
+        </View>
 
-          {/* Usage Breakdown */}
-          <View style={styles.analyticsGrid}>
-            {hubAnalytics.map((item, index) => (
-              <View key={index} style={styles.analyticsCard}>
-                <CircularProgress percentage={item.percentage} color={item.color} size={70} />
-                <View style={styles.analyticsInfo}>
-                  <View style={styles.analyticsHeader}>
-                    <Ionicons name={item.icon as any} size={18} color={item.color} />
-                    <ThemedText style={styles.analyticsName}>{item.name}</ThemedText>
-                  </View>
-                  <ThemedText style={styles.analyticsSessions}>{item.sessions} sessions</ThemedText>
+        {/* Quick Stats Summary */}
+        <View style={styles.statsSummary}>
+          <View style={styles.statBox}>
+            <ThemedText style={styles.statLabel}>Usage</ThemedText>
+            <ThemedText style={styles.statValue}>
+              {analyticsData ? Math.round(analyticsData.tabAnalytics.reduce((acc, curr) => acc + curr.totalSeconds, 0) / 60) : 0}m
+            </ThemedText>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBox}>
+            <ThemedText style={styles.statLabel}>Hubs</ThemedText>
+            <ThemedText style={styles.statValue}>{features.length}</ThemedText>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBox}>
+            <ThemedText style={styles.statLabel}>Score</ThemedText>
+            <ThemedText style={styles.statValue}>{analyticsData?.engagementMetrics.engagementScore || 0}%</ThemedText>
+          </View>
+        </View>
+
+        {/* Features Grid */}
+        <View style={styles.featuresGrid}>
+          {features.map((feature) => (
+            <TouchableOpacity
+              key={feature.id}
+              style={styles.featureCard}
+              onPress={() => router.push(feature.route as any)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.featureCardInner}>
+                <View style={[styles.featureIconBox, { backgroundColor: feature.color + '15' }]}>
+                  <Ionicons name={feature.icon as any} size={26} color={feature.color} />
                 </View>
-              </View>
-            ))}
-          </View>
-
-          {/* Weekly Activity Chart */}
-          <View style={styles.chartSection}>
-            <View style={styles.chartHeader}>
-              <ThemedText style={styles.chartTitle}>Weekly Activity</ThemedText>
-              <ThemedText style={styles.chartSubtitle}>Last 7 days</ThemedText>
-            </View>
-            <BarChart data={weeklyActivity} maxValue={Math.max(...weeklyActivity)} />
-          </View>
-
-          {/* Engagement Metrics */}
-          <View style={styles.metricsContainer}>
-            {engagementMetrics.map((metric, index) => (
-              <View key={index} style={styles.metricCard}>
-                <ThemedText style={styles.metricLabel}>{metric.label}</ThemedText>
-                <View style={styles.metricValueRow}>
-                  <ThemedText style={styles.metricValue}>{metric.value}</ThemedText>
-                  <View style={[styles.metricChange, { backgroundColor: '#dcfce7' }]}>
-                    <Ionicons name="trending-up" size={12} color="#166534" />
-                    <ThemedText style={styles.metricChangeText}>{metric.change}</ThemedText>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* Quick Actions Grid */}
-          <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Quick Access</ThemedText>
-            <View style={styles.sectionBadge}>
-              <Ionicons name="flash" size={12} color="#10b981" />
-              <ThemedText style={styles.sectionBadgeText}>LIVE</ThemedText>
-            </View>
-          </View>
-
-          <View style={styles.featuresGrid}>
-            {features.map((feature, index) => (
-              <TouchableOpacity
-                key={feature.id}
-                style={styles.featureCardContainer}
-                onPress={() => router.push(`/${feature.id}` as any)}
-                activeOpacity={0.85}
-              >
-                <LinearGradient
-                  colors={['#ffffff', '#f8fafc']}
-                  style={styles.featureCard}
-                >
-                  <View style={[styles.featureIconWrapper, { backgroundColor: feature.iconBg }]}>
-                    <Ionicons name={feature.icon as any} size={28} color={feature.gradientColors[0]} />
-                  </View>
+                <View>
                   <ThemedText style={styles.featureTitle}>{feature.title}</ThemedText>
-                  <ThemedText style={styles.featureDescription}>{feature.description}</ThemedText>
-                  <View style={styles.featureArrow}>
-                    <Ionicons name="arrow-forward" size={16} color="#94a3b8" />
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <ThemedText style={styles.featureSubtitle}>{feature.subtitle}</ThemedText>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-          {/* Recent Activity */}
-          <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Recent Activity</ThemedText>
-            <TouchableOpacity>
-              <ThemedText style={styles.sectionLink}>View All</ThemedText>
+        {/* Analytics Hub Card (Web-style) */}
+        <View style={styles.analyticsCard}>
+          <View style={styles.analyticsHeader}>
+            <View>
+              <ThemedText style={styles.analyticsTitle}>
+                <Ionicons name="analytics" size={20} color="#6366f1" /> Hub Analytics
+              </ThemedText>
+              <ThemedText style={styles.analyticsSubtitle}>Time spent across M4Hub platforms</ThemedText>
+            </View>
+            <TouchableOpacity onPress={onRefresh} style={styles.chartRefreshBtn}>
+              <Ionicons name="refresh" size={16} color="#6366f1" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.activityList}>
-            {recentActivity.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.activityItem} activeOpacity={0.7}>
-                <View style={[styles.activityIconContainer, { backgroundColor: item.color + '15' }]}>
-                  <Ionicons name={item.icon as any} size={22} color={item.color} />
-                </View>
-                <View style={styles.activityContent}>
-                  <ThemedText style={styles.activityTitle}>{item.title}</ThemedText>
-                  <ThemedText style={styles.activityTime}>{item.time}</ThemedText>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
-              </TouchableOpacity>
-            ))}
-          </View>
+          {loadingAnalytics ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6366f1" />
+              <ThemedText style={styles.loadingText}>Loading activity data...</ThemedText>
+            </View>
+          ) : !analyticsData || analyticsData.tabAnalytics.length === 0 ? (
+            <View style={styles.comingSoon}>
+              <Ionicons name="time-outline" size={48} color="#94a3b8" />
+              <ThemedText style={styles.comingSoonText}>
+                No activity recorded yet
+              </ThemedText>
+            </View>
+          ) : (
+            <View style={styles.chartsContainer}>
+              {/* Chart Selector Dropdown/Chips */}
+              <View style={styles.chartSelector}>
+                <TouchableOpacity
+                  style={[styles.selectorBtn, selectedChartType === 'bar' && styles.selectorBtnActive]}
+                  onPress={() => setSelectedChartType('bar')}
+                >
+                  <ThemedText style={[styles.selectorText, selectedChartType === 'bar' && styles.selectorTextActive]}>Vertical</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.selectorBtn, selectedChartType === 'pie' && styles.selectorBtnActive]}
+                  onPress={() => setSelectedChartType('pie')}
+                >
+                  <ThemedText style={[styles.selectorText, selectedChartType === 'pie' && styles.selectorTextActive]}>Circular</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.selectorBtn, selectedChartType === 'line' && styles.selectorBtnActive]}
+                  onPress={() => setSelectedChartType('line')}
+                >
+                  <ThemedText style={[styles.selectorText, selectedChartType === 'line' && styles.selectorTextActive]}>Weekly</ThemedText>
+                </TouchableOpacity>
+              </View>
 
-          {/* Bottom Spacer */}
-          <View style={{ height: 40 }} />
-        </Animated.View>
+              <View style={styles.chartWrapper}>
+                {selectedChartType === 'bar' && (
+                  <>
+                    <ThemedText style={styles.chartTitle}>Time Spent (Seconds)</ThemedText>
+                    <BarChart
+                      data={{
+                        labels: analyticsData.tabAnalytics.map(t => t.name),
+                        datasets: [{
+                          data: analyticsData.tabAnalytics.map(t => t.totalSeconds)
+                        }]
+                      }}
+                      width={width - 72}
+                      height={220}
+                      yAxisLabel=""
+                      yAxisSuffix=""
+                      chartConfig={chartConfig}
+                      style={styles.chart}
+                      verticalLabelRotation={30}
+                    />
+                  </>
+                )}
+
+                {selectedChartType === 'pie' && (
+                  <>
+                    <ThemedText style={styles.chartTitle}>Usage Distribution</ThemedText>
+                    <PieChart
+                      data={analyticsData.tabAnalytics.map(t => ({
+                        name: t.name,
+                        population: t.totalSeconds,
+                        color: t.color || '#6366f1',
+                        legendFontColor: isDark ? '#cbd5e1' : '#64748b',
+                        legendFontSize: 12
+                      }))}
+                      width={width - 72}
+                      height={200}
+                      chartConfig={chartConfig}
+                      accessor="population"
+                      backgroundColor="transparent"
+                      paddingLeft="15"
+                      absolute
+                    />
+                  </>
+                )}
+
+                {selectedChartType === 'line' && (
+                  <>
+                    <ThemedText style={styles.chartTitle}>Weekly Activity</ThemedText>
+                    <LineChart
+                      data={{
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                          data: analyticsData.weeklyActivity || [0, 0, 0, 0, 0, 0, 0]
+                        }]
+                      }}
+                      width={width - 72}
+                      height={220}
+                      chartConfig={{
+                        ...chartConfig,
+                        color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+                      }}
+                      bezier
+                      style={styles.chart}
+                    />
+                  </>
+                )}
+              </View>
+
+              {/* Web-consistent Analytics Footer */}
+              <View style={styles.analyticsFooter}>
+                <View style={styles.footerItem}>
+                  <ThemedText style={styles.footerLabel}>MOST ACTIVE HUB</ThemedText>
+                  <ThemedText style={styles.footerValue}>
+                    {analyticsData.tabAnalytics.length > 0
+                      ? [...analyticsData.tabAnalytics].sort((a, b) => b.totalSeconds - a.totalSeconds)[0].name
+                      : '--'}
+                  </ThemedText>
+                </View>
+                <View style={styles.footerDivider} />
+                <View style={styles.footerItem}>
+                  <ThemedText style={styles.footerLabel}>TOTAL ENGAGEMENT</ThemedText>
+                  <ThemedText style={styles.footerValue}>
+                    {Math.round(analyticsData.tabAnalytics.reduce((acc, curr) => acc + curr.totalSeconds, 0) / 60)} Minutes
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
       </ScrollView>
+
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
     </ThemedView>
   );
 }
@@ -394,382 +451,357 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  heroHeader: {
-    paddingTop: Platform.OS === 'ios' ? 70 : 50,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
-    position: 'relative',
-  },
-  heroContent: {
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  avatarContainer: {
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  avatarGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  heroGreeting: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  heroName: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: '#fff',
-    marginTop: 4,
-    marginBottom: 8,
-    letterSpacing: -1,
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  heroSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '800',
-    letterSpacing: 1.5,
-  },
-  particle: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-  },
-  mainContent: {
-    marginTop: -20,
-    backgroundColor: '#f8fafc',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 20,
-    paddingTop: 24,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 32,
-  },
-  statCard: {
+  scrollView: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
   },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#0f172a',
-    marginBottom: 2,
+  barChartContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    height: 180,
   },
-  statLabel: {
-    fontSize: 11,
-    color: '#64748b',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  sectionHeader: {
+  profileHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingHorizontal: 4,
   },
-  sectionTitle: {
+  profileInfoMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatarContainer: {
+    position: 'relative',
+  },
+  avatarGradient: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  avatarText: {
     fontSize: 22,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  onlineBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#10b981',
+    borderWidth: 2,
+    borderColor: '#f8fafc',
+  },
+  welcomeText: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  profileNameText: {
+    fontSize: 20,
     fontWeight: '800',
     color: '#0f172a',
     letterSpacing: -0.5,
   },
-  sectionBadge: {
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0fdf4',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
     gap: 4,
+    marginTop: 2,
   },
-  sectionBadgeText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#166534',
-    letterSpacing: 0.5,
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10b981',
   },
-  sectionLink: {
-    fontSize: 14,
+  statusText: {
+    fontSize: 11,
     color: '#10b981',
     fontWeight: '700',
+    textTransform: 'uppercase',
   },
-  analyticsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 32,
-  },
-  analyticsCard: {
-    width: (width - 52) / 2,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  circularProgress: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  circularProgressBg: {
-    position: 'absolute',
-    borderWidth: 6,
-    borderRadius: 100,
-  },
-  circularProgressFill: {
-    position: 'absolute',
-    borderWidth: 6,
-    borderRadius: 100,
-    borderTopColor: 'transparent',
-    borderLeftColor: 'transparent',
-  },
-  circularProgressInner: {
-    backgroundColor: '#fff',
-    borderRadius: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  circularProgressText: {
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  analyticsInfo: {
-    flex: 1,
-  },
-  analyticsHeader: {
+  dateControl: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    backgroundColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  dateControlText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  statsSummary: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
-  analyticsName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0f172a',
-  },
-  analyticsSessions: {
-    fontSize: 12,
-    color: '#64748b',
-    fontWeight: '600',
-  },
-  chartSection: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  chartHeader: {
-    marginBottom: 20,
-  },
-  chartTitle: {
+  statValue: {
     fontSize: 18,
     fontWeight: '800',
     color: '#0f172a',
-    marginBottom: 4,
   },
-  chartSubtitle: {
-    fontSize: 13,
-    color: '#64748b',
-    fontWeight: '600',
-  },
-  barChartContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: 120,
-  },
-  barWrapper: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 8,
-  },
-  barContainer: {
-    flex: 1,
-    width: '70%',
-    justifyContent: 'flex-end',
-  },
-  bar: {
-    width: '100%',
-    borderRadius: 6,
-    overflow: 'hidden',
-    minHeight: 4,
-  },
-  barLabel: {
-    fontSize: 10,
-    color: '#94a3b8',
-    fontWeight: '700',
-  },
-  metricsContainer: {
-    gap: 12,
-    marginBottom: 32,
-  },
-  metricCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  metricLabel: {
-    fontSize: 13,
-    color: '#64748b',
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  metricValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  metricValue: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#0f172a',
-  },
-  metricChange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  metricChangeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#166534',
+  statDivider: {
+    width: 1,
+    height: '70%',
+    backgroundColor: '#f1f5f9',
+    alignSelf: 'center',
   },
   featuresGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
-    marginBottom: 32,
-  },
-  featureCardContainer: {
-    width: (width - 56) / 2,
-    height: 160,
-    borderRadius: 24,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    gap: 12,
+    marginBottom: 24,
   },
   featureCard: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'space-between',
+    width: (width - 52) / 2,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#f1f5f9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  featureIconWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+  featureCardInner: {
+    flex: 1,
+    justifyContent: 'space-between',
+    minHeight: 120,
+  },
+  featureIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 16,
   },
   featureTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0f172a',
-    marginTop: 12,
-  },
-  featureDescription: {
-    fontSize: 12,
-    color: '#64748b',
-    fontWeight: '600',
-  },
-  featureArrow: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-  },
-  activityList: {
-    gap: 12,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  activityIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  activityContent: {
-    flex: 1,
-    marginLeft: 14,
-  },
-  activityTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0f172a',
+    color: '#1e293b',
+    letterSpacing: -0.5,
     marginBottom: 4,
   },
-  activityTime: {
+  featureSubtitle: {
     fontSize: 13,
     color: '#64748b',
     fontWeight: '500',
+    lineHeight: 18,
+  },
+  analyticsCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  darkCard: {
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+  },
+  analyticsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  chartRefreshBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  analyticsTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0f172a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  analyticsSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  analyticsFooter: {
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  footerItem: {
+    flex: 1,
+  },
+  footerLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748b',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  footerValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#6366f1',
+  },
+  footerDivider: {
+    width: 2,
+    height: '60%',
+    backgroundColor: '#e2e8f0',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  comingSoon: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  comingSoonText: {
+    fontSize: 16,
+    color: '#94a3b8',
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  chartsContainer: {
+    width: '100%',
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#334155',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    backgroundColor: '#f8fafc',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  metricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  metricLabel: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  metricValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  chartSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  selectorBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  selectorBtnActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  selectorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  selectorTextActive: {
+    color: '#6366f1',
+  },
+  chartWrapper: {
+    alignItems: 'center',
+    width: '100%',
+    overflow: 'hidden',
   },
 });

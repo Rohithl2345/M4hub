@@ -5,9 +5,9 @@
 
 export const COLORS = {
     // Primary Brand Colors - Purple/Blue
-    PRIMARY: '#5433ff',
-    PRIMARY_LIGHT: '#FF8C61',
-    PRIMARY_DARK: '#E85A2A',
+    PRIMARY: '#6366f1',
+    PRIMARY_LIGHT: '#818cf8',
+    PRIMARY_DARK: '#4f46e5',
 
     // Secondary Colors
     SECONDARY: '#5856D6',
@@ -50,21 +50,21 @@ export const COLORS = {
     INFO_DARK: '#3B9DD8',
 
     // Background Colors
-    BACKGROUND: '#F8F8F8',
+    BACKGROUND: '#f8fafc',
     BACKGROUND_SECONDARY: '#FFFFFF',
     CARD: '#FFFFFF',
     OVERLAY: 'rgba(0, 0, 0, 0.5)',
 
     // Feature Card Colors
-    MUSIC: '#FF2D55',
-    MESSAGE: '#5856D6',
-    MONEY: '#34C759',
-    NEWS: '#FF9500',
+    MUSIC: '#10b981',
+    MESSAGE: '#3b82f6',
+    MONEY: '#f59e0b',
+    NEWS: '#ef4444',
 
     // Text Colors
-    TEXT_PRIMARY: '#1A1A1A',
-    TEXT_SECONDARY: '#4F4F4F',
-    TEXT_TERTIARY: '#8E8E8E',
+    TEXT_PRIMARY: '#1e293b',
+    TEXT_SECONDARY: '#64748b',
+    TEXT_TERTIARY: '#94a3b8',
     TEXT_INVERSE: '#FFFFFF',
 
     // Border Colors
