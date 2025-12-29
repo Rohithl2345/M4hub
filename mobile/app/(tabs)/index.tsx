@@ -223,26 +223,26 @@ export default function DashboardScreen() {
         />
 
         {/* Professional Dashboard Header (Indigo Sync) */}
-        <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
+        <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 15, paddingTop: 10 }}>
           <LinearGradient
             colors={['#4338ca', '#6366f1']}
-            style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 20 }}
+            style={{ padding: 16, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}
           >
-            <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
-              <ThemedText style={{ fontSize: 28, fontWeight: '800', color: 'white' }}>
+            <View style={{ width: 50, height: 50, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
+              <ThemedText style={{ fontSize: 22, fontWeight: '800', color: 'white' }}>
                 {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
               </ThemedText>
             </View>
             <View style={{ flex: 1 }}>
-              <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
+              <ThemedText style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Welcome Back
               </ThemedText>
-              <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>
+              <ThemedText style={{ fontSize: 20, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>
                 {user?.name || user?.username || 'User'}
               </ThemedText>
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start', marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start', marginTop: 4 }}>
                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', marginRight: 6 }} />
-                <ThemedText style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                <ThemedText style={{ color: 'white', fontSize: 11, fontWeight: '600' }}>
                   {currentDate.day} {currentDate.month} • Active
                 </ThemedText>
               </View>
