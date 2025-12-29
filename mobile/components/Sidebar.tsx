@@ -152,7 +152,7 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
 
     const translateX = animation.interpolate({
         inputRange: [0, 1],
-        outputRange: [SIDEBAR_WIDTH, 0],
+        outputRange: [-SIDEBAR_WIDTH, 0],
     });
 
     const opacity = animation.interpolate({
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     },
     sidebar: {
         position: 'absolute',
-        right: 0,
+        left: 0,
         top: 0,
         bottom: 0,
         width: SIDEBAR_WIDTH,

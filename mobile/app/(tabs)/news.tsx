@@ -60,32 +60,26 @@ export default function NewsScreen() {
         <ThemedView style={styles.container}>
             <Stack.Screen
                 options={{
-                    headerLeft: () => (
-                        <View style={{ marginLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={{ padding: 8 }}>
-                                <Ionicons name="arrow-back" size={24} color="#0f172a" />
-                            </TouchableOpacity>
+                    headerShown: true,
+                    headerTitle: () => (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center' }}>
                                 <Ionicons name="newspaper" size={18} color="white" />
                             </View>
-                            <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 16, letterSpacing: -0.5 }}>World News</ThemedText>
+                            <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 18, letterSpacing: -0.5 }}>World News</ThemedText>
                         </View>
                     ),
-                    headerRight: () => (
-                        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginRight: 16 }}>
+                    headerLeft: () => (
+                        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginLeft: 16 }}>
                             <Ionicons name="menu" size={28} color="#0f172a" />
                         </TouchableOpacity>
                     ),
+                    headerRight: () => null,
                     headerStyle: {
                         backgroundColor: '#ffffff',
                     },
-                    headerTitleStyle: {
-                        fontWeight: '800',
-                        color: '#0f172a',
-                        fontSize: 18,
-                    },
+                    headerTitleAlign: 'center',
                     headerShadowVisible: false,
-                    headerTitle: '',
                 }}
             />
 

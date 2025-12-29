@@ -201,28 +201,24 @@ export default function DashboardScreen() {
         <Stack.Screen
           options={{
             headerShown: true,
-            headerTitle: '',
-            headerLeft: () => (
-              <View style={{ marginLeft: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#6366f1', justifyContent: 'center', alignItems: 'center' }}>
                   <Ionicons name="apps" size={18} color="white" />
                 </View>
-                <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 16, letterSpacing: -0.5 }}>M4Hub</ThemedText>
+                <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 18, letterSpacing: -0.5 }}>M4Hub</ThemedText>
               </View>
             ),
-            headerRight: () => (
-              <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginRight: 16 }}>
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginLeft: 16 }}>
                 <Ionicons name="menu" size={28} color="#0f172a" />
               </TouchableOpacity>
             ),
+            headerRight: () => null,
             headerStyle: {
               backgroundColor: '#ffffff',
             },
-            headerTitleStyle: {
-              fontWeight: '800',
-              color: '#0f172a',
-              fontSize: 18,
-            },
+            headerTitleAlign: 'center',
             headerShadowVisible: false,
           }}
         />

@@ -31,40 +31,7 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={24} color={color} />,
           }}
         />
-        <Tabs.Screen
-          name="hub"
-          options={{
-            title: 'M4 Hub',
-            tabBarIcon: ({ color }) => (
-              <View style={{
-                width: 50,
-                height: 50,
-                borderRadius: 25,
-                backgroundColor: '#6366f1',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: 20,
-                elevation: 10,
-                shadowColor: '#6366f1',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8
-              }}>
-                <Ionicons name="grid" size={26} color="white" />
-              </View>
-            ),
-            tabBarButton: (props) => {
-              const { delayLongPress, ...otherProps } = props as any;
-              return (
-                <TouchableOpacity
-                  {...otherProps}
-                  onPress={() => dispatch(setSidebarOpen(true))}
-                  activeOpacity={0.8}
-                />
-              );
-            }
-          }}
-        />
+
         <Tabs.Screen
           name="music"
           options={{
