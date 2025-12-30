@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 @Service
 public class AnalyticsService {
 
+    // Service for handling all analytics calculations and data aggregation
+
     private static final Logger logger = LoggerFactory.getLogger(AnalyticsService.class);
 
     @Autowired
@@ -84,8 +86,90 @@ public class AnalyticsService {
         return analytics;
     }
 
-    // ... (keep calculateTabAnalytics and getSessionCounts and
-    // calculateWeeklyActivity as is - skipping lines to avoid replacing them) ...
+    private List<HubAnalyticsDto.TabAnalytics> calculateTabAnalytics(User user, Instant since) {
+        List<Map<String, Object>> aggregatedData = tabUsageRepository.aggregateUsageByUserAndTimestampAfter(user,
+                since);
+
+        // Calculate total duration across all tabs
+        long totalDuration = aggregatedData.stream()
+                .mapToLong(map -> {
+                    Object val = map.get("totalDuration");
+                    return val instanceof Number ? ((Number) val).longValue() : 0L;
+                })
+                .sum();
+
+        if (totalDuration == 0) {
+            // Return default data if no usage
+            return getDefaultTabAnalytics();
+        }
+
+        // Get session counts
+        Map<String, Long> sessionCounts = getSessionCounts(user, since);
+
+        List<HubAnalyticsDto.TabAnalytics> tabAnalyticsList = new ArrayList<>();
+
+        for (Map<String, Object> data : aggregatedData) {
+            String tabName = (String) data.get("tabName");
+            if (tabName == null)
+                tabName = "unknown";
+
+            Object durationObj = data.get("totalDuration");
+            long duration = durationObj instanceof Number ? ((Number) durationObj).longValue() : 0L;
+
+            int percentage = (int) ((duration * 100) / totalDuration);
+            int sessions = sessionCounts.getOrDefault(tabName, 0L).intValue();
+
+            HubAnalyticsDto.TabAnalytics tabAnalytics = new HubAnalyticsDto.TabAnalytics(
+                    capitalize(tabName),
+                    percentage,
+                    TAB_COLORS.getOrDefault(tabName.toLowerCase(), "#64748b"),
+                    TAB_ICONS.getOrDefault(tabName.toLowerCase(), "apps"),
+                    sessions,
+                    duration);
+
+            tabAnalyticsList.add(tabAnalytics);
+        }
+
+        // Sort by percentage descending
+        tabAnalyticsList.sort((a, b) -> Integer.compare(b.getPercentage(), a.getPercentage()));
+
+        return tabAnalyticsList;
+    }
+
+    private Map<String, Long> getSessionCounts(User user, Instant since) {
+        List<TabUsage> usages = tabUsageRepository.findByUserAndTimestampAfter(user, since);
+
+        return usages.stream()
+                .collect(Collectors.groupingBy(
+                        u -> u.getTabName() != null ? u.getTabName() : "unknown",
+                        Collectors.counting()));
+    }
+
+    private List<Integer> calculateWeeklyActivity(User user, Instant since) {
+        List<TabUsage> usages = tabUsageRepository.findByUserAndTimestampAfter(user, since);
+
+        // Group by day
+        Map<LocalDate, Long> dailyDurations = usages.stream()
+                .collect(Collectors.groupingBy(
+                        usage -> {
+                            Instant ts = usage.getTimestamp();
+                            return ts != null ? ts.atZone(ZoneId.systemDefault()).toLocalDate() : LocalDate.now();
+                        },
+                        Collectors.summingLong(u -> u.getDurationSeconds() != null ? u.getDurationSeconds() : 0L)));
+
+        // Get last 7 days
+        List<Integer> weeklyActivity = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            long seconds = dailyDurations.getOrDefault(date, 0L);
+            // Convert to minutes for better visualization
+            weeklyActivity.add((int) (seconds / 60));
+        }
+
+        return weeklyActivity;
+    }
 
     private HubAnalyticsDto.EngagementMetrics calculateEngagementMetrics(User user, Instant currentPeriodStart,
             Instant previousPeriodStart, int daysInPeriod) {
@@ -154,6 +238,7 @@ public class AnalyticsService {
 
         // Factor 2: Consistency (30%)
         Set<LocalDate> activeDays = usages.stream()
+                .filter(u -> u.getTimestamp() != null)
                 .map(usage -> usage.getTimestamp().atZone(ZoneId.systemDefault()).toLocalDate())
                 .collect(Collectors.toSet());
         // Cap consistency at 100% of daysInPeriod
@@ -162,7 +247,8 @@ public class AnalyticsService {
 
         // Factor 3: Total engagement time (30%)
         // Target: 1 hour per day average = max score
-        long totalSeconds = usages.stream().mapToLong(TabUsage::getDurationSeconds).sum();
+        long totalSeconds = usages.stream().mapToLong(u -> u.getDurationSeconds() != null ? u.getDurationSeconds() : 0L)
+                .sum();
         double hoursPerDay = (totalSeconds / 3600.0) / daysInPeriod;
         int timeScore = Math.min(30, (int) (hoursPerDay * 30));
 

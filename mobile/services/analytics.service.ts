@@ -43,6 +43,11 @@ class AnalyticsServiceClass {
                 },
             });
 
+            if (!response.ok) {
+                config.error(`Hub analytics failed with status: ${response.status}`);
+                return null;
+            }
+
             const data: AnalyticsResponse = await response.json();
             config.log('Hub analytics response:', data);
 
@@ -52,7 +57,7 @@ class AnalyticsServiceClass {
 
             return null;
         } catch (error) {
-            config.log('Error fetching hub analytics:', error);
+            config.error('Error fetching hub analytics:', error);
             return null;
         }
     }

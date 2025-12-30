@@ -22,6 +22,13 @@ const TAB_NAME_MAP: Record<string, string> = {
     'MONEY': 'Money',
     'NEWS': 'News',
     'PROFILE': 'Profile',
+    'dashboard': 'Dashboard',
+    'music': 'Music',
+    'messages': 'Messages',
+    'money': 'Money',
+    'news': 'News',
+    'profile': 'Profile',
+    'explore': 'Profile', // Mobile 'explore' tab is Profile
 };
 
 interface ChartData {

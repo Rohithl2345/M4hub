@@ -78,7 +78,16 @@ class MusicService {
             const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.MUSIC.SONGS}`, {
                 headers
             });
-            const songs = await response.json();
+
+            if (!response.ok) {
+                console.warn('Failed to fetch popular tracks:', response.status);
+                return [];
+            }
+
+            const text = await response.text();
+            if (!text) return [];
+
+            const songs = JSON.parse(text);
             return songs.map(this.mapSongToTrack).slice(0, limit);
         } catch (error) {
             console.error('Error fetching popular tracks from backend:', error);
@@ -100,7 +109,16 @@ class MusicService {
                 `${this.baseUrl}${API_ENDPOINTS.MUSIC.SEARCH}?q=${encodeURIComponent(query)}`,
                 { headers }
             );
-            const songs = await response.json();
+
+            if (!response.ok) {
+                console.warn('Failed to search tracks:', response.status);
+                return [];
+            }
+
+            const text = await response.text();
+            if (!text) return [];
+
+            const songs = JSON.parse(text);
             return songs.map(this.mapSongToTrack).slice(0, limit);
         } catch (error) {
             console.error('Error searching tracks via backend:', error);

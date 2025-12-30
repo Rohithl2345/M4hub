@@ -7,7 +7,7 @@ export const APP_CONFIG = {
     // For Android emulator, use 10.0.2.2; for Web/iOS, use localhost
     // Use machine IP for physical device/emulator access on local network
     API_URL: process.env.EXPO_PUBLIC_API_URL ||
-        (Platform.OS === 'android' ? 'http://192.168.1.2:8080' : 'http://192.168.1.2:8080'),
+        (Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://192.168.1.2:8080'),
     ENABLE_LOGGING: process.env.EXPO_PUBLIC_ENABLE_LOGGING === 'true' || __DEV__,
 } as const;
 
