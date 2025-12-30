@@ -5,14 +5,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectUser, markTutorialSeen } from '@/store/slices/authSlice';
 import axios from 'axios';
 import styles from './PortalTutorial.module.css';
-import {
-    RocketLaunch as WelcomeIcon,
-    Chat as MessengerIcon,
-    MusicNote as MusicIcon,
-    Newspaper as NewsIcon,
-    AccountBalanceWallet as WalletIcon,
-    CheckCircle as DoneIcon
-} from '@mui/icons-material';
+import WelcomeIcon from '@mui/icons-material/RocketLaunch';
+import MessengerIcon from '@mui/icons-material/Chat';
+import MusicIcon from '@mui/icons-material/MusicNote';
+import NewsIcon from '@mui/icons-material/Newspaper';
+import WalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import DoneIcon from '@mui/icons-material/CheckCircle';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 

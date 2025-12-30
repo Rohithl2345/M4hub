@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import PremiumAudioPlayer from '@/components/PremiumAudioPlayer';
+import dynamic from 'next/dynamic';
+
+const PremiumAudioPlayer = dynamic(() => import('@/components/PremiumAudioPlayer'), {
+    ssr: false,
+    loading: () => <div className={styles.playerLoading}>Initialising Premium Player...</div>
+});
 
 import styles from './music.module.css';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';

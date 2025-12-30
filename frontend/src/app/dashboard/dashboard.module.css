@@ -410,3 +410,36 @@
         gap: 8px;
     }
 }
+
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+        transform: scale(0.98);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 0.6;
+        transform: scale(0.98);
+    }
+}
+
+.loadingPulse {
+    font-size: 16px;
+    font-weight: 600;
+    color: #64748b;
+    animation: pulse 1.5s infinite ease-in-out;
+    letter-spacing: 0.5px;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    border: 1px dashed #cbd5e1;
+    margin-top: 24px;
+}

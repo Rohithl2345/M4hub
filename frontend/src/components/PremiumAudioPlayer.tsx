@@ -191,6 +191,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                             onClick={() => setIsShuffle(!isShuffle)}
                             className={`${styles.secondaryButton} ${isShuffle ? styles.active : ''}`}
                             title="Shuffle"
+                            aria-label={isShuffle ? "Disable shuffle" : "Enable shuffle"}
                         >
                             <ShuffleIcon fontSize="small" />
                         </button>
@@ -200,6 +201,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                             className={styles.controlButton}
                             disabled={!onPrevious}
                             title="Previous"
+                            aria-label="Previous track"
                         >
                             <SkipPreviousIcon />
                         </button>
@@ -209,6 +211,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                             className={styles.playButton}
                             disabled={!hasAudio}
                             title={isPlaying ? 'Pause' : 'Play'}
+                            aria-label={isPlaying ? "Pause music" : "Play music"}
                         >
                             {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
                         </button>
@@ -218,6 +221,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                             className={styles.controlButton}
                             disabled={!onNext}
                             title="Next"
+                            aria-label="Next track"
                         >
                             <SkipNextIcon />
                         </button>
@@ -226,6 +230,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                             onClick={toggleRepeat}
                             className={`${styles.secondaryButton} ${repeatMode !== 'off' ? styles.active : ''}`}
                             title={`Repeat: ${repeatMode}`}
+                            aria-label={`Current repeat mode: ${repeatMode}. Click to cycle.`}
                         >
                             {repeatMode === 'one' ? <RepeatOneIcon fontSize="small" /> : <RepeatIcon fontSize="small" />}
                         </button>
@@ -257,7 +262,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                 {/* Volume & Queue Controls */}
                 <div className={styles.rightControls}>
                     <div className={styles.volumeSection}>
-                        <button onClick={toggleMute} className={styles.volumeButton}>
+                        <button onClick={toggleMute} className={styles.volumeButton} aria-label={isMuted ? "Unmute" : "Mute"}>
                             {getVolumeIcon()}
                         </button>
                         <div className={styles.volumeBarContainer}>
@@ -277,6 +282,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                         onClick={() => setShowQueue(!showQueue)}
                         className={`${styles.queueButton} ${showQueue ? styles.active : ''}`}
                         title="Queue"
+                        aria-label={showQueue ? "Hide queue" : "Show queue"}
                     >
                         <QueueMusicIcon />
                     </button>

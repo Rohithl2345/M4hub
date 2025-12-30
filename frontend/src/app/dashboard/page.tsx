@@ -13,7 +13,16 @@ import NewspaperIcon from '@mui/icons-material/Newspaper';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import AnalyticsDashboard from '@/components/AnalyticsDashboard';
+import dynamic from 'next/dynamic';
+
+const AnalyticsDashboard = dynamic(() => import('@/components/AnalyticsDashboard'), {
+    ssr: false,
+    loading: () => (
+        <div style={{ height: '400px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className={styles.loadingPulse}>Loading Analytics...</div>
+        </div>
+    )
+});
 
 export default function DashboardPage() {
     const router = useRouter();

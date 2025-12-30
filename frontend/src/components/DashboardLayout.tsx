@@ -1,10 +1,10 @@
 'use client';
-
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout, selectIsLoading } from '@/store/slices/authSlice';
-import { Badge, Switch } from '@mui/material';
+import Badge from '@mui/material/Badge';
+import Switch from '@mui/material/Switch';
 import chatService from '@/services/chat.service';
 import styles from './DashboardLayout.module.css';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -13,14 +13,14 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-function FloatingSidebarIcons({ Icon }: { Icon: any }) {
-    const items = Array.from({ length: 15 }).map((_, i) => ({
+const FloatingSidebarIcons = React.memo(({ Icon }: { Icon: any }) => {
+    const items = useMemo(() => Array.from({ length: 15 }).map((_, i) => ({
         id: i,
         left: `${(i * 17) % 80 + 10}%`,
         delay: `-${(i * 1.5) % 15}s`,
         duration: `${10 + (i % 8)}s`,
         size: `${18 + (i % 4) * 8}px`
-    }));
+    })), []);
 
     return (
         <div className={styles.sidebarIconsContainer}>
@@ -38,9 +38,14 @@ function FloatingSidebarIcons({ Icon }: { Icon: any }) {
             ))}
         </div>
     );
-}
+});
 import { logger } from '@/utils/logger';
-import PortalTutorial from './PortalTutorial';
+import dynamic from 'next/dynamic';
+
+const PortalTutorial = dynamic(() => import('./PortalTutorial'), { ssr: false });
+const SnakeGame = dynamic(() => import('./SnakeGame'), { ssr: false });
+const InactivityHandler = dynamic(() => import('./InactivityHandler'), { ssr: false });
+
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PersonIcon from '@mui/icons-material/Person';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
@@ -52,8 +57,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 import HubIcon from '@mui/icons-material/Hub';
-import SnakeGame from './SnakeGame';
-import InactivityHandler from './InactivityHandler';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;

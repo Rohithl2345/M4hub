@@ -7,29 +7,27 @@ import chatService, { ChatMessage, FriendRequest, UserSearchResult } from '@/ser
 import DashboardLayout from '@/components/DashboardLayout';
 import { logger } from '@/utils/logger';
 import styles from './messages.module.css';
-import {
-    Box,
-    TextField,
-    Button,
-    List,
-    ListItemButton,
-    ListItemText,
-    Typography,
-    IconButton,
-    Badge,
-    Tab,
-    Tabs,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Avatar,
-    ListItemAvatar,
-    Chip,
-    InputAdornment,
-    Tooltip,
-    CircularProgress
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Badge from '@mui/material/Badge';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Avatar from '@mui/material/Avatar';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import Chip from '@mui/material/Chip';
+import InputAdornment from '@mui/material/InputAdornment';
+import Tooltip from '@mui/material/Tooltip';
+import CircularProgress from '@mui/material/CircularProgress';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
@@ -446,12 +444,12 @@ export default function MessagesPage() {
                 subtitle: 'When people want to connect with you, they will appear here.'
             },
             incoming: {
-                icon: <PersonAddIcon className={styles.emptyIcon} sx={{ fontSize: isSubSection ? 48 : 72, mb: 2, color: '#cbd5e1' }} />,
+                icon: <PersonAddIcon sx={{ fontSize: isSubSection ? 48 : 72, mb: 2, color: '#cbd5e1' }} />,
                 title: 'No Incoming Friend Requests',
                 subtitle: "When people send you friend requests, they'll appear here"
             },
             outgoing: {
-                icon: <SendIcon className={styles.emptyIcon} sx={{ fontSize: isSubSection ? 48 : 72, mb: 2, color: '#cbd5e1' }} />,
+                icon: <SendIcon sx={{ fontSize: isSubSection ? 48 : 72, mb: 2, color: '#cbd5e1' }} />,
                 title: 'No Outgoing Friend Requests',
                 subtitle: 'Friend requests you send will appear here'
             },

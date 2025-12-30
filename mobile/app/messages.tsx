@@ -68,7 +68,7 @@ export default function MessagesScreen() {
                                 <ThemedText style={styles.time}>{chat.time}</ThemedText>
                                 {chat.unread > 0 && (
                                     <View style={styles.badge}>
-                                        <ThemedText style={styles.badgeText}>{chat.unread}</ThemedText>
+                                        <ThemedText style={styles.tabBadgeText}>{chat.unread}</ThemedText>
                                     </View>
                                 )}
                             </View>

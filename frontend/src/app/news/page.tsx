@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import NextImage from 'next/image';
 import DashboardLayout from '@/components/DashboardLayout';
 import styles from './news.module.css';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import { CircularProgress, Box } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { env } from '@/utils/env';
@@ -95,12 +97,16 @@ export default function NewsPage() {
                     <div className={styles.mainLayout}>
                         {/* Main Feed - Standard Cards */}
                         <div className={styles.newsGrid}>
-                            {newsArticles.length > 0 ? newsArticles.map((article) => (
+                            {newsArticles.length > 0 ? newsArticles.map((article, index) => (
                                 <div key={article.id} className={styles.newsCard}>
                                     <div className={styles.newsImage}>
-                                        <img
+                                        <NextImage
                                             src={article.urlToImage || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800'}
                                             alt={article.title}
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            priority={index === 0}
+                                            style={{ objectFit: 'cover' }}
                                         />
                                     </div>
                                     <div className={styles.cardContent}>
