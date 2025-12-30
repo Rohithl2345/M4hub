@@ -12,7 +12,7 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
-# Profile selection (can be overridden by Render/Cloud environment variables)
-ENV SPRING_PROFILES_ACTIVE=dev
+# Profile selection (default to prod for deployment)
+ENV SPRING_PROFILES_ACTIVE=prod
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
