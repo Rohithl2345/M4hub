@@ -269,7 +269,7 @@ export default function DashboardScreen() {
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>Active Time</Text>
                 <Text style={{ fontSize: 14, color: 'white', fontWeight: '900' }}>
-                  {analyticsData ? Math.round(analyticsData.tabAnalytics.reduce((acc, curr) => acc + curr.totalSeconds, 0) / 60) : 0}m
+                  {analyticsData && analyticsData.tabAnalytics ? Math.round(analyticsData.tabAnalytics.reduce((acc, curr) => acc + curr.totalSeconds, 0) / 60) : 0}m
                 </Text>
               </View>
               <View style={{ width: 1, height: '60%', backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center' }} />
@@ -329,7 +329,7 @@ export default function DashboardScreen() {
               <ActivityIndicator size="large" color="#7c3aed" />
               <ThemedText style={styles.loadingText}>Loading activity data...</ThemedText>
             </View>
-          ) : !analyticsData || analyticsData.tabAnalytics.length === 0 ? (
+          ) : !analyticsData || !analyticsData.tabAnalytics || analyticsData.tabAnalytics.length === 0 ? (
             <View style={styles.comingSoon}>
               <Ionicons name="time-outline" size={48} color="#94a3b8" />
               <ThemedText style={styles.comingSoonText}>

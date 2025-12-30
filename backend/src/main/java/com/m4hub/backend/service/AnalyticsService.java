@@ -78,6 +78,9 @@ public class AnalyticsService {
         // Dynamic engagement metrics
         analytics.setEngagementMetrics(calculateEngagementMetrics(user, since, previousSince, daysInPeriod));
 
+        // Tab analytics
+        analytics.setTabAnalytics(calculateTabAnalytics(user, since));
+
         return analytics;
     }
 
