@@ -35,6 +35,9 @@ export const API_ENDPOINTS = {
         FAVORITES_TOGGLE: '/api/music/favorites/toggle',
         WISHLIST: '/api/music/wishlist',
         WISHLIST_TOGGLE: '/api/music/wishlist/toggle',
+        TRENDING: '/api/music/trending',
+        ALBUMS: '/api/music/albums',
+        ARTISTS: '/api/music/artists',
     },
 } as const;
 

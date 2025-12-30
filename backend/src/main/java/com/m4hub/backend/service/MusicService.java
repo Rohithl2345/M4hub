@@ -164,4 +164,20 @@ public class MusicService {
         dataGenerator.generate500Songs();
         logger.info("Data seeding complete. Current song count: {}", songRepository.count());
     }
+
+    public List<Song> getTrendingSongs() {
+        return songRepository.findTopTracks();
+    }
+
+    public List<String> getAlbums() {
+        return songRepository.findDistinctAlbums();
+    }
+
+    public List<String> getArtists() {
+        return songRepository.findDistinctArtists();
+    }
+
+    public List<Song> getSongsByAlbum(String albumName) {
+        return songRepository.findByAlbum(albumName);
+    }
 }

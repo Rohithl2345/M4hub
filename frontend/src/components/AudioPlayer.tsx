@@ -16,9 +16,10 @@ interface AudioPlayerProps {
     playlist: Track[];
     onNext?: () => void;
     onPrevious?: () => void;
+    onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
-export default function AudioPlayer({ track, playlist, onNext, onPrevious }: AudioPlayerProps) {
+export default function AudioPlayer({ track, playlist, onNext, onPrevious, onPlayStateChange }: AudioPlayerProps) {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -61,6 +62,7 @@ export default function AudioPlayer({ track, playlist, onNext, onPrevious }: Aud
                 audioRef.current.pause();
                 console.log('Paused');
                 setIsPlaying(false);
+                onPlayStateChange?.(false);
             } else {
                 const playPromise = audioRef.current.play();
                 if (playPromise !== undefined) {
@@ -68,6 +70,7 @@ export default function AudioPlayer({ track, playlist, onNext, onPrevious }: Aud
                         .then(() => {
                             console.log('Started playing');
                             setIsPlaying(true);
+                            onPlayStateChange?.(true);
                         })
                         .catch(err => {
                             console.error('Play error:', err);
@@ -127,6 +130,7 @@ export default function AudioPlayer({ track, playlist, onNext, onPrevious }: Aud
 
     const handleEnded = () => {
         setIsPlaying(false);
+        onPlayStateChange?.(false);
         if (onNext) {
             onNext();
         }

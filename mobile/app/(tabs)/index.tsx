@@ -314,9 +314,10 @@ export default function DashboardScreen() {
         <View style={[styles.analyticsCard, isDark && styles.darkCard, { marginTop: 24 }]}>
           <View style={styles.analyticsHeader}>
             <View>
-              <ThemedText style={[styles.analyticsTitle, isDark && { color: '#f8fafc' }]}>
-                <Ionicons name="analytics" size={20} color="#7c3aed" /> Hub Analytics
-              </ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="analytics" size={20} color="#7c3aed" />
+                <ThemedText style={[styles.analyticsTitle, isDark && { color: '#f8fafc' }]}>Hub Analytics</ThemedText>
+              </View>
               <ThemedText style={[styles.analyticsSubtitle, isDark && { color: '#94a3b8' }]}>Time spent across M4Hub platforms</ThemedText>
             </View>
             <TouchableOpacity onPress={onRefresh} style={styles.chartRefreshBtn}>
@@ -378,12 +379,12 @@ export default function DashboardScreen() {
               <View style={styles.chartWrapper}>
                 {selectedChartType === 'bar' && (
                   <View style={{ width: '100%', alignItems: 'center' }}>
-                    <ThemedText style={styles.chartTitle}>Time Spent (Seconds)</ThemedText>
+                    <ThemedText style={styles.chartTitle}>Time Spent (Minutes)</ThemedText>
                     <BarChart
                       data={{
                         labels: analyticsData.tabAnalytics.map(t => t.name),
                         datasets: [{
-                          data: analyticsData.tabAnalytics.map(t => t.totalSeconds)
+                          data: analyticsData.tabAnalytics.map(t => Math.round(t.totalSeconds / 60))
                         }]
                       }}
                       width={width - 72}
@@ -403,7 +404,7 @@ export default function DashboardScreen() {
                     <PieChart
                       data={analyticsData.tabAnalytics.map(t => ({
                         name: t.name,
-                        population: t.totalSeconds,
+                        population: Math.round(t.totalSeconds / 60),
                         color: t.color || '#6366f1',
                         legendFontColor: isDark ? '#cbd5e1' : '#64748b',
                         legendFontSize: 12
@@ -425,10 +426,18 @@ export default function DashboardScreen() {
                     <LineChart
                       data={{
                         labels: timeframe === 'monthly'
-                          ? ['W1', 'W2', 'W3', 'W4']
+                          ? ['3W Ago', '2W Ago', 'Last W', 'This W']
                           : timeframe === 'yearly'
-                            ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                            ? Array.from({ length: 12 }, (_, i) => {
+                              const d = new Date();
+                              d.setMonth(d.getMonth() - (11 - i));
+                              return d.toLocaleDateString('en-US', { month: 'short' });
+                            })
+                            : Array.from({ length: 7 }, (_, i) => {
+                              const d = new Date();
+                              d.setDate(d.getDate() - (6 - i));
+                              return d.toLocaleDateString('en-US', { weekday: 'short' });
+                            }),
                         datasets: [{
                           data: analyticsData.weeklyActivity && analyticsData.weeklyActivity.length > 0
                             ? analyticsData.weeklyActivity

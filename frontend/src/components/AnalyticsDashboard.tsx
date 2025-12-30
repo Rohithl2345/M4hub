@@ -43,21 +43,44 @@ export default function AnalyticsDashboard() {
     const [timeframe, setTimeframe] = useState('weekly');
     const [chartType, setChartType] = useState('bar');
     const [data, setData] = useState<ChartData[]>([]);
+    const [trendData, setTrendData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const stats = await analyticsService.getUsage(timeframe);
-            // Format data for chart
-            const formatted = stats
-                .filter(s => TAB_NAME_MAP[s.tabName]) // Filter to only show known tabs
-                .map(s => ({
-                    name: TAB_NAME_MAP[s.tabName],
-                    duration: s.totalDuration,
-                    displayDuration: Math.round(s.totalDuration / 60) // Convert to minutes
-                }));
+            const hubData = await analyticsService.getHubAnalytics(timeframe);
+            if (!hubData) return;
+
+            // 1. Format tab usage data
+            const formatted: ChartData[] = hubData.tabAnalytics.map((s: any) => ({
+                name: s.name,
+                duration: s.totalSeconds,
+                displayDuration: Math.round(s.totalSeconds / 60)
+            }));
             setData(formatted);
+
+            // 2. Format trend data
+            const labels = timeframe === 'yearly'
+                ? Array.from({ length: 12 }, (_, i) => {
+                    const d = new Date();
+                    d.setMonth(d.getMonth() - (11 - i));
+                    return d.toLocaleString('default', { month: 'short' });
+                })
+                : timeframe === 'monthly'
+                    ? ['3 Weeks Ago', '2 Weeks Ago', 'Last Week', 'This Week']
+                    : Array.from({ length: 7 }, (_, i) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - (6 - i));
+                        return d.toLocaleString('default', { weekday: 'short' });
+                    });
+
+            const formattedTrend = hubData.weeklyActivity.map((val: number, idx: number) => ({
+                name: labels[idx] || `Point ${idx + 1}`,
+                mins: val
+            }));
+            setTrendData(formattedTrend);
+
         } catch (error) {
             console.error('Error loading analytics:', error);
         } finally {
@@ -70,6 +93,9 @@ export default function AnalyticsDashboard() {
     }, [timeframe]);
 
     const renderChart = () => {
+        const isTrendChart = chartType === 'line' || chartType === 'area';
+        const activeData = isTrendChart ? trendData : data;
+
         switch (chartType) {
             case 'pie':
                 return (
@@ -81,34 +107,33 @@ export default function AnalyticsDashboard() {
                             innerRadius={60}
                             outerRadius={80}
                             paddingAngle={5}
-                            dataKey="duration"
+                            dataKey="displayDuration"
                             label={({ name, percent }) => `${name} ${(percent ? percent * 100 : 0).toFixed(0)}%`}
                         >
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
-                        <RechartsTooltip formatter={(value: number | undefined) => [`${Math.round((value || 0) / 60)} mins`, 'Time Spent']} />
+                        <RechartsTooltip formatter={(value: number | undefined) => [`${value || 0} mins`, 'Time Spent']} />
                         <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ paddingLeft: '20px' }} />
                     </PieChart>
                 );
             case 'line':
                 return (
-                    <LineChart data={data}>
+                    <LineChart data={trendData}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} label={{ value: 'Mins', angle: -90, position: 'insideLeft' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} label={{ value: 'Mins', angle: -90, position: 'insideLeft', fontSize: 10 }} />
                         <RechartsTooltip
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: number | undefined) => [`${Math.round((value || 0) / 60)} mins`, 'Time Spent']}
+                            formatter={(value: number | undefined) => [`${value || 0} mins`, 'Active Time']}
                         />
-                        <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ paddingLeft: '20px' }} />
-                        <Line type="monotone" dataKey="duration" name="Time Spent" stroke="#6366f1" strokeWidth={4} dot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                        <Line type="monotone" dataKey="mins" name="Active Time" stroke="#6366f1" strokeWidth={4} dot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
                     </LineChart>
                 );
             case 'area':
                 return (
-                    <AreaChart data={data}>
+                    <AreaChart data={trendData}>
                         <defs>
                             <linearGradient id="colorDur" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
@@ -117,13 +142,12 @@ export default function AnalyticsDashboard() {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} label={{ value: 'Mins', angle: -90, position: 'insideLeft', fontSize: 10 }} />
                         <RechartsTooltip
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: number | undefined) => [`${Math.round((value || 0) / 60)} mins`, 'Time Spent']}
+                            formatter={(value: number | undefined) => [`${value || 0} mins`, 'Active Time']}
                         />
-                        <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ paddingLeft: '20px' }} />
-                        <Area type="monotone" dataKey="duration" name="Time Spent" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorDur)" />
+                        <Area type="monotone" dataKey="mins" name="Active Time" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorDur)" />
                     </AreaChart>
                 );
             default:
@@ -131,14 +155,13 @@ export default function AnalyticsDashboard() {
                     <BarChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} label={{ value: 'Mins', angle: -90, position: 'insideLeft', fontSize: 10 }} />
                         <RechartsTooltip
                             cursor={{ fill: '#f8fafc' }}
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: number | undefined) => [`${Math.round((value || 0) / 60)} mins`, 'Time Spent']}
+                            formatter={(value: number | undefined) => [`${value || 0} mins`, 'Time Spent']}
                         />
-                        <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ paddingLeft: '20px' }} />
-                        <Bar dataKey="duration" name="Time Spent" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40}>
+                        <Bar dataKey="displayDuration" name="Time Spent" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40}>
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}

@@ -1,4 +1,5 @@
 import { env } from '@/utils/env';
+import fetchWithAuth from '@/utils/fetchWithAuth';
 
 export interface TabUsageStats {
     tabName: string;
@@ -17,9 +18,8 @@ class AnalyticsService {
     async logUsage(tabName: string, durationSeconds: number): Promise<void> {
         if (!tabName || tabName === '/') return;
         try {
-            await fetch(`${env.apiUrl}/api/analytics/log`, {
+            await fetchWithAuth(`${env.apiUrl}/api/analytics/log`, {
                 method: 'POST',
-                headers: this.getHeaders(),
                 body: JSON.stringify({ tabName, durationSeconds })
             });
         } catch (error) {
@@ -29,14 +29,24 @@ class AnalyticsService {
 
     async getUsage(timeframe: string = 'weekly'): Promise<TabUsageStats[]> {
         try {
-            const response = await fetch(`${env.apiUrl}/api/analytics/usage?timeframe=${timeframe}`, {
-                headers: this.getHeaders()
-            });
+            const response = await fetchWithAuth(`${env.apiUrl}/api/analytics/usage?timeframe=${timeframe}`);
             if (!response.ok) return [];
             return await response.json();
         } catch (error) {
             console.error('Failed to fetch analytics:', error);
             return [];
+        }
+    }
+
+    async getHubAnalytics(timeframe: string = 'weekly'): Promise<any> {
+        try {
+            const response = await fetchWithAuth(`${env.apiUrl}/api/analytics/hub?timeframe=${timeframe}`);
+            if (!response.ok) return null;
+            const data = await response.json();
+            return data.success ? data.data : null;
+        } catch (error) {
+            console.error('Failed to fetch hub analytics:', error);
+            return null;
         }
     }
 }

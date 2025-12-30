@@ -1,4 +1,5 @@
 import { env } from '@/utils/env';
+import fetchWithAuth from '@/utils/fetchWithAuth';
 const API_URL = env.apiUrl;
 const BACKEND_API_BASE = `${API_URL}/api/music`;
 
@@ -40,8 +41,8 @@ class MusicService {
     }
 
     private getHeaders(): Record<string, string> {
-        if (typeof window === 'undefined') return {};
-        const token = localStorage.getItem('authToken');
+        if (typeof window === 'undefined') return { 'Content-Type': 'application/json' };
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         return {
             'Content-Type': 'application/json',
             'Authorization': token ? `Bearer ${token}` : ''
@@ -65,10 +66,25 @@ class MusicService {
      */
     async getPopularTracks(limit: number = 20): Promise<Track[]> {
         try {
-            const response = await fetch(`${this.baseUrl}/songs`, {
-                headers: this.getHeaders()
-            });
-            const songs = await response.json();
+            const response = await fetchWithAuth(`${this.baseUrl}/songs`);
+
+            if (!response.ok) {
+                console.error('Music API error:', response.status, response.statusText);
+                return [];
+            }
+
+            const text = await response.text();
+            if (!text || text.trim().length === 0) {
+                console.warn('Empty response from music API');
+                return [];
+            }
+
+            const songs = JSON.parse(text);
+            if (!Array.isArray(songs)) {
+                console.error('Invalid response format from music API');
+                return [];
+            }
+
             return songs.map(this.mapSongToTrack).slice(0, limit);
         } catch (error) {
             console.error('Error fetching songs from backend:', error);
@@ -85,11 +101,20 @@ class MusicService {
                 return this.getPopularTracks(limit);
             }
 
-            const response = await fetch(`${this.baseUrl}/search?q=${encodeURIComponent(query)}`, {
-                headers: this.getHeaders()
-            });
-            const songs = await response.json();
-            return songs.map(this.mapSongToTrack).slice(0, limit);
+            const response = await fetchWithAuth(`${this.baseUrl}/search?q=${encodeURIComponent(query)}`);
+
+            if (!response.ok) {
+                console.error('Music search API error:', response.status);
+                return [];
+            }
+
+            const text = await response.text();
+            if (!text || text.trim().length === 0) {
+                return [];
+            }
+
+            const songs = JSON.parse(text);
+            return Array.isArray(songs) ? songs.map(this.mapSongToTrack).slice(0, limit) : [];
         } catch (error) {
             console.error('Error searching tracks from backend:', error);
             return [];
@@ -160,6 +185,49 @@ class MusicService {
             return songs.map((s: any) => ({ ...this.mapSongToTrack(s), isInWishlist: true }));
         } catch (error) {
             console.error('Error fetching wishlist:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get Trending Tracks
+     */
+    async getTrendingTracks(): Promise<Track[]> {
+        try {
+            const response = await fetchWithAuth(`${this.baseUrl}/trending`);
+            if (!response.ok) return [];
+            const songs = await response.json();
+            return songs.map((s: any) => this.mapSongToTrack(s));
+        } catch (error) {
+            console.error('Error fetching trending tracks:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get Albums
+     */
+    async getAlbums(): Promise<string[]> {
+        try {
+            const response = await fetchWithAuth(`${this.baseUrl}/albums`);
+            if (!response.ok) return [];
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching albums:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get Artists
+     */
+    async getArtists(): Promise<string[]> {
+        try {
+            const response = await fetchWithAuth(`${this.baseUrl}/artists`);
+            if (!response.ok) return [];
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching artists:', error);
             return [];
         }
     }

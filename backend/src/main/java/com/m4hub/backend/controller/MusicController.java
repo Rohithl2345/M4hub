@@ -105,6 +105,31 @@ public class MusicController {
         return ResponseEntity.ok(musicService.getUserWishlist(user.getId()));
     }
 
+    @GetMapping("/trending")
+    public ResponseEntity<List<Song>> getTrending(@RequestHeader("Authorization") String token) {
+        if (authHeaderInvalid(token))
+            return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(musicService.getTrendingSongs());
+    }
+
+    @GetMapping("/albums")
+    public ResponseEntity<List<String>> getAlbums(@RequestHeader("Authorization") String token) {
+        if (authHeaderInvalid(token))
+            return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(musicService.getAlbums());
+    }
+
+    @GetMapping("/artists")
+    public ResponseEntity<List<String>> getArtists(@RequestHeader("Authorization") String token) {
+        if (authHeaderInvalid(token))
+            return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(musicService.getArtists());
+    }
+
+    private boolean authHeaderInvalid(String token) {
+        return token == null || token.isEmpty() || authService.getUserFromToken(token) == null;
+    }
+
     @GetMapping("/stream/{filename}")
     public ResponseEntity<org.springframework.core.io.Resource> streamSong(@PathVariable String filename) {
         try {

@@ -198,6 +198,58 @@ class MusicService {
         }
     }
 
+    /**
+     * Get Trending Tracks
+     */
+    async getTrendingTracks(): Promise<Track[]> {
+        try {
+            const headers = await this.getHeaders();
+            const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.MUSIC.TRENDING}`, {
+                headers
+            });
+            if (!response.ok) return [];
+            const songs = await response.json();
+            return songs.map((s: any) => this.mapSongToTrack(s));
+        } catch (error) {
+            console.error('Error fetching trending tracks:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get Albums
+     */
+    async getAlbums(): Promise<string[]> {
+        try {
+            const headers = await this.getHeaders();
+            const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.MUSIC.ALBUMS}`, {
+                headers
+            });
+            if (!response.ok) return [];
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching albums:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get Artists
+     */
+    async getArtists(): Promise<string[]> {
+        try {
+            const headers = await this.getHeaders();
+            const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.MUSIC.ARTISTS}`, {
+                headers
+            });
+            if (!response.ok) return [];
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching artists:', error);
+            return [];
+        }
+    }
+
     formatDuration(seconds: number): string {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);

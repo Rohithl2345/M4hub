@@ -84,44 +84,63 @@ public class AnalyticsService {
         return analytics;
     }
 
+    private static final Map<String, String> TAB_DISPLAY_NAMES = Map.of(
+            "dashboard", "Dashboard",
+            "music", "Music",
+            "messages", "Messages",
+            "money", "Money",
+            "news", "News",
+            "profile", "Profile",
+            "explore", "Profile");
+
     private List<HubAnalyticsDto.TabAnalytics> calculateTabAnalytics(User user, Instant since) {
         List<Map<String, Object>> aggregatedData = tabUsageRepository.aggregateUsageByUserAndTimestampAfter(user,
                 since);
 
-        // Calculate total duration across all tabs
-        long totalDuration = aggregatedData.stream()
-                .mapToLong(map -> {
-                    Object val = map.get("totalDuration");
-                    return val instanceof Number ? ((Number) val).longValue() : 0L;
-                })
-                .sum();
-
-        if (totalDuration == 0) {
-            // Return default data if no usage
-            return getDefaultTabAnalytics();
-        }
-
-        // Get session counts
-        Map<String, Long> sessionCounts = getSessionCounts(user, since);
-
-        List<HubAnalyticsDto.TabAnalytics> tabAnalyticsList = new ArrayList<>();
-
+        // Group by mapped display name to be extra safe
+        Map<String, Long> groupedDurations = new HashMap<>();
         for (Map<String, Object> data : aggregatedData) {
             String tabName = (String) data.get("tabName");
             if (tabName == null)
                 tabName = "unknown";
 
+            String displayName = TAB_DISPLAY_NAMES.getOrDefault(tabName.toLowerCase(), capitalize(tabName));
             Object durationObj = data.get("totalDuration");
             long duration = durationObj instanceof Number ? ((Number) durationObj).longValue() : 0L;
 
+            groupedDurations.put(displayName, groupedDurations.getOrDefault(displayName, 0L) + duration);
+        }
+
+        long totalDuration = groupedDurations.values().stream().mapToLong(Long::longValue).sum();
+
+        if (totalDuration == 0) {
+            return getDefaultTabAnalytics();
+        }
+
+        // Get session counts (also grouped by display name)
+        Map<String, Long> mappedSessionCounts = new HashMap<>();
+        List<TabUsage> usages = tabUsageRepository.findByUserAndTimestampAfter(user, since);
+        for (TabUsage u : usages) {
+            String tabName = u.getTabName() != null ? u.getTabName().toLowerCase() : "unknown";
+            String displayName = TAB_DISPLAY_NAMES.getOrDefault(tabName, capitalize(tabName));
+            mappedSessionCounts.put(displayName, mappedSessionCounts.getOrDefault(displayName, 0L) + 1);
+        }
+
+        List<HubAnalyticsDto.TabAnalytics> tabAnalyticsList = new ArrayList<>();
+
+        for (Map.Entry<String, Long> entry : groupedDurations.entrySet()) {
+            String displayName = entry.getKey();
+            long duration = entry.getValue();
+            String originalKey = displayName.toLowerCase();
+
             int percentage = (int) ((duration * 100) / totalDuration);
-            int sessions = sessionCounts.getOrDefault(tabName, 0L).intValue();
+            int sessions = mappedSessionCounts.getOrDefault(displayName, 0L).intValue();
 
             HubAnalyticsDto.TabAnalytics tabAnalytics = new HubAnalyticsDto.TabAnalytics(
-                    capitalize(tabName),
+                    displayName,
                     percentage,
-                    TAB_COLORS.getOrDefault(tabName.toLowerCase(), "#64748b"),
-                    TAB_ICONS.getOrDefault(tabName.toLowerCase(), "apps"),
+                    TAB_COLORS.getOrDefault(originalKey, "#64748b"),
+                    TAB_ICONS.getOrDefault(originalKey, "apps"),
                     sessions,
                     duration);
 
@@ -134,31 +153,17 @@ public class AnalyticsService {
         return tabAnalyticsList;
     }
 
-    private Map<String, Long> getSessionCounts(User user, Instant since) {
-        List<TabUsage> usages = tabUsageRepository.findByUserAndTimestampAfter(user, since);
-
-        return usages.stream()
-                .collect(Collectors.groupingBy(
-                        u -> u.getTabName() != null ? u.getTabName() : "unknown",
-                        Collectors.counting()));
-    }
-
     private List<Integer> calculateActivityTrend(User user, String timeframe) {
         Instant since;
-        int points;
-        ChronoUnit unit;
 
         String mode = timeframe.toLowerCase();
         if ("yearly".equals(mode)) {
             since = Instant.now().minus(365, ChronoUnit.DAYS);
-            points = 12;
         } else if ("monthly".equals(mode)) {
             since = Instant.now().minus(28, ChronoUnit.DAYS);
-            points = 4;
         } else {
             // Daily or Weekly default to last 7 days daily view
             since = Instant.now().minus(7, ChronoUnit.DAYS);
-            points = 7;
         }
 
         List<TabUsage> usages = tabUsageRepository.findByUserAndTimestampAfter(user, since);
@@ -173,20 +178,11 @@ public class AnalyticsService {
                             u -> u.getTimestamp().atZone(ZoneId.systemDefault()).toLocalDate().getMonthValue(),
                             Collectors.summingLong(u -> u.getDurationSeconds() != null ? u.getDurationSeconds() : 0L)));
 
-            // Last 12 months
-            int currentMonth = today.getMonthValue();
-            for (int i = 0; i < 12; i++) {
-                // Logic to handle month wrapping is complex, simple implementation:
-                // Just map 1-12 in order? Or 11 months ago to now?
-                // For simplified chart, let's just show Jan-Dec logic if possible,
-                // but better is relatively: Month-11 to CurrentMonth
-
-                // Let's stick to simple Mon-Sun style logic but for months
-                // Actually, let's just group by MonthValue and return in order?
-                // The frontend expects a list matching the labels.
-                // Labels: Jan, Feb... Dec. So we need data for Jan... Dec.
-                int month = i + 1;
-                long seconds = monthlyDurations.getOrDefault(month, 0L);
+            // Last 12 months (relative to now)
+            for (int i = 11; i >= 0; i--) {
+                LocalDate monthDate = today.minusMonths(i);
+                int monthValue = monthDate.getMonthValue();
+                long seconds = monthlyDurations.getOrDefault(monthValue, 0L);
                 activity.add((int) (seconds / 60));
             }
         } else if ("monthly".equals(mode)) {
