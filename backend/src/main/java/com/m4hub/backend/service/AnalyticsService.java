@@ -72,13 +72,8 @@ public class AnalyticsService {
                 daysInPeriod = 7;
         }
 
-        Instant sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS); // Keep weekly activity fixed for the chart
-
-        // Get tab analytics based on timeframe
-        analytics.setTabAnalytics(calculateTabAnalytics(user, since));
-
         // Keep weekly chart fixed for now (it's a "Weekly Activity" chart specifically)
-        analytics.setWeeklyActivity(calculateWeeklyActivity(user, sevenDaysAgo));
+        analytics.setWeeklyActivity(calculateActivityTrend(user, timeframe));
 
         // Dynamic engagement metrics
         analytics.setEngagementMetrics(calculateEngagementMetrics(user, since, previousSince, daysInPeriod));
@@ -145,30 +140,86 @@ public class AnalyticsService {
                         Collectors.counting()));
     }
 
-    private List<Integer> calculateWeeklyActivity(User user, Instant since) {
-        List<TabUsage> usages = tabUsageRepository.findByUserAndTimestampAfter(user, since);
+    private List<Integer> calculateActivityTrend(User user, String timeframe) {
+        Instant since;
+        int points;
+        ChronoUnit unit;
 
-        // Group by day
-        Map<LocalDate, Long> dailyDurations = usages.stream()
-                .collect(Collectors.groupingBy(
-                        usage -> {
-                            Instant ts = usage.getTimestamp();
-                            return ts != null ? ts.atZone(ZoneId.systemDefault()).toLocalDate() : LocalDate.now();
-                        },
-                        Collectors.summingLong(u -> u.getDurationSeconds() != null ? u.getDurationSeconds() : 0L)));
-
-        // Get last 7 days
-        List<Integer> weeklyActivity = new ArrayList<>();
-        LocalDate today = LocalDate.now();
-
-        for (int i = 6; i >= 0; i--) {
-            LocalDate date = today.minusDays(i);
-            long seconds = dailyDurations.getOrDefault(date, 0L);
-            // Convert to minutes for better visualization
-            weeklyActivity.add((int) (seconds / 60));
+        String mode = timeframe.toLowerCase();
+        if ("yearly".equals(mode)) {
+            since = Instant.now().minus(365, ChronoUnit.DAYS);
+            points = 12;
+        } else if ("monthly".equals(mode)) {
+            since = Instant.now().minus(28, ChronoUnit.DAYS);
+            points = 4;
+        } else {
+            // Daily or Weekly default to last 7 days daily view
+            since = Instant.now().minus(7, ChronoUnit.DAYS);
+            points = 7;
         }
 
-        return weeklyActivity;
+        List<TabUsage> usages = tabUsageRepository.findByUserAndTimestampAfter(user, since);
+        List<Integer> activity = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        if ("yearly".equals(mode)) {
+            // Group by Month
+            Map<Integer, Long> monthlyDurations = usages.stream()
+                    .filter(u -> u.getTimestamp() != null)
+                    .collect(Collectors.groupingBy(
+                            u -> u.getTimestamp().atZone(ZoneId.systemDefault()).toLocalDate().getMonthValue(),
+                            Collectors.summingLong(u -> u.getDurationSeconds() != null ? u.getDurationSeconds() : 0L)));
+
+            // Last 12 months
+            int currentMonth = today.getMonthValue();
+            for (int i = 0; i < 12; i++) {
+                // Logic to handle month wrapping is complex, simple implementation:
+                // Just map 1-12 in order? Or 11 months ago to now?
+                // For simplified chart, let's just show Jan-Dec logic if possible,
+                // but better is relatively: Month-11 to CurrentMonth
+
+                // Let's stick to simple Mon-Sun style logic but for months
+                // Actually, let's just group by MonthValue and return in order?
+                // The frontend expects a list matching the labels.
+                // Labels: Jan, Feb... Dec. So we need data for Jan... Dec.
+                int month = i + 1;
+                long seconds = monthlyDurations.getOrDefault(month, 0L);
+                activity.add((int) (seconds / 60));
+            }
+        } else if ("monthly".equals(mode)) {
+            // Group by Week (approx 4 weeks)
+            Map<Integer, Long> dailyDurations = usages.stream()
+                    .filter(u -> u.getTimestamp() != null)
+                    .collect(Collectors.groupingBy(
+                            u -> u.getTimestamp().atZone(ZoneId.systemDefault()).toLocalDate().getDayOfYear(),
+                            Collectors.summingLong(u -> u.getDurationSeconds() != null ? u.getDurationSeconds() : 0L)));
+
+            // Aggregate into 4 weeks
+            for (int w = 3; w >= 0; w--) {
+                long weekSum = 0;
+                // Sum 7 days
+                for (int d = 0; d < 7; d++) {
+                    LocalDate date = today.minusDays(w * 7 + d);
+                    weekSum += dailyDurations.getOrDefault(date.getDayOfYear(), 0L);
+                }
+                activity.add((int) (weekSum / 60));
+            }
+        } else {
+            // Daily/Weekly - Group by Day (Last 7 Days)
+            Map<LocalDate, Long> dailyDurations = usages.stream()
+                    .filter(u -> u.getTimestamp() != null)
+                    .collect(Collectors.groupingBy(
+                            usage -> usage.getTimestamp().atZone(ZoneId.systemDefault()).toLocalDate(),
+                            Collectors.summingLong(u -> u.getDurationSeconds() != null ? u.getDurationSeconds() : 0L)));
+
+            for (int i = 6; i >= 0; i--) {
+                LocalDate date = today.minusDays(i);
+                long seconds = dailyDurations.getOrDefault(date, 0L);
+                activity.add((int) (seconds / 60));
+            }
+        }
+
+        return activity;
     }
 
     private HubAnalyticsDto.EngagementMetrics calculateEngagementMetrics(User user, Instant currentPeriodStart,

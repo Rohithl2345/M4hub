@@ -83,7 +83,7 @@ export default function DashboardScreen() {
   const [analyticsData, setAnalyticsData] = useState<HubAnalytics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   const [selectedChartType, setSelectedChartType] = useState<'bar' | 'pie' | 'line'>('bar');
-  const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('weekly');
   const theme = useAppTheme();
   const isDark = theme === 'dark';
   const magicEnabled = useAppSelector((state) => state.ui.magicEnabled);
@@ -421,12 +421,18 @@ export default function DashboardScreen() {
 
                 {selectedChartType === 'line' && (
                   <View style={{ width: '100%', alignItems: 'center' }}>
-                    <ThemedText style={styles.chartTitle}>Weekly Activity</ThemedText>
+                    <ThemedText style={styles.chartTitle}>Activity Trend</ThemedText>
                     <LineChart
                       data={{
-                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        labels: timeframe === 'monthly'
+                          ? ['W1', 'W2', 'W3', 'W4']
+                          : timeframe === 'yearly'
+                            ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                         datasets: [{
-                          data: analyticsData.weeklyActivity || [0, 0, 0, 0, 0, 0, 0]
+                          data: analyticsData.weeklyActivity && analyticsData.weeklyActivity.length > 0
+                            ? analyticsData.weeklyActivity
+                            : (timeframe === 'monthly' ? [0, 0, 0, 0] : (timeframe === 'yearly' ? new Array(12).fill(0) : new Array(7).fill(0)))
                         }]
                       }}
                       width={width - 72}
