@@ -36,20 +36,35 @@ public class AnalyticsService {
             "money", "wallet",
             "news", "newspaper");
 
-    public HubAnalyticsDto getHubAnalytics(User user) {
+    public HubAnalyticsDto getHubAnalytics(User user, String timeframe) {
         HubAnalyticsDto analytics = new HubAnalyticsDto();
 
-        // Get data for last 30 days
+        Instant since;
+        switch (timeframe.toLowerCase()) {
+            case "daily":
+                since = Instant.now().minus(1, ChronoUnit.DAYS);
+                break;
+            case "weekly":
+                since = Instant.now().minus(7, ChronoUnit.DAYS);
+                break;
+            case "monthly":
+                since = Instant.now().minus(30, ChronoUnit.DAYS);
+                break;
+            case "yearly":
+                since = Instant.now().minus(365, ChronoUnit.DAYS);
+                break;
+            default:
+                since = Instant.now().minus(7, ChronoUnit.DAYS);
+        }
+
         Instant thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS);
         Instant sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS);
 
-        // Get tab analytics
-        analytics.setTabAnalytics(calculateTabAnalytics(user, thirtyDaysAgo));
+        // Get tab analytics based on timeframe
+        analytics.setTabAnalytics(calculateTabAnalytics(user, since));
 
-        // Get weekly activity
+        // Keep other metrics fixed for now or Todo: make them dynamic too
         analytics.setWeeklyActivity(calculateWeeklyActivity(user, sevenDaysAgo));
-
-        // Get engagement metrics
         analytics.setEngagementMetrics(calculateEngagementMetrics(user, thirtyDaysAgo, sevenDaysAgo));
 
         return analytics;

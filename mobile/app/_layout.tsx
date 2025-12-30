@@ -7,12 +7,24 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ReduxProvider } from '@/store/ReduxProvider';
 import PortalTutorial from '@/components/PortalTutorial';
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+import { useAppTheme } from '@/hooks/use-app-theme';
+
+function AppThemeProvider({ children }: { children: React.ReactNode }) {
+  const theme = useAppTheme();
+  const isDark = theme === 'dark';
 
   return (
+    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      {children}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+    </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <ReduxProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <AppThemeProvider>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="welcome" options={{ headerShown: false }} />
@@ -23,8 +35,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      </AppThemeProvider>
     </ReduxProvider>
   );
 }

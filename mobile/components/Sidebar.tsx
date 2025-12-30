@@ -7,6 +7,7 @@ import {
     Animated as RNAnimated,
     TouchableWithoutFeedback,
     ScrollView,
+    Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
@@ -26,6 +27,7 @@ import Reanimated, {
     Easing,
     withDelay,
 } from 'react-native-reanimated';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 function FloatingSidebarIcon({ icon, index }: { icon: any; index: number }) {
     const translateY = useSharedValue(0);
@@ -96,6 +98,8 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
     const user = useAppSelector((state) => state.auth.user);
     const magicEnabled = useAppSelector((state) => state.ui.magicEnabled);
     const reduxIsOpen = useAppSelector((state) => state.ui.isSidebarOpen);
+    const theme = useAppTheme();
+    const isDark = theme === 'dark';
     const isOpen = propIsOpen ?? reduxIsOpen;
 
     const onClose = () => {
@@ -145,7 +149,7 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
     useEffect(() => {
         RNAnimated.timing(animation, {
             toValue: isOpen ? 1 : 0,
-            duration: 300,
+            duration: 220, // Faster, snappier animation
             useNativeDriver: true,
         }).start();
     }, [isOpen]);
@@ -174,7 +178,19 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
         router.push(route as any);
     };
 
-    if (!isOpen && !animation) return null; // Simplified logic
+    // Keep component mounted during closing animation
+    const [isMounted, setIsMounted] = React.useState(isOpen);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsMounted(true);
+        } else {
+            const timer = setTimeout(() => setIsMounted(false), 250);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
+    if (!isMounted && !isOpen) return null;
 
     return (
         <View style={StyleSheet.absoluteFill} pointerEvents={isOpen ? 'auto' : 'none'}>
@@ -202,22 +218,40 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
                         colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
                         style={[styles.header, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.2)' }]}
                     >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <View style={styles.profileSection}>
-                                <View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.3)' }]}>
-                                    <ThemedText style={[styles.avatarText, { color: '#fff' }]}>
-                                        {(user?.firstName || user?.username || 'U').charAt(0).toUpperCase()}
-                                    </ThemedText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', position: 'relative' }}>
+                            <View style={[styles.profileSection, { flex: 1, paddingRight: 42 }]}>
+                                <View style={{ position: 'relative' }}>
+                                    <View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.25)', borderColor: 'rgba(255,255,255,0.4)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }]}>
+                                        <ThemedText style={[styles.avatarText, { color: '#fff', fontSize: 18, fontWeight: '900' }]}>
+                                            {(user?.firstName || user?.username || 'U').charAt(0).toUpperCase()}
+                                        </ThemedText>
+                                    </View>
+                                    {/* Online Status Dot */}
+                                    <View style={{ position: 'absolute', bottom: 1, right: 1, width: 12, height: 12, borderRadius: 6, backgroundColor: '#22c55e', borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)' }} />
                                 </View>
+
                                 <View style={styles.userInfo}>
-                                    <ThemedText style={[styles.userName, { color: '#fff' }]}>
-                                        {user?.firstName} {user?.lastName}
-                                    </ThemedText>
-                                    <ThemedText style={[styles.userEmail, { color: 'rgba(255,255,255,0.7)' }]}>{user?.email}</ThemedText>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <ThemedText style={[styles.userName, { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: -0.5 }]} numberOfLines={1}>
+                                            {user?.firstName} {user?.lastName || ''}
+                                        </ThemedText>
+                                        <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 }}>
+                                            <Ionicons name="checkmark-circle" size={11} color="#fff" />
+                                        </View>
+                                    </View>
+                                    <ThemedText style={[styles.userEmail, { color: 'rgba(255,255,255,0.6)', fontSize: 10.5, fontWeight: '600', marginTop: 1 }]} numberOfLines={1}>{user?.email || 'Premium Member'}</ThemedText>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, gap: 4 }}>
+                                        <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: '#22c55e' }} />
+                                        <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 }}>Active Connection</Text>
+                                    </View>
                                 </View>
                             </View>
-                            <TouchableOpacity onPress={onClose} style={{ padding: 4 }}>
-                                <Ionicons name="close" size={28} color="white" />
+
+                            <TouchableOpacity
+                                onPress={onClose}
+                                style={{ position: 'absolute', right: -2, width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                            >
+                                <Ionicons name="close" size={22} color="white" />
                             </TouchableOpacity>
                         </View>
                     </LinearGradient>
@@ -256,16 +290,15 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
                             );
                         })}
 
-                        <View style={[styles.divider, magicEnabled && { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
 
-                        <View style={styles.sectionHeader}>
-                            <ThemedText style={[styles.sectionTitle, magicEnabled && { color: 'rgba(255,255,255,0.5)' }]}>Preferences</ThemedText>
-                        </View>
+                    </ScrollView>
 
-
-
-                        {/* Magic Toggle */}
-                        <TouchableOpacity style={styles.menuItem} onPress={() => dispatch(toggleMagic())}>
+                    {/* Magic Toggle Above Footer */}
+                    <View style={{ paddingHorizontal: 20, marginBottom: 5 }}>
+                        <TouchableOpacity
+                            style={[styles.menuItem, { paddingHorizontal: 0 }]}
+                            onPress={() => dispatch(toggleMagic())}
+                        >
                             <Ionicons
                                 name={magicEnabled ? "sparkles" : "sparkles-outline"}
                                 size={22}
@@ -278,21 +311,10 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
                                 </View>
                             </View>
                         </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.menuItem, styles.logoutItem]}
-                            onPress={() => {
-                                dispatch(logout());
-                                router.replace('/auth/email-login');
-                            }}
-                        >
-                            <Ionicons name="log-out-outline" size={22} color="#ffaaaa" />
-                            <ThemedText style={[styles.menuLabel, { color: '#ffaaaa' }]}>Logout</ThemedText>
-                        </TouchableOpacity>
-                    </ScrollView>
+                    </View>
 
                     <View style={[styles.footer, { borderTopColor: 'rgba(255,255,255,0.1)' }]}>
-                        <ThemedText style={[styles.version, { color: 'rgba(255,255,255,0.4)' }]}>M4hub Mobile v1.0.0</ThemedText>
+                        <ThemedText style={[styles.version, { color: 'rgba(255,255,255,0.4)', marginBottom: 4 }]}>M4hub Mobile v1.0.0</ThemedText>
                     </View>
                 </View>
             </RNAnimated.View>
@@ -325,7 +347,6 @@ const styles = StyleSheet.create({
         paddingTop: 60,
         paddingBottom: 20,
         paddingHorizontal: 20,
-        overflow: 'hidden',
     },
     floatingIconsContainer: {
         ...StyleSheet.absoluteFillObject,

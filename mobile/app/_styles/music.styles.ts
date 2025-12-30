@@ -7,7 +7,7 @@ export const musicStyles = StyleSheet.create({
     header: {
         paddingTop: 60,
         paddingBottom: 24,
-        paddingHorizontal: 24,
+        paddingHorizontal: 20,
         alignItems: 'center',
     },
     headerTitle: {
@@ -24,7 +24,7 @@ export const musicStyles = StyleSheet.create({
     },
     searchContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         marginBottom: 24,
         marginTop: 24,
         gap: 8,
@@ -75,7 +75,7 @@ export const musicStyles = StyleSheet.create({
     statsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         marginBottom: 24,
     },
     statCard: {
@@ -102,7 +102,7 @@ export const musicStyles = StyleSheet.create({
         marginTop: 4,
     },
     section: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         marginBottom: 24,
     },
     sectionTitle: {
@@ -147,7 +147,7 @@ export const musicStyles = StyleSheet.create({
     },
     tabsContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 12,
+        paddingHorizontal: 20,
         marginBottom: 20,
         gap: 8,
     },

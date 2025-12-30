@@ -71,10 +71,11 @@ public class AnalyticsController {
 
     @GetMapping("/hub")
     public ResponseEntity<ApiResponse<HubAnalyticsDto>> getHubAnalytics(
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam(defaultValue = "weekly") String timeframe) {
         try {
             User user = getUserFromToken(authHeader);
-            HubAnalyticsDto analytics = analyticsService.getHubAnalytics(user);
+            HubAnalyticsDto analytics = analyticsService.getHubAnalytics(user, timeframe);
             return ResponseEntity.ok(new ApiResponse<>(true, "Analytics retrieved successfully", analytics));
         } catch (Exception e) {
             logger.error("Error fetching hub analytics", e);

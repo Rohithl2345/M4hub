@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, Alert, TextInput, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Alert, TextInput, ActivityIndicator, Text } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useRouter } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { logout, setCredentials, selectToken } from '@/store/slices/authSlice';
 import { COLORS } from '@/constants/colors';
@@ -10,9 +9,10 @@ import axios from 'axios';
 import { APP_CONFIG } from '@/constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Sidebar } from '@/components/Sidebar';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { Stack } from 'expo-router';
+import { setSidebarOpen } from '@/store/slices/uiSlice';
+import { Stack, useRouter } from 'expo-router';
+import { HubHeaderBackground } from '@/components/HubHeaderBackground';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -24,7 +24,6 @@ export default function ProfileScreen() {
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const theme = useAppTheme();
   const isDark = theme === 'dark';
 
@@ -144,230 +143,194 @@ export default function ProfileScreen() {
         options={{
           headerShown: true,
           headerTitle: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#6366f1', justifyContent: 'center', alignItems: 'center' }}>
-                <Ionicons name="person" size={18} color="white" />
-              </View>
-              <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 18, letterSpacing: -0.5 }}>Account</ThemedText>
+            <View style={{ gap: 2 }}>
+              <Text style={{ fontWeight: '900', fontSize: 16, letterSpacing: -0.5, color: '#ffffff' }}>User Profile</Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Manage your account settings</Text>
             </View>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginLeft: 16 }}>
-              <Ionicons name="menu" size={28} color="#0f172a" />
-            </TouchableOpacity>
+          headerBackground: () => (
+            <HubHeaderBackground
+              colors={['#4c1d95', '#2e1065']}
+              icon="person"
+            />
           ),
-          headerStyle: {
-            backgroundColor: '#ffffff',
-          },
+          headerTintColor: '#ffffff',
           headerTitleAlign: 'left',
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => dispatch(setSidebarOpen(true))}
+              style={{ marginLeft: 16, marginRight: 8 }}
+            >
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                <Ionicons name="menu" size={22} color="#ffffff" />
+              </View>
+            </TouchableOpacity>
+          ),
         }}
       />
-      {/* Professional Profile Header (Purple Sync) */}
-      <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
-        <LinearGradient
-          colors={['#4c1d95', '#6366f1']}
-          style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 20 }}
-        >
-          <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
-            <ThemedText style={{ fontSize: 28, fontWeight: '800', color: 'white' }}>
-              {(user?.firstName || user?.name || 'U').charAt(0).toUpperCase()}
-            </ThemedText>
-          </View>
-          <View>
-            <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>
-              {user?.firstName} {user?.lastName || user?.username}
-            </ThemedText>
-            <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>
-              {user?.email || 'M4Hub Premium Member'}
-            </ThemedText>
-          </View>
-        </LinearGradient>
-      </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        decelerationRate="normal"
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Personal Information</ThemedText>
-
-          <View style={styles.infoCard}>
+          <ThemedText style={[styles.sectionLabel, isDark && { color: '#94a3b8' }]}>PERSONAL INFORMATION</ThemedText>
+          <View style={[styles.infoCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
             <View style={styles.infoRow}>
-              <ThemedText style={styles.infoLabel}>First Name</ThemedText>
-              <ThemedText style={styles.infoValue}>{user?.firstName || 'Not set'}</ThemedText>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2e1065' : '#f5f3ff' }]}>
+                <Ionicons name="person-outline" size={18} color="#7c3aed" />
+              </View>
+              <View style={styles.infoText}>
+                <ThemedText style={styles.infoLabel}>Full Name</ThemedText>
+                <ThemedText style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>{user?.firstName ? `${user.firstName} ${user.lastName || ''}` : (user?.name || 'Not set')}</ThemedText>
+              </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, isDark && { backgroundColor: '#334155' }]} />
 
             <View style={styles.infoRow}>
-              <ThemedText style={styles.infoLabel}>Last Name</ThemedText>
-              <ThemedText style={styles.infoValue}>{user?.lastName || 'Not set'}</ThemedText>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2e1065' : '#f5f3ff' }]}>
+                <Ionicons name="at-outline" size={18} color="#7c3aed" />
+              </View>
+              <View style={styles.infoText}>
+                <ThemedText style={styles.infoLabel}>Username</ThemedText>
+                <ThemedText style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>@{user?.username || 'user892'}</ThemedText>
+              </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, isDark && { backgroundColor: '#334155' }]} />
 
             <View style={styles.infoRow}>
-              <ThemedText style={styles.infoLabel}>Phone Number</ThemedText>
-              <ThemedText style={styles.infoValue}>{user?.phoneNumber}</ThemedText>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2e1065' : '#f5f3ff' }]}>
+                <Ionicons name="transgender-outline" size={18} color="#7c3aed" />
+              </View>
+              <View style={styles.infoText}>
+                <ThemedText style={styles.infoLabel}>Gender</ThemedText>
+                <ThemedText style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>{user?.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : 'Not set'}</ThemedText>
+              </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, isDark && { backgroundColor: '#334155' }]} />
 
             <View style={styles.infoRow}>
-              <ThemedText style={styles.infoLabel}>Date of Birth</ThemedText>
-              <ThemedText style={styles.infoValue}>{formatDate(user?.dateOfBirth)}</ThemedText>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.infoRow}>
-              <ThemedText style={styles.infoLabel}>Gender</ThemedText>
-              <ThemedText style={styles.infoValue}>
-                {user?.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : 'Not set'}
-              </ThemedText>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2e1065' : '#f5f3ff' }]}>
+                <Ionicons name="calendar-outline" size={18} color="#7c3aed" />
+              </View>
+              <View style={styles.infoText}>
+                <ThemedText style={styles.infoLabel}>Date of Birth</ThemedText>
+                <ThemedText style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>{formatDate(user?.dateOfBirth)}</ThemedText>
+              </View>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Contact Information</ThemedText>
-
-          <View style={styles.infoCard}>
-            {/* Email Section */}
+          <ThemedText style={[styles.sectionLabel, isDark && { color: '#94a3b8' }]}>ACCOUNT SETTINGS</ThemedText>
+          <View style={[styles.infoCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
             <View style={styles.infoRow}>
-              <View style={styles.fieldHeader}>
-                <ThemedText style={styles.infoLabel}>Email</ThemedText>
-                {!isEditingEmail && (
-                  <TouchableOpacity onPress={() => setIsEditingEmail(true)}>
-                    <ThemedText style={styles.editButton}>Edit</ThemedText>
-                  </TouchableOpacity>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2e1065' : '#f5f3ff' }]}>
+                <Ionicons name="mail-outline" size={18} color="#7c3aed" />
+              </View>
+              <View style={styles.infoText}>
+                <View style={styles.fieldHeader}>
+                  <ThemedText style={styles.infoLabel}>Email Address</ThemedText>
+                </View>
+                <ThemedText style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>{user?.email || 'Not set'}</ThemedText>
+              </View>
+            </View>
+
+            <View style={[styles.divider, isDark && { backgroundColor: '#334155' }]} />
+
+            <View style={styles.infoRow}>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2e1065' : '#f5f3ff' }]}>
+                <Ionicons name="call-outline" size={18} color="#7c3aed" />
+              </View>
+              <View style={styles.infoText}>
+                <View style={styles.fieldHeader}>
+                  <ThemedText style={styles.infoLabel}>Phone Number</ThemedText>
+                  {!isEditingPhone && (
+                    <TouchableOpacity onPress={() => setIsEditingPhone(true)}>
+                      <Text style={styles.editButton}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {isEditingPhone ? (
+                  <View style={styles.editContainer}>
+                    <TextInput
+                      style={[styles.input, isDark && { backgroundColor: '#0f172a', color: '#f8fafc', borderColor: '#334155' }]}
+                      value={phone}
+                      onChangeText={setPhone}
+                      placeholder="New number"
+                      placeholderTextColor={isDark ? '#4b5563' : '#94a3b8'}
+                      keyboardType="phone-pad"
+                    />
+                    <View style={styles.editActions}>
+                      <TouchableOpacity style={[styles.cancelAction, isDark && { backgroundColor: '#334155' }]} onPress={() => setIsEditingPhone(false)}>
+                        <Text style={[styles.cancelText, isDark && { color: '#94a3b8' }]}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.saveAction, { backgroundColor: '#7c3aed' }]} onPress={handleUpdatePhone} disabled={isUpdating}>
+                        <Text style={styles.saveText}>{isUpdating ? '...' : 'Save'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <ThemedText style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>{user?.phoneNumber || 'Not set'}</ThemedText>
                 )}
               </View>
-
-              {isEditingEmail ? (
-                <View style={styles.fieldEditContainer}>
-                  <TextInput
-                    style={styles.fieldInput}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Enter email"
-                    placeholderTextColor={COLORS.TEXT_TERTIARY}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                  <View style={styles.fieldActions}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => {
-                        setEmail(user?.email || '');
-                        setIsEditingEmail(false);
-                      }}
-                    >
-                      <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]}
-                      onPress={handleUpdateEmail}
-                      disabled={isUpdating}
-                    >
-                      {isUpdating ? (
-                        <ActivityIndicator color={COLORS.WHITE} size="small" />
-                      ) : (
-                        <ThemedText style={styles.saveButtonText}>Save</ThemedText>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <ThemedText style={styles.infoValue}>{user?.email || 'Not set'}</ThemedText>
-              )}
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Phone Number Section */}
-            <View style={styles.infoRow}>
-              <View style={styles.fieldHeader}>
-                <ThemedText style={styles.infoLabel}>Phone Number</ThemedText>
-                {!isEditingPhone && (
-                  <TouchableOpacity onPress={() => setIsEditingPhone(true)}>
-                    <ThemedText style={styles.editButton}>Edit</ThemedText>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {isEditingPhone ? (
-                <View style={styles.fieldEditContainer}>
-                  <TextInput
-                    style={styles.fieldInput}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder="Enter phone number"
-                    placeholderTextColor={COLORS.TEXT_TERTIARY}
-                    keyboardType="phone-pad"
-                  />
-                  <View style={styles.fieldActions}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => {
-                        setPhone(user?.phoneNumber || '');
-                        setIsEditingPhone(false);
-                      }}
-                    >
-                      <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]}
-                      onPress={handleUpdatePhone}
-                      disabled={isUpdating}
-                    >
-                      {isUpdating ? (
-                        <ActivityIndicator color={COLORS.WHITE} size="small" />
-                      ) : (
-                        <ThemedText style={styles.saveButtonText}>Save</ThemedText>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <ThemedText style={styles.infoValue}>{user?.phoneNumber || 'Not set'}</ThemedText>
-              )}
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Account</ThemedText>
+          <ThemedText style={[styles.sectionLabel, isDark && { color: '#94a3b8' }]}>SYSTEM SETTINGS</ThemedText>
+          <View style={[styles.infoCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+            <View style={styles.menuItem}>
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: isDark ? '#0f172a' : '#f1f5f9' }]}>
+                  <Ionicons name="shield-checkmark" size={18} color="#10b981" />
+                </View>
+                <View>
+                  <ThemedText style={styles.menuText}>Account Status</ThemedText>
+                  <Text style={{ fontSize: 11, color: '#10b981', fontWeight: '800' }}>ACTIVE & SECURE</Text>
+                </View>
+              </View>
+            </View>
 
-          <View style={styles.menuCard}>
-            <TouchableOpacity style={styles.menuItem}>
-              <ThemedText style={styles.menuText}>Settings</ThemedText>
-              <ThemedText style={styles.menuArrow}>→</ThemedText>
-            </TouchableOpacity>
+            <View style={[styles.divider, isDark && { backgroundColor: '#334155' }]} />
 
-            <View style={styles.divider} />
+            <View style={styles.menuItem}>
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: isDark ? '#0f172a' : '#fdf4ff' }]}>
+                  <Ionicons name="ribbon" size={18} color="#a855f7" />
+                </View>
+                <View>
+                  <ThemedText style={styles.menuText}>Membership</ThemedText>
+                  <Text style={{ fontSize: 11, color: '#a855f7', fontWeight: '800' }}>PREMIUM HUB ACCESS</Text>
+                </View>
+              </View>
+            </View>
 
-            <TouchableOpacity style={styles.menuItem}>
-              <ThemedText style={styles.menuText}>Privacy Policy</ThemedText>
-              <ThemedText style={styles.menuArrow}>→</ThemedText>
-            </TouchableOpacity>
+            <View style={[styles.divider, isDark && { backgroundColor: '#334155' }]} />
 
-            <View style={styles.divider} />
-
-            <TouchableOpacity style={styles.menuItem}>
-              <ThemedText style={styles.menuText}>Terms of Service</ThemedText>
-              <ThemedText style={styles.menuArrow}>→</ThemedText>
+            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: isDark ? '#450a0a' : '#fef2f2' }]}>
+                  <Ionicons name="log-out" size={18} color="#ef4444" />
+                </View>
+                <ThemedText style={[styles.menuText, { color: '#ef4444' }]}>Sign Out</ThemedText>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#cbd5e1'} />
             </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <ThemedText style={styles.logoutText}>Logout</ThemedText>
-        </TouchableOpacity>
+        <View style={{ height: 40 }} />
       </ScrollView>
-
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
     </ThemedView>
   );
 }
@@ -375,210 +338,158 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.5)',
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  headerInfo: {
-    marginLeft: 20,
-    flex: 1,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  userPhone: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    marginTop: 24,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   section: {
     marginBottom: 24,
-    marginTop: 20,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-    color: '#333',
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#64748b',
+    letterSpacing: 1.2,
+    marginBottom: 12,
     marginLeft: 4,
+    textTransform: 'uppercase',
   },
   infoCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(241, 245, 249, 0.6)',
+    shadowColor: '#4c1d95',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
   infoRow: {
-    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
   },
-  infoLabel: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 4,
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1a1a1a',
+  infoText: {
+    flex: 1,
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
-    marginVertical: 12,
+    backgroundColor: '#f1f5f9',
+    marginVertical: 4,
+    marginLeft: 60,
   },
-  emailContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  infoLabel: {
+    fontSize: 10,
+    color: '#94a3b8',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+    letterSpacing: -0.3,
   },
   fieldHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
   editButton: {
-    fontSize: 14,
-    color: '#396afc',
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#7c3aed',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  fieldEditContainer: {
+  editContainer: {
+    marginTop: 12,
     gap: 12,
   },
-  fieldInput: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
+  input: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e1e4e8',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1a1a1a',
-  },
-  fieldActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  emailEditContainer: {
-    gap: 12,
-  },
-  emailInput: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e1e4e8',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1a1a1a',
-  },
-  emailActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  saveButton: {
-    flex: 1,
-    backgroundColor: '#396afc',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-  },
-  menuCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    borderColor: '#e2e8f0',
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    fontSize: 16,
+    color: '#1e293b',
+    fontWeight: '600',
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelAction: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    padding: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  saveAction: {
+    flex: 1,
+    backgroundColor: '#7c3aed',
+    padding: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  cancelText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#64748b',
+  },
+  saveText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
   },
   menuItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  menuIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuText: {
     fontSize: 16,
-    color: '#1a1a1a',
-  },
-  menuArrow: {
-    fontSize: 20,
-    color: '#ccc',
-  },
-  logoutButton: {
-    backgroundColor: '#ef4444',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 40,
-    shadowColor: '#ef4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
-  },
-  logoutText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#1e293b',
   },
 });

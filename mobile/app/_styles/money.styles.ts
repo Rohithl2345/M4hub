@@ -10,7 +10,7 @@ export const moneyStyles = StyleSheet.create({
     header: {
         paddingTop: Platform.OS === 'ios' ? 70 : 50,
         paddingBottom: 40,
-        paddingHorizontal: 24,
+        paddingHorizontal: 20,
         borderBottomLeftRadius: 40,
         borderBottomRightRadius: 40,
     },
@@ -74,7 +74,7 @@ export const moneyStyles = StyleSheet.create({
     actionsGrid: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         marginTop: 24,
         marginBottom: 32,
     },
@@ -108,7 +108,7 @@ export const moneyStyles = StyleSheet.create({
         backgroundColor: 'white',
         borderTopLeftRadius: 40,
         borderTopRightRadius: 40,
-        paddingHorizontal: 24,
+        paddingHorizontal: 20,
         paddingTop: 32,
     },
     sectionTitle: {

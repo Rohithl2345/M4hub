@@ -11,19 +11,21 @@ import {
     Dimensions,
     ActivityIndicator,
     FlatList,
-    StyleSheet
+    StyleSheet,
+    RefreshControl
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { HubHeaderBackground } from '@/components/HubHeaderBackground';
 import { moneyStyles as styles } from '../_styles/money.styles';
 import paymentService, { BankAccount, Transaction, BankInfo } from '../../services/payment.service';
 import storageService from '../../services/storage.service';
 
-import { useAppSelector } from '@/store/hooks';
-import { Sidebar } from '@/components/Sidebar';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setSidebarOpen } from '@/store/slices/uiSlice';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRouter } from 'expo-router';
 
@@ -31,10 +33,10 @@ const { width, height } = Dimensions.get('window');
 
 export default function MoneyScreen() {
     const user = useAppSelector((state) => state.auth.user);
+    const dispatch = useAppDispatch();
     const theme = useAppTheme();
     const router = useRouter();
     const isDark = theme === 'dark';
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     // States
     const [token, setToken] = useState<string | null>(null);
     const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
@@ -43,6 +45,7 @@ export default function MoneyScreen() {
     const [banks, setBanks] = useState<BankInfo[]>([]);
     const [selectedBank, setSelectedBank] = useState<BankInfo | null>(null);
     const [showBankPicker, setShowBankPicker] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     // Modals
     const [showLinkModal, setShowLinkModal] = useState(false);
@@ -76,6 +79,7 @@ export default function MoneyScreen() {
     const [showBalance, setShowBalance] = useState(false);
     const [showBalanceModal, setShowBalanceModal] = useState(false);
     const [checkBalancePin, setCheckBalancePin] = useState('');
+    const [txSearchQuery, setTxSearchQuery] = useState('');
 
     // Animations
     const successAnim = useRef(new Animated.Value(0)).current;
@@ -83,6 +87,12 @@ export default function MoneyScreen() {
     useEffect(() => {
         loadData();
     }, []);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadData();
+        setRefreshing(false);
+    };
 
     const loadData = async () => {
         setIsLoading(true);
@@ -260,41 +270,61 @@ export default function MoneyScreen() {
                 options={{
                     headerShown: true,
                     headerTitle: () => (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#f59e0b', justifyContent: 'center', alignItems: 'center' }}>
-                                <Ionicons name="wallet" size={18} color="white" />
-                            </View>
-                            <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 18, letterSpacing: -0.5 }}>Wallet</ThemedText>
+                        <View style={{ gap: 2 }}>
+                            <Text style={{ fontWeight: '900', fontSize: 16, letterSpacing: -0.5, color: '#ffffff' }}>Wallet</Text>
+                            <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Securely manage your funds</Text>
                         </View>
                     ),
-                    headerLeft: () => (
-                        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginLeft: 16 }}>
-                            <Ionicons name="menu" size={28} color="#0f172a" />
-                        </TouchableOpacity>
+                    headerBackground: () => (
+                        <HubHeaderBackground
+                            colors={['#78350f', '#451a03']}
+                            icon="wallet"
+                        />
                     ),
-                    headerStyle: {
-                        backgroundColor: '#ffffff',
-                    },
+                    headerTintColor: '#ffffff',
                     headerTitleAlign: 'left',
                     headerShadowVisible: false,
+                    headerLeft: () => (
+                        <TouchableOpacity
+                            onPress={() => dispatch(setSidebarOpen(true))}
+                            style={{ marginLeft: 16, marginRight: 8 }}
+                        >
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                                <Ionicons name="menu" size={22} color="#ffffff" />
+                            </View>
+                        </TouchableOpacity>
+                    ),
+                    headerRight: () => (
+                        <TouchableOpacity onPress={loadData} style={{ marginRight: 16 }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                                <Ionicons name="refresh" size={18} color="#ffffff" />
+                            </View>
+                        </TouchableOpacity>
+                    )
                 }}
             />
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Professional Header Section (Gold Sync) */}
-                <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
-                    <LinearGradient
-                        colors={['#d97706', '#f59e0b']}
-                        style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                decelerationRate="normal"
+                scrollEventThrottle={16}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#f59e0b"
+                    />
+                }
+            >
+                {/* Search / Mini Actions Bar */}
+                <View style={{ backgroundColor: isDark ? '#0f172a' : '#ffffff', paddingHorizontal: 20, paddingBottom: 10, paddingTop: 10 }}>
+                    <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f1f5f9', padding: 12, borderRadius: 12, gap: 10 }}
                     >
-                        <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}>
-                            <Ionicons name="wallet" size={30} color="white" />
-                        </View>
-                        <View>
-                            <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>Money Manager</ThemedText>
-                            <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>Securely manage your global funds</ThemedText>
-                        </View>
-                    </LinearGradient>
+                        <Ionicons name="search" size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <ThemedText style={{ color: isDark ? '#4b5563' : '#94a3b8', fontSize: 13, fontWeight: '500' }}>Search transactions...</ThemedText>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Interactive Money Card (Hero Section) */}
@@ -342,31 +372,43 @@ export default function MoneyScreen() {
 
                 {/* Actions */}
                 <View style={styles.actionsGrid}>
-                    <TouchableOpacity style={styles.actionItem} onPress={() => { setTransferMode('PHONE'); setShowTransferModal(true); }}>
-                        <View style={styles.actionIcon}>
+                    <TouchableOpacity style={[styles.actionItem, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]} onPress={() => { setTransferMode('PHONE'); setShowTransferModal(true); }}>
+                        <View style={[styles.actionIcon, isDark && { backgroundColor: '#0f172a' }]}>
                             <Ionicons name="phone-portrait" size={24} color="#3b82f6" />
                         </View>
-                        <Text style={styles.actionLabel}>To Phone</Text>
+                        <ThemedText style={styles.actionLabel}>To Phone</ThemedText>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.actionItem} onPress={() => { setTransferMode('BANK'); setShowTransferModal(true); }}>
-                        <View style={styles.actionIcon}>
+                    <TouchableOpacity style={[styles.actionItem, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]} onPress={() => { setTransferMode('BANK'); setShowTransferModal(true); }}>
+                        <View style={[styles.actionIcon, isDark && { backgroundColor: '#0f172a' }]}>
                             <Ionicons name="swap-horizontal" size={24} color="#f97316" />
                         </View>
-                        <Text style={styles.actionLabel}>To Bank</Text>
+                        <ThemedText style={styles.actionLabel}>To Bank</ThemedText>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.actionItem} onPress={() => setShowLinkModal(true)}>
-                        <View style={styles.actionIcon}>
+                    <TouchableOpacity style={[styles.actionItem, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]} onPress={() => setShowLinkModal(true)}>
+                        <View style={[styles.actionIcon, isDark && { backgroundColor: '#0f172a' }]}>
                             <Ionicons name="add-circle" size={24} color="#22c55e" />
                         </View>
-                        <Text style={styles.actionLabel}>Link Bank</Text>
+                        <ThemedText style={styles.actionLabel}>Link Bank</ThemedText>
                     </TouchableOpacity>
                 </View>
 
                 {/* Transactions */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Recent Activity</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                        <ThemedText style={styles.sectionTitle}>Recent Activity</ThemedText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, flex: 0.6 }}>
+                            <Ionicons name="search" size={14} color={isDark ? '#94a3b8' : '#64748b'} />
+                            <TextInput
+                                style={{ flex: 1, fontSize: 12, color: isDark ? '#f8fafc' : '#1e293b', marginLeft: 6, padding: 0 }}
+                                placeholder="Search history..."
+                                placeholderTextColor={isDark ? '#4b5563' : '#94a3b8'}
+                                value={txSearchQuery}
+                                onChangeText={setTxSearchQuery}
+                            />
+                        </View>
+                    </View>
 
                     {transactions.length === 0 ? (
                         <View style={styles.emptyState}>
@@ -374,26 +416,30 @@ export default function MoneyScreen() {
                             <Text style={styles.emptyText}>No activity recorded</Text>
                         </View>
                     ) : (
-                        transactions.map((tx) => {
-                            const isIncoming = tx.receiver?.id === currentUserId;
+                        transactions.filter(tx => {
+                            const isIncoming = tx.receiver?.id === user?.id;
+                            const displayUser = isIncoming ? tx.sender : tx.receiver;
+                            return (displayUser?.name || '').toLowerCase().includes(txSearchQuery.toLowerCase());
+                        }).map((tx) => {
+                            const isIncoming = tx.receiver?.id === user?.id;
                             const displayUser = isIncoming ? tx.sender : tx.receiver;
                             return (
-                                <View key={tx.id} style={styles.transactionCard}>
+                                <View key={tx.id} style={[styles.transactionCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
                                     <View style={[styles.txAvatar, {
-                                        backgroundColor: isIncoming ? '#dcfce7' : '#fee2e2'
+                                        backgroundColor: isIncoming ? (isDark ? '#064e3b' : '#dcfce7') : (isDark ? '#7f1d1d' : '#fee2e2')
                                     }]}>
                                         <Text style={{
-                                            color: isIncoming ? '#166534' : '#991b1b',
+                                            color: isIncoming ? (isDark ? '#34d399' : '#166534') : (isDark ? '#f87171' : '#991b1b'),
                                             fontWeight: '900'
                                         }}>
                                             {(displayUser?.name || 'U').charAt(0).toUpperCase()}
                                         </Text>
                                     </View>
                                     <View style={styles.txInfo}>
-                                        <Text style={styles.txName}>{displayUser?.name || 'External A/c'}</Text>
-                                        <Text style={styles.txDate}>
+                                        <ThemedText style={[styles.txName, isDark && { color: '#f8fafc' }]}>{displayUser?.name || 'External A/c'}</ThemedText>
+                                        <ThemedText style={styles.txDate}>
                                             {new Date(tx.timestamp).toLocaleDateString()}
-                                        </Text>
+                                        </ThemedText>
                                     </View>
                                     <View>
                                         <Text style={[styles.txAmount, {
@@ -726,11 +772,6 @@ export default function MoneyScreen() {
             >
                 <Ionicons name="add" size={32} color="white" />
             </TouchableOpacity>
-
-            <Sidebar
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-            />
         </ThemedView >
     );
 }

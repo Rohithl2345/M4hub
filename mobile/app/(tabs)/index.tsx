@@ -1,17 +1,18 @@
-import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions, RefreshControl, ActivityIndicator, Modal } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions, RefreshControl, ActivityIndicator, Modal, Text } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useAppSelector } from '@/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { HubHeaderBackground } from '@/components/HubHeaderBackground';
 import { useState, useEffect } from 'react';
 import { analyticsService, HubAnalytics } from '@/services/analytics.service';
 import storageService from '@/services/storage.service';
 import BarChart from 'react-native-chart-kit/dist/BarChart';
 import LineChart from 'react-native-chart-kit/dist/line-chart';
 import PieChart from 'react-native-chart-kit/dist/PieChart';
-import { Sidebar } from '@/components/Sidebar';
+import { setSidebarOpen } from '@/store/slices/uiSlice';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Colors } from '@/constants/theme';
 import Reanimated, {
@@ -74,14 +75,15 @@ const { width, height } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [currentDate, setCurrentDate] = useState({ day: '', month: '' });
   const [analyticsData, setAnalyticsData] = useState<HubAnalytics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedChartType, setSelectedChartType] = useState<'bar' | 'pie' | 'line'>('bar');
+  const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const theme = useAppTheme();
   const isDark = theme === 'dark';
   const magicEnabled = useAppSelector((state) => state.ui.magicEnabled);
@@ -90,7 +92,7 @@ export default function DashboardScreen() {
     updateGreeting();
     updateDate();
     loadAnalytics();
-  }, []);
+  }, [timeframe]);
 
   const updateGreeting = () => {
     const hour = new Date().getHours();
@@ -112,7 +114,7 @@ export default function DashboardScreen() {
     try {
       const token = await storageService.getAuthToken();
       if (token) {
-        const data = await analyticsService.getHubAnalytics(token);
+        const data = await analyticsService.getHubAnalytics(token, timeframe);
         if (data) {
           setAnalyticsData(data);
         }
@@ -172,20 +174,25 @@ export default function DashboardScreen() {
   ];
 
   const chartConfig = {
-    backgroundGradientFrom: isDark ? '#1e293b' : '#ffffff',
-    backgroundGradientTo: isDark ? '#1e293b' : '#ffffff',
+    backgroundGradientFrom: 'transparent',
+    backgroundGradientTo: 'transparent',
+    backgroundGradientFromOpacity: 0,
+    backgroundGradientToOpacity: 0,
     decimalPlaces: 0,
-    color: (opacity = 1) => isDark ? `rgba(129, 140, 248, ${opacity})` : `rgba(99, 102, 241, ${opacity})`,
-    labelColor: (opacity = 1) => isDark ? `rgba(203, 213, 225, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
+    color: (opacity = 1) => isDark ? `rgba(139, 92, 246, ${opacity})` : `rgba(124, 58, 237, ${opacity})`,
+    labelColor: (opacity = 1) => isDark ? `rgba(148, 163, 184, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
     style: {
       borderRadius: 16,
     },
     propsForDots: {
-      r: '6',
+      r: '5',
       strokeWidth: '2',
-      stroke: '#6366f1',
+      stroke: '#7c3aed',
     },
-    barPercentage: 0.6,
+    barPercentage: 0.7,
+    useShadowColorFromDataset: false,
+    fillShadowGradient: '#7c3aed',
+    fillShadowGradientOpacity: 0.1,
   };
 
   return (
@@ -193,8 +200,10 @@ export default function DashboardScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        decelerationRate="normal"
+        scrollEventThrottle={16}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />
         }
       >
         {/* Header Stack config */}
@@ -202,113 +211,122 @@ export default function DashboardScreen() {
           options={{
             headerShown: true,
             headerTitle: () => (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#6366f1', justifyContent: 'center', alignItems: 'center' }}>
-                  <Ionicons name="apps" size={18} color="white" />
-                </View>
-                <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 18, letterSpacing: -0.5 }}>M4Hub</ThemedText>
+              <View style={{ gap: 2 }}>
+                <Text style={{ fontWeight: '900', fontSize: 16, letterSpacing: -0.5, color: '#ffffff' }}>M4Hub Dashboard</Text>
+                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Everything in one place</Text>
               </View>
             ),
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginLeft: 16 }}>
-                <Ionicons name="menu" size={28} color="#0f172a" />
-              </TouchableOpacity>
+            headerBackground: () => (
+              <HubHeaderBackground
+                colors={['#4c1d95', '#2e1065']}
+                icon="grid"
+              />
             ),
-            headerStyle: {
-              backgroundColor: '#ffffff',
-            },
+            headerTintColor: '#ffffff',
             headerTitleAlign: 'left',
             headerShadowVisible: false,
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => dispatch(setSidebarOpen(true))}
+                style={{ marginLeft: 16, marginRight: 8 }}
+              >
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name="menu" size={22} color="#ffffff" />
+                </View>
+              </TouchableOpacity>
+            ),
           }}
         />
 
-        {/* Professional Dashboard Header (Indigo Sync) */}
-        <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 15, paddingTop: 10 }}>
+        {/* Premium Compact Hero Section */}
+        <View style={{ paddingTop: 6 }}>
           <LinearGradient
-            colors={['#4338ca', '#6366f1']}
-            style={{ padding: 16, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+            colors={['#4c1d95', '#7c3aed']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ padding: 20, borderRadius: 24, shadowColor: '#4c1d95', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 }}
           >
-            <View style={{ width: 50, height: 50, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
-              <ThemedText style={{ fontSize: 22, fontWeight: '800', color: 'white' }}>
-                {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
-              </ThemedText>
-            </View>
-            <View style={{ flex: 1 }}>
-              <ThemedText style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Welcome Back
-              </ThemedText>
-              <ThemedText style={{ fontSize: 20, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>
-                {user?.name || user?.username || 'User'}
-              </ThemedText>
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start', marginTop: 4 }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', marginRight: 6 }} />
-                <ThemedText style={{ color: 'white', fontSize: 11, fontWeight: '600' }}>
-                  {currentDate.day} {currentDate.month} • Active
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <View style={{ width: 56, height: 56, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' }}>
+                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: 'white' }}>
+                  {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
                 </ThemedText>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>{greeting}</Text>
+                <ThemedText style={{ fontSize: 22, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>
+                  {user?.name || user?.username || 'User'}
+                </ThemedText>
+              </View>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: 'white', lineHeight: 18 }}>{currentDate.day}</Text>
+                <Text style={{ fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase' }}>{currentDate.month}</Text>
+              </View>
+            </View>
+
+            {/* Integrated Stats Bar */}
+            <View style={{ flexDirection: 'row', marginTop: 20, backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 20, padding: 14, gap: 12 }}>
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>Active Time</Text>
+                <Text style={{ fontSize: 14, color: 'white', fontWeight: '900' }}>
+                  {analyticsData ? Math.round(analyticsData.tabAnalytics.reduce((acc, curr) => acc + curr.totalSeconds, 0) / 60) : 0}m
+                </Text>
+              </View>
+              <View style={{ width: 1, height: '60%', backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center' }} />
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>Hub Status</Text>
+                <Text style={{ fontSize: 14, color: 'white', fontWeight: '900' }}>LIVE</Text>
               </View>
             </View>
           </LinearGradient>
         </View>
 
-        {/* Quick Stats Summary */}
-        <View style={styles.statsSummary}>
-          <View style={styles.statBox}>
-            <ThemedText style={styles.statLabel}>Usage</ThemedText>
-            <ThemedText style={styles.statValue}>
-              {analyticsData ? Math.round(analyticsData.tabAnalytics.reduce((acc, curr) => acc + curr.totalSeconds, 0) / 60) : 0}m
-            </ThemedText>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <ThemedText style={styles.statLabel}>Hubs</ThemedText>
-            <ThemedText style={styles.statValue}>{features.length}</ThemedText>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <ThemedText style={styles.statLabel}>Score</ThemedText>
-            <ThemedText style={styles.statValue}>{analyticsData?.engagementMetrics.engagementScore || 0}%</ThemedText>
-          </View>
-        </View>
-
-        {/* Features Grid */}
-        <View style={styles.featuresGrid}>
-          {features.map((feature) => (
-            <TouchableOpacity
-              key={feature.id}
-              style={styles.featureCard}
-              onPress={() => router.push(feature.route as any)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.featureCardInner}>
-                <View style={[styles.featureIconBox, { backgroundColor: feature.color + '15' }]}>
-                  <Ionicons name={feature.icon as any} size={26} color={feature.color} />
-                </View>
-                <View>
-                  <ThemedText style={styles.featureTitle}>{feature.title}</ThemedText>
-                  <ThemedText style={styles.featureSubtitle}>{feature.subtitle}</ThemedText>
-                </View>
-              </View>
+        {/* Feature Grid - Modern & Dense */}
+        <View style={{ marginTop: 24 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingHorizontal: 4 }}>
+            <ThemedText style={{ fontSize: 14, fontWeight: '800', color: isDark ? '#f8fafc' : '#1e293b', textTransform: 'uppercase', letterSpacing: 0.5 }}>Service Modules</ThemedText>
+            <TouchableOpacity onPress={() => dispatch(setSidebarOpen(true))}>
+              <ThemedText style={{ fontSize: 12, fontWeight: '700', color: '#7c3aed' }}>Directory</ThemedText>
             </TouchableOpacity>
-          ))}
+          </View>
+          <View style={styles.featuresGrid}>
+            {features.map((feature) => (
+              <TouchableOpacity
+                key={feature.id}
+                style={[styles.featureCard, isDark && styles.darkCard]}
+                onPress={() => router.push(feature.route as any)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.featureIconBox, { backgroundColor: feature.color }]}>
+                  <Ionicons name={feature.icon as any} size={22} color="white" />
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                  <ThemedText style={[styles.featureTitle, isDark && { color: '#f8fafc' }]}>{feature.title}</ThemedText>
+                  <ThemedText style={[styles.featureSubtitle, isDark && { color: '#94a3b8' }]} numberOfLines={1}>{feature.subtitle}</ThemedText>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={isDark ? '#475569' : '#cbd5e1'} />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Analytics Hub Card (Web-style) */}
-        <View style={styles.analyticsCard}>
+        <View style={[styles.analyticsCard, isDark && styles.darkCard, { marginTop: 24 }]}>
           <View style={styles.analyticsHeader}>
             <View>
-              <ThemedText style={styles.analyticsTitle}>
-                <Ionicons name="analytics" size={20} color="#6366f1" /> Hub Analytics
+              <ThemedText style={[styles.analyticsTitle, isDark && { color: '#f8fafc' }]}>
+                <Ionicons name="analytics" size={20} color="#7c3aed" /> Hub Analytics
               </ThemedText>
-              <ThemedText style={styles.analyticsSubtitle}>Time spent across M4Hub platforms</ThemedText>
+              <ThemedText style={[styles.analyticsSubtitle, isDark && { color: '#94a3b8' }]}>Time spent across M4Hub platforms</ThemedText>
             </View>
             <TouchableOpacity onPress={onRefresh} style={styles.chartRefreshBtn}>
-              <Ionicons name="refresh" size={16} color="#6366f1" />
+              <Ionicons name="refresh" size={16} color="#7c3aed" />
             </TouchableOpacity>
           </View>
 
           {loadingAnalytics ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#6366f1" />
+              <ActivityIndicator size="large" color="#7c3aed" />
               <ThemedText style={styles.loadingText}>Loading activity data...</ThemedText>
             </View>
           ) : !analyticsData || analyticsData.tabAnalytics.length === 0 ? (
@@ -320,31 +338,46 @@ export default function DashboardScreen() {
             </View>
           ) : (
             <View style={styles.chartsContainer}>
-              {/* Chart Selector Dropdown/Chips */}
-              <View style={styles.chartSelector}>
+              {/* Timeframe Selector */}
+              <View style={[styles.chartSelector, isDark && { backgroundColor: '#1e293b' }, { marginBottom: 12 }]}>
+                {(['daily', 'weekly', 'monthly'] as const).map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.selectorBtn, timeframe === t && styles.selectorBtnActive, timeframe === t && isDark && { backgroundColor: '#334155' }]}
+                    onPress={() => setTimeframe(t)}
+                  >
+                    <ThemedText style={[styles.selectorText, timeframe === t && styles.selectorTextActive, timeframe === t && isDark && { color: '#818cf8' }]}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Chart Toggles (Visual Style) */}
+              <View style={[styles.chartSelector, isDark && { backgroundColor: '#1e293b' }]}>
                 <TouchableOpacity
-                  style={[styles.selectorBtn, selectedChartType === 'bar' && styles.selectorBtnActive]}
+                  style={[styles.selectorBtn, selectedChartType === 'bar' && styles.selectorBtnActive, selectedChartType === 'bar' && isDark && { backgroundColor: '#334155' }]}
                   onPress={() => setSelectedChartType('bar')}
                 >
-                  <ThemedText style={[styles.selectorText, selectedChartType === 'bar' && styles.selectorTextActive]}>Vertical</ThemedText>
+                  <ThemedText style={[styles.selectorText, selectedChartType === 'bar' && styles.selectorTextActive, selectedChartType === 'bar' && isDark && { color: '#818cf8' }]}>Vertical</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.selectorBtn, selectedChartType === 'pie' && styles.selectorBtnActive]}
+                  style={[styles.selectorBtn, selectedChartType === 'pie' && styles.selectorBtnActive, selectedChartType === 'pie' && isDark && { backgroundColor: '#334155' }]}
                   onPress={() => setSelectedChartType('pie')}
                 >
-                  <ThemedText style={[styles.selectorText, selectedChartType === 'pie' && styles.selectorTextActive]}>Circular</ThemedText>
+                  <ThemedText style={[styles.selectorText, selectedChartType === 'pie' && styles.selectorTextActive, selectedChartType === 'pie' && isDark && { color: '#818cf8' }]}>Circular</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.selectorBtn, selectedChartType === 'line' && styles.selectorBtnActive]}
+                  style={[styles.selectorBtn, selectedChartType === 'line' && styles.selectorBtnActive, selectedChartType === 'line' && isDark && { backgroundColor: '#334155' }]}
                   onPress={() => setSelectedChartType('line')}
                 >
-                  <ThemedText style={[styles.selectorText, selectedChartType === 'line' && styles.selectorTextActive]}>Weekly</ThemedText>
+                  <ThemedText style={[styles.selectorText, selectedChartType === 'line' && styles.selectorTextActive, selectedChartType === 'line' && isDark && { color: '#818cf8' }]}>Trend</ThemedText>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.chartWrapper}>
                 {selectedChartType === 'bar' && (
-                  <>
+                  <View style={{ width: '100%', alignItems: 'center' }}>
                     <ThemedText style={styles.chartTitle}>Time Spent (Seconds)</ThemedText>
                     <BarChart
                       data={{
@@ -354,18 +387,18 @@ export default function DashboardScreen() {
                         }]
                       }}
                       width={width - 72}
-                      height={220}
+                      height={180}
                       yAxisLabel=""
                       yAxisSuffix=""
                       chartConfig={chartConfig}
                       style={styles.chart}
                       verticalLabelRotation={30}
                     />
-                  </>
+                  </View>
                 )}
 
                 {selectedChartType === 'pie' && (
-                  <>
+                  <View style={{ width: '100%', alignItems: 'center' }}>
                     <ThemedText style={styles.chartTitle}>Usage Distribution</ThemedText>
                     <PieChart
                       data={analyticsData.tabAnalytics.map(t => ({
@@ -376,18 +409,18 @@ export default function DashboardScreen() {
                         legendFontSize: 12
                       }))}
                       width={width - 72}
-                      height={200}
+                      height={160}
                       chartConfig={chartConfig}
                       accessor="population"
                       backgroundColor="transparent"
                       paddingLeft="15"
                       absolute
                     />
-                  </>
+                  </View>
                 )}
 
                 {selectedChartType === 'line' && (
-                  <>
+                  <View style={{ width: '100%', alignItems: 'center' }}>
                     <ThemedText style={styles.chartTitle}>Weekly Activity</ThemedText>
                     <LineChart
                       data={{
@@ -397,7 +430,7 @@ export default function DashboardScreen() {
                         }]
                       }}
                       width={width - 72}
-                      height={220}
+                      height={180}
                       chartConfig={{
                         ...chartConfig,
                         color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
@@ -405,37 +438,32 @@ export default function DashboardScreen() {
                       bezier
                       style={styles.chart}
                     />
-                  </>
+                  </View>
                 )}
               </View>
 
-              {/* Web-consistent Analytics Footer */}
-              <View style={styles.analyticsFooter}>
+              {/* Premium Analytics Footer */}
+              <View style={[styles.analyticsFooter, isDark && { backgroundColor: 'rgba(0,0,0,0.2)' }]}>
                 <View style={styles.footerItem}>
-                  <ThemedText style={styles.footerLabel}>MOST ACTIVE HUB</ThemedText>
-                  <ThemedText style={styles.footerValue}>
+                  <Text style={[styles.footerLabel, isDark && { color: '#64748b' }]}>MOST ACTIVE HUB</Text>
+                  <Text style={[styles.footerValue, isDark && { color: '#818cf8' }]}>
                     {analyticsData.tabAnalytics.length > 0
                       ? [...analyticsData.tabAnalytics].sort((a, b) => b.totalSeconds - a.totalSeconds)[0].name
                       : '--'}
-                  </ThemedText>
+                  </Text>
                 </View>
-                <View style={styles.footerDivider} />
+                <View style={[styles.footerDivider, isDark && { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
                 <View style={styles.footerItem}>
-                  <ThemedText style={styles.footerLabel}>TOTAL ENGAGEMENT</ThemedText>
-                  <ThemedText style={styles.footerValue}>
-                    {Math.round(analyticsData.tabAnalytics.reduce((acc, curr) => acc + curr.totalSeconds, 0) / 60)} Minutes
-                  </ThemedText>
+                  <Text style={[styles.footerLabel, isDark && { color: '#64748b' }]}>TOTAL ENGAGEMENT</Text>
+                  <Text style={[styles.footerValue, isDark && { color: '#818cf8' }]}>
+                    {Math.round(analyticsData.tabAnalytics.reduce((acc, curr) => acc + curr.totalSeconds, 0) / 60)}m
+                  </Text>
                 </View>
               </View>
             </View>
           )}
         </View>
       </ScrollView>
-
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
     </ThemedView>
   );
 }
@@ -443,7 +471,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   scrollView: {
     flex: 1,
@@ -585,62 +612,55 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   featuresGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
     marginBottom: 24,
   },
   featureCard: {
-    width: (width - 52) / 2,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 16,
+    borderRadius: 20,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#f1f5f9',
+    gap: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  featureCardInner: {
-    flex: 1,
-    justifyContent: 'space-between',
-    minHeight: 120,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 5,
+    elevation: 1,
   },
   featureIconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
   featureTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#1e293b',
-    letterSpacing: -0.5,
-    marginBottom: 4,
   },
   featureSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748b',
     fontWeight: '500',
-    lineHeight: 18,
+    marginTop: 1,
   },
   analyticsCard: {
     backgroundColor: '#ffffff',
     borderRadius: 24,
-    padding: 24,
+    padding: 20,
     marginBottom: 24,
+    marginHorizontal: 0,
     borderWidth: 1,
     borderColor: '#f1f5f9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowRadius: 10,
-    elevation: 3,
+    elevation: 2,
   },
   darkCard: {
     backgroundColor: '#1e293b',
@@ -695,7 +715,7 @@ const styles = StyleSheet.create({
   footerValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#6366f1',
+    color: '#7c3aed',
   },
   footerDivider: {
     width: 2,

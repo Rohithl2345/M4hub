@@ -1,56 +1,55 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ScrollView, View, TouchableOpacity, TextInput, ActivityIndicator, Linking, Alert } from 'react-native';
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { ScrollView, View, TouchableOpacity, TextInput, ActivityIndicator, Linking, Alert, Text, StyleSheet } from 'react-native';
+import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import MobileAudioPlayer from '@/components/MobileAudioPlayer';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { HubHeaderBackground } from '@/components/HubHeaderBackground';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { musicStyles as styles } from '../_styles/music.styles';
 import { musicService, Track } from '@/services/music.service';
-import { Sidebar } from '@/components/Sidebar';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setSidebarOpen } from '@/store/slices/uiSlice';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function MusicScreen() {
     const [tracks, setTracks] = useState<Track[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
     const [currentTrackIndex, setCurrentTrackIndex] = useState(-1);
     const [error, setError] = useState<string | null>(null);
     const [searchError, setSearchError] = useState<string | null>(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const dispatch = useAppDispatch();
     const theme = useAppTheme();
     const router = useRouter();
     const isDark = theme === 'dark';
 
-    useFocusEffect(
-        useCallback(() => {
-            // Clear error when screen comes into focus
-            return () => {
-                setSearchError(null);
-            };
-        }, [])
-    );
-
-    const loadPopularTracks = async () => {
+    const loadPopularTracks = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const popularTracks = await musicService.getPopularTracks(20);
             setTracks(popularTracks);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error loading music:", error);
             setError("Failed to load music. Please check your connection.");
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        loadPopularTracks();
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadPopularTracks();
+
+            return () => {
+                setSearchError(null);
+            };
+        }, [loadPopularTracks])
+    );
 
     const handleSearch = async () => {
         if (!searchQuery.trim()) {
@@ -94,79 +93,59 @@ export default function MusicScreen() {
         <ThemedView style={styles.container}>
             <Stack.Screen
                 options={{
-                    title: 'Music',
                     headerShown: true,
                     headerTitle: () => (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center' }}>
-                                <Ionicons name="musical-notes" size={18} color="white" />
-                            </View>
-                            <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 18, letterSpacing: -0.5 }}>Music</ThemedText>
+                        <View style={{ gap: 2 }}>
+                            <Text style={{ fontWeight: '900', fontSize: 16, letterSpacing: -0.5, color: '#ffffff' }}>Music Studio</Text>
+                            <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>600K+ tracks available</Text>
                         </View>
                     ),
-                    headerLeft: () => (
-                        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginLeft: 16 }}>
-                            <Ionicons name="menu" size={28} color="#0f172a" />
-                        </TouchableOpacity>
+                    headerBackground: () => (
+                        <HubHeaderBackground
+                            colors={['#064e3b', '#065f46']}
+                            icon="musical-notes"
+                        />
                     ),
-                    headerStyle: {
-                        backgroundColor: '#ffffff',
-                    },
+                    headerTintColor: '#ffffff',
                     headerTitleAlign: 'left',
                     headerShadowVisible: false,
+                    headerLeft: () => (
+                        <TouchableOpacity
+                            onPress={() => dispatch(setSidebarOpen(true))}
+                            style={{ marginLeft: 16, marginRight: 8 }}
+                        >
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                                <Ionicons name="menu" size={22} color="#ffffff" />
+                            </View>
+                        </TouchableOpacity>
+                    ),
+                    headerRight: () => (
+                        <TouchableOpacity onPress={loadPopularTracks} style={{ marginRight: 16 }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                                <Ionicons name="refresh" size={18} color="#ffffff" />
+                            </View>
+                        </TouchableOpacity>
+                    )
                 }}
             />
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Professional Header (Emerald Sync) */}
-                <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
-                    <LinearGradient
-                        colors={['#059669', '#10b981']}
-                        style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 16 }}
-                    >
-                        <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}>
-                            <Ionicons name="musical-notes" size={30} color="white" />
-                        </View>
-                        <View>
-                            <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>Music Studio</ThemedText>
-                            <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>Stream and discover 600K+ tracks</ThemedText>
-                        </View>
-                    </LinearGradient>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                {/* Search Bar - More Compact */}
+                <View style={{ backgroundColor: isDark ? '#0f172a' : '#ffffff', paddingHorizontal: 20, paddingBottom: 10, paddingTop: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f1f5f9', padding: 12, borderRadius: 12, gap: 10 }}>
+                        <Ionicons name="search" size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <TextInput
+                            style={{ flex: 1, fontSize: 14, color: isDark ? '#f8fafc' : '#1e293b', padding: 0 }}
+                            placeholder="Search songs or artists..."
+                            placeholderTextColor={isDark ? '#4b5563' : '#94a3b8'}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            onSubmitEditing={handleSearch}
+                        />
+                    </View>
                 </View>
 
-                {/* Search */}
-                <View style={styles.searchContainer}>
-                    <View style={[styles.searchBox, searchError ? { borderColor: '#ef4444', borderWidth: 1 } : {}]}>
-                        <Ionicons name="search" size={20} color="#666" />
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search for songs, artists..."
-                            value={searchQuery}
-                            onChangeText={(text) => {
-                                setSearchQuery(text);
-                                if (text.trim()) setSearchError(null);
-                            }}
-                            onSubmitEditing={handleSearch}
-                            returnKeyType="search"
-                        />
-                        {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => { setSearchQuery(''); loadPopularTracks(); setSearchError(null); }}>
-                                <Ionicons name="close-circle" size={20} color="#666" />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                    {searchError && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fee2e2', padding: 8, borderRadius: 8, marginTop: 8 }}>
-                            <Ionicons name="alert-circle" size={16} color="#ef4444" style={{ marginRight: 6 }} />
-                            <ThemedText style={{ color: '#b91c1c', fontSize: 12, fontWeight: '500' }}>
-                                {searchError}
-                            </ThemedText>
-                        </View>
-                    )}
-                    <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-                        <ThemedText style={styles.searchButtonText}>Search</ThemedText>
-                    </TouchableOpacity>
-                </View>
+
 
                 {error ? (
                     <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 50, padding: 20 }}>
@@ -177,7 +156,7 @@ export default function MusicScreen() {
                                 marginTop: 20,
                                 paddingVertical: 10,
                                 paddingHorizontal: 24,
-                                backgroundColor: '#667eea',
+                                backgroundColor: '#10b981',
                                 borderRadius: 20
                             }}
                             onPress={searchQuery ? handleSearch : loadPopularTracks}
@@ -189,19 +168,19 @@ export default function MusicScreen() {
                     <>
                         {/* Stats */}
                         <View style={styles.statsContainer}>
-                            <View style={styles.statCard}>
-                                <Ionicons name="play-circle-outline" size={32} color="#667eea" />
-                                <ThemedText style={styles.statValue}>{tracks.length}</ThemedText>
+                            <View style={[styles.statCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                <Ionicons name="play-circle-outline" size={32} color="#10b981" />
+                                <ThemedText style={[styles.statValue, isDark && { color: '#f8fafc' }]}>{tracks.length}</ThemedText>
                                 <ThemedText style={styles.statLabel}>Tracks</ThemedText>
                             </View>
-                            <View style={styles.statCard}>
-                                <Ionicons name="list" size={32} color="#667eea" />
-                                <ThemedText style={styles.statValue}>Free</ThemedText>
+                            <View style={[styles.statCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                <Ionicons name="list" size={32} color="#10b981" />
+                                <ThemedText style={[styles.statValue, isDark && { color: '#f8fafc' }]}>Free</ThemedText>
                                 <ThemedText style={styles.statLabel}>Music</ThemedText>
                             </View>
-                            <View style={styles.statCard}>
-                                <Ionicons name="library" size={32} color="#667eea" />
-                                <ThemedText style={styles.statValue}>600K+</ThemedText>
+                            <View style={[styles.statCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                <Ionicons name="library" size={32} color="#10b981" />
+                                <ThemedText style={[styles.statValue, isDark && { color: '#f8fafc' }]}>600K+</ThemedText>
                                 <ThemedText style={styles.statLabel}>Library</ThemedText>
                             </View>
                         </View>
@@ -232,6 +211,7 @@ export default function MusicScreen() {
                                         key={track.id}
                                         style={[
                                             styles.trackCard,
+                                            isDark && { backgroundColor: '#1e293b', borderColor: '#334155' },
                                             currentTrackIndex === index && styles.trackCardActive
                                         ]}
                                         onPress={() => playTrack(track, index)}
@@ -239,17 +219,17 @@ export default function MusicScreen() {
                                     >
                                         <View style={styles.trackIconContainer}>
                                             <LinearGradient
-                                                colors={['#667eea', '#764ba2']}
+                                                colors={['#10b981', '#059669']}
                                                 style={styles.trackIcon}
                                             >
                                                 <Ionicons name="musical-note" size={24} color="white" />
                                             </LinearGradient>
                                         </View>
                                         <View style={styles.trackInfo}>
-                                            <ThemedText style={styles.trackTitle} numberOfLines={1}>
+                                            <ThemedText style={[styles.trackTitle, isDark && { color: '#f8fafc' }]} numberOfLines={1}>
                                                 {track.name}
                                             </ThemedText>
-                                            <ThemedText style={styles.trackArtist} numberOfLines={1}>
+                                            <ThemedText style={[styles.trackArtist, isDark && { color: '#94a3b8' }]} numberOfLines={1}>
                                                 {track.artist_name}
                                             </ThemedText>
                                         </View>
@@ -268,7 +248,7 @@ export default function MusicScreen() {
                                             <Ionicons
                                                 name={currentTrackIndex === index && currentTrack ? "pause-circle" : "play-circle"}
                                                 size={44}
-                                                color="#667eea"
+                                                color="#10b981"
                                                 style={styles.playButton}
                                             />
                                         </View>
@@ -288,11 +268,6 @@ export default function MusicScreen() {
                     onPrevious={currentTrackIndex > 0 ? handlePrevious : undefined}
                 />
             )}
-
-            <Sidebar
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-            />
         </ThemedView>
     );
 }

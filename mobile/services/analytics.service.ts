@@ -31,11 +31,11 @@ export interface AnalyticsResponse {
 }
 
 class AnalyticsServiceClass {
-    async getHubAnalytics(token: string): Promise<HubAnalytics | null> {
+    async getHubAnalytics(token: string, timeframe: string = 'weekly'): Promise<HubAnalytics | null> {
         try {
-            config.log('Fetching hub analytics...');
+            config.log(`Fetching hub analytics (${timeframe})...`);
 
-            const response = await fetch(`${config.apiUrl}/api/analytics/hub`, {
+            const response = await fetch(`${config.apiUrl}/api/analytics/hub?timeframe=${timeframe}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': token,

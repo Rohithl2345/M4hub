@@ -34,7 +34,7 @@ export const newsStyles = StyleSheet.create({
     /* Ticker */
     tickerContainer: {
         backgroundColor: '#fff',
-        marginHorizontal: 16,
+        marginHorizontal: 20,
         marginTop: -16,
         borderRadius: 12,
         paddingVertical: 12,
@@ -71,7 +71,7 @@ export const newsStyles = StyleSheet.create({
     /* Category Tabs */
     tabsContainer: {
         marginTop: 24,
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         paddingBottom: 16,
     },
     tab: {
@@ -98,7 +98,7 @@ export const newsStyles = StyleSheet.create({
 
     /* News Grid */
     section: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         paddingBottom: 32,
     },
     sectionTitle: {
@@ -180,7 +180,7 @@ export const newsStyles = StyleSheet.create({
     /* Side Briefs Section (Mobile Style) */
     briefsSection: {
         backgroundColor: 'white',
-        marginHorizontal: 16,
+        marginHorizontal: 20,
         padding: 20,
         borderRadius: 16,
         marginBottom: 24,

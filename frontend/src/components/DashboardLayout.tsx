@@ -53,6 +53,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 import HubIcon from '@mui/icons-material/Hub';
 import SnakeGame from './SnakeGame';
+import InactivityHandler from './InactivityHandler';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -116,7 +117,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         // Protect the route
         const token = typeof window !== 'undefined' ? (localStorage.getItem('authToken') || sessionStorage.getItem('authToken')) : null;
         if (!token && !isLoading) {
-            router.push('/auth/email-login');
+            router.push('/auth/email-login?mode=login');
         }
 
         if (user?.id) {
@@ -201,7 +202,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const handleLogout = () => {
         chatService.disconnect();
         dispatch(logout());
-        router.push('/auth/email-login');
+        router.push('/auth/email-login?mode=login');
     };
 
     const handleNavigation = (path: string) => {
@@ -448,6 +449,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                 <div className={styles.content}>
                     {children}
                 </div>
+                <InactivityHandler onLogout={handleLogout} />
                 <SnakeGame isOpen={isGameOpen} onClose={() => setIsGameOpen(false)} />
             </main>
         </div>

@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store/slices/authSlice';
 import { authService } from '@/services/auth.service';
@@ -21,9 +21,10 @@ import Animated, {
 
 export default function EmailLoginScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
     const dispatch = useAppDispatch();
     const { toast, showError, showSuccess, hideToast } = useToast();
-    const [mode, setMode] = useState<'login' | 'signup'>('signup'); // Default to signup
+    const [mode, setMode] = useState<'login' | 'signup'>((params.mode as 'login' | 'signup') || 'signup');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);

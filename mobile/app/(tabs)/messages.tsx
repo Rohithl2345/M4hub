@@ -15,15 +15,16 @@ import {
     ScrollView,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useAppSelector } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { selectToken } from '../../store/slices/authSlice';
 import chatService, { ChatMessage, FriendRequest, UserSearchResult } from '../../services/chat.service';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { HubHeaderBackground } from '@/components/HubHeaderBackground';
 import { COLORS } from '../../constants/colors';
 import { useFocusEffect, Stack, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
-import { Sidebar } from '@/components/Sidebar';
+import { setSidebarOpen } from '@/store/slices/uiSlice';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width, height } = Dimensions.get('window');
@@ -31,6 +32,7 @@ const { width, height } = Dimensions.get('window');
 export default function MessagesScreen() {
     const user = useAppSelector((state) => state.auth.user);
     const token = useAppSelector(selectToken);
+    const dispatch = useAppDispatch();
     const [friends, setFriends] = useState<UserSearchResult[]>([]);
     const [groups, setGroups] = useState<any[]>([]);
     const [selectedEntity, setSelectedEntity] = useState<{ type: 'friend' | 'group', data: any } | null>(null);
@@ -39,7 +41,6 @@ export default function MessagesScreen() {
     const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
     const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
     const [activeTab, setActiveTab] = useState(0); // 0: Friends, 1: Groups, 2: Requests
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const theme = useAppTheme();
     const router = useRouter();
     const isDark = theme === 'dark';
@@ -159,8 +160,12 @@ export default function MessagesScreen() {
         try {
             const friendsList = await chatService.getFriends(token);
             setFriends(friendsList);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading friends:', error);
+            if (error?.response?.status === 401) {
+                dispatch({ type: 'auth/logout' });
+                router.replace('/auth/email-login?mode=login');
+            }
         }
     };
 
@@ -169,8 +174,12 @@ export default function MessagesScreen() {
         try {
             const list = await chatService.getGroups(token);
             setGroups(list);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading groups:', error);
+            if (error?.response?.status === 401) {
+                dispatch({ type: 'auth/logout' });
+                // No need to redirect again if loadFriends already did, but redundancy is fine
+            }
         }
     };
 
@@ -183,8 +192,20 @@ export default function MessagesScreen() {
             ]);
             setPendingRequests(received);
             setSentRequests(sent);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading requests:', error);
+            if (error?.response?.status === 401) {
+                // Session expired
+                Alert.alert('Session Expired', 'Please login again.', [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            dispatch({ type: 'auth/logout' });
+                            router.replace('/auth/email-login?mode=login');
+                        }
+                    }
+                ]);
+            }
         }
     };
 
@@ -389,46 +410,62 @@ export default function MessagesScreen() {
                     options={{
                         headerShown: true,
                         headerTitle: () => (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#3b82f6', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Ionicons name="chatbubbles" size={18} color="white" />
-                                </View>
-                                <ThemedText style={{ fontWeight: '900', color: '#0f172a', fontSize: 18, letterSpacing: -0.5 }}>Messenger</ThemedText>
+                            <View style={{ gap: 2 }}>
+                                <Text style={{ fontWeight: '900', fontSize: 16, letterSpacing: -0.5, color: '#ffffff' }}>Messenger</Text>
+                                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>{friends.length} friends online</Text>
                             </View>
                         ),
-                        headerLeft: () => (
-                            <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={{ marginLeft: 16 }}>
-                                <Ionicons name="menu" size={28} color="#0f172a" />
-                            </TouchableOpacity>
+                        headerBackground: () => (
+                            <HubHeaderBackground
+                                colors={['#1e3a8a', '#172554']}
+                                icon="chatbubbles"
+                            />
                         ),
-                        headerStyle: {
-                            backgroundColor: '#ffffff',
-                        },
+                        headerTintColor: '#ffffff',
                         headerTitleAlign: 'left',
                         headerShadowVisible: false,
+                        headerLeft: () => (
+                            <TouchableOpacity
+                                onPress={() => dispatch(setSidebarOpen(true))}
+                                style={{ marginLeft: 16, marginRight: 8 }}
+                            >
+                                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Ionicons name="menu" size={22} color="#ffffff" />
+                                </View>
+                            </TouchableOpacity>
+                        ),
+                        headerRight: () => (
+                            <View style={{ flexDirection: 'row', gap: 12, marginRight: 16 }}>
+                                <TouchableOpacity onPress={() => setShowSearch(true)}>
+                                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                                        <Ionicons name="person-add" size={18} color="#ffffff" />
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => setShowCreateGroup(true)}>
+                                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                                        <Ionicons name="add-circle" size={18} color="#ffffff" />
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+                        )
                     }}
                 />
 
-                {/* Professional Header (Blue Sync) */}
-                <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 25, paddingTop: 10 }}>
-                    <LinearGradient
-                        colors={['#1e40af', '#3b82f6']}
-                        style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+                {/* Search Bar - Professional & Compact */}
+                <View style={{ backgroundColor: isDark ? '#0f172a' : '#ffffff', paddingHorizontal: 20, paddingBottom: 10 }}>
+                    <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f1f5f9', padding: 12, borderRadius: 12, gap: 10 }}
+                        onPress={() => setShowSearch(true)}
                     >
-                        <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}>
-                            <Ionicons name="chatbubbles" size={30} color="white" />
-                        </View>
-                        <View>
-                            <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>Messenger Hub</ThemedText>
-                            <ThemedText style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' }}>Stay connected with your network</ThemedText>
-                        </View>
-                    </LinearGradient>
+                        <Ionicons name="search" size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <ThemedText style={{ color: isDark ? '#4b5563' : '#94a3b8', fontSize: 13, fontWeight: '500' }}>Search messages or people...</ThemedText>
+                    </TouchableOpacity>
                 </View>
 
-                {/* Tab Selection - Segmented Control Style */}
-                <View style={styles.segmentContainer}>
+                {/* Segmented Tabs - Styled with absolute professionalism */}
+                <View style={[styles.segmentContainer, isDark && { backgroundColor: '#1e293b' }]}>
                     <TouchableOpacity
-                        style={[styles.segmentButton, activeTab === 0 && styles.segmentButtonActive]}
+                        style={[styles.segmentButton, activeTab === 0 && styles.segmentButtonActive, activeTab === 0 && isDark && { backgroundColor: '#334155' }]}
                         onPress={() => {
                             setActiveTab(0);
                             setSearchQuery('');
@@ -436,15 +473,15 @@ export default function MessagesScreen() {
                             setHasSearched(false);
                         }}
                     >
-                        <Text style={[styles.segmentText, activeTab === 0 && styles.segmentTextActive]}>Friends</Text>
+                        <ThemedText style={[styles.segmentText, activeTab === 0 && styles.segmentTextActive]}>Friends</ThemedText>
                         {friends.length > 0 && (
-                            <View style={styles.tabBadge}>
+                            <View style={[styles.tabBadge, { backgroundColor: '#3b82f6' }]}>
                                 <Text style={styles.tabBadgeText}>{friends.length}</Text>
                             </View>
                         )}
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.segmentButton, activeTab === 1 && styles.segmentButtonActive]}
+                        style={[styles.segmentButton, activeTab === 1 && styles.segmentButtonActive, activeTab === 1 && isDark && { backgroundColor: '#334155' }]}
                         onPress={() => {
                             setActiveTab(1);
                             setSearchQuery('');
@@ -452,15 +489,15 @@ export default function MessagesScreen() {
                             setHasSearched(false);
                         }}
                     >
-                        <Text style={[styles.segmentText, activeTab === 1 && styles.segmentTextActive]}>Groups</Text>
+                        <ThemedText style={[styles.segmentText, activeTab === 1 && styles.segmentTextActive]}>Groups</ThemedText>
                         {groups.length > 0 && (
-                            <View style={styles.tabBadge}>
+                            <View style={[styles.tabBadge, { backgroundColor: '#8b5cf6' }]}>
                                 <Text style={styles.tabBadgeText}>{groups.length}</Text>
                             </View>
                         )}
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.segmentButton, activeTab === 2 && styles.segmentButtonActive]}
+                        style={[styles.segmentButton, activeTab === 2 && styles.segmentButtonActive, activeTab === 2 && isDark && { backgroundColor: '#334155' }]}
                         onPress={() => {
                             setActiveTab(2);
                             setSearchQuery('');
@@ -468,7 +505,7 @@ export default function MessagesScreen() {
                             setHasSearched(false);
                         }}
                     >
-                        <Text style={[styles.segmentText, activeTab === 2 && styles.segmentTextActive]}>Requests</Text>
+                        <ThemedText style={[styles.segmentText, activeTab === 2 && styles.segmentTextActive]}>Requests</ThemedText>
                         {(pendingRequests.length + sentRequests.length) > 0 && (
                             <View style={[styles.tabBadge, { backgroundColor: '#ef4444' }]}>
                                 <Text style={styles.tabBadgeText}>{pendingRequests.length + sentRequests.length}</Text>
@@ -482,53 +519,37 @@ export default function MessagesScreen() {
                     {activeTab === 0 && (
                         <FlatList
                             data={friends}
+                            decelerationRate="normal"
+                            scrollEventThrottle={16}
                             renderItem={(props) => renderListItem({ ...props, type: 'friend' })}
                             keyExtractor={(item) => item.id.toString()}
-                            ListHeaderComponent={
-                                <TouchableOpacity
-                                    style={styles.tabActionBtn}
-                                    onPress={() => setShowSearch(true)}
-                                >
-                                    <LinearGradient
-                                        colors={['#6366f1', '#4f46e5']}
-                                        style={styles.tabActionGradient}
-                                    >
-                                        <Ionicons name="person-add" size={20} color="white" />
-                                        <Text style={styles.tabActionText}>Add New Friend</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            }
+                            ListHeaderComponent={friends.length === 0 ? null : (
+                                <View style={{ height: 10 }} />
+                            )}
                             ListEmptyComponent={() => renderEmptyState('friends')}
-                            contentContainerStyle={{ padding: 16 }}
+                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
                         />
                     )}
                     {activeTab === 1 && (
                         <FlatList
                             data={groups}
+                            decelerationRate="normal"
+                            scrollEventThrottle={16}
                             renderItem={(props) => renderListItem({ ...props, type: 'group' })}
                             keyExtractor={(item) => item.id.toString()}
-                            ListHeaderComponent={
-                                <TouchableOpacity
-                                    style={styles.tabActionBtn}
-                                    onPress={() => setShowCreateGroup(true)}
-                                >
-                                    <LinearGradient
-                                        colors={['#8b5cf6', '#7c3aed']}
-                                        style={styles.tabActionGradient}
-                                    >
-                                        <Ionicons name="add-circle" size={22} color="white" />
-                                        <Text style={styles.tabActionText}>Create New Group</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            }
+                            ListHeaderComponent={groups.length === 0 ? null : (
+                                <View style={{ height: 10 }} />
+                            )}
                             ListEmptyComponent={() => renderEmptyState('groups')}
-                            contentContainerStyle={{ padding: 16 }}
+                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
                         />
                     )}
                     {activeTab === 2 && (
                         <View style={{ flex: 1 }}>
                             <FlatList
                                 data={[]}
+                                decelerationRate="normal"
+                                scrollEventThrottle={16}
                                 renderItem={null}
                                 ListHeaderComponent={
                                     <View>
@@ -600,7 +621,7 @@ export default function MessagesScreen() {
                                         </View>
                                     </View>
                                 }
-                                contentContainerStyle={{ padding: 16 }}
+                                contentContainerStyle={{ padding: 20 }}
                             />
                         </View>
                     )}
@@ -860,11 +881,6 @@ export default function MessagesScreen() {
                         </View>
                     </TouchableOpacity>
                 </Modal>
-
-                <Sidebar
-                    isOpen={isSidebarOpen}
-                    onClose={() => setIsSidebarOpen(false)}
-                />
             </View>
         );
     }
@@ -875,41 +891,33 @@ export default function MessagesScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={90}
         >
-            <LinearGradient
-                colors={['#4c669f', '#3b5998', '#192f6a']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.chatHeader}
-            >
+            <View style={[styles.chatHeader, { backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }]}>
                 <TouchableOpacity onPress={() => setSelectedEntity(null)} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="white" />
+                    <Ionicons name="arrow-back" size={24} color="#0f172a" />
                 </TouchableOpacity>
                 <View style={styles.chatHeaderInfo}>
-                    <Text style={styles.chatHeaderTitle}>
+                    <Text style={[styles.chatHeaderTitle, { color: '#0f172a', fontSize: 16 }]}>
                         {selectedEntity.type === 'friend' ? (selectedEntity.data.name || selectedEntity.data.username) : selectedEntity.data.name}
                     </Text>
                     {selectedEntity.type === 'friend' ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             <View style={[styles.headerStatusDot, selectedEntity.data.isActive ? styles.online : styles.offline]} />
-                            <Text style={styles.chatHeaderSubtitle}>
+                            <Text style={[styles.chatHeaderSubtitle, { color: '#64748b', fontSize: 11 }]}>
                                 {selectedEntity.data.isActive ? 'Online' : 'Offline'}
                             </Text>
                         </View>
                     ) : (
-                        <Text style={styles.chatHeaderSubtitle}>
+                        <Text style={[styles.chatHeaderSubtitle, { color: '#64748b', fontSize: 11 }]}>
                             {selectedEntity.data.members?.length || 0} Members
                         </Text>
                     )}
                 </View>
-                {selectedEntity.type === 'group' && (
-                    <TouchableOpacity style={{ padding: 8 }}>
-                        <Ionicons name="information-circle-outline" size={24} color="white" />
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity onPress={() => dispatch(setSidebarOpen(true))} style={{ width: 36, height: 36, justifyContent: 'center', alignItems: 'center' }}>
+                        <Ionicons name="menu" size={24} color="#0f172a" />
                     </TouchableOpacity>
-                )}
-                <TouchableOpacity style={{ paddingLeft: 8 }}>
-                    <Ionicons name="ellipsis-vertical" size={24} color="white" />
-                </TouchableOpacity>
-            </LinearGradient>
+                </View>
+            </View>
 
             {/* Group Members Preview (for Group Chat) */}
             {selectedEntity.type === 'group' && selectedEntity.data.members && (
@@ -942,7 +950,7 @@ export default function MessagesScreen() {
                             </Text>
                         </View>
                         <Text style={styles.msgTime}>
-                            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(item.timestamp || item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </Text>
                     </View>
                 )}
@@ -1069,12 +1077,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
     },
+    searchContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 20,
+        marginBottom: 24,
+        marginTop: 16,
+        gap: 8,
+    },
     statsContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 16,
-        paddingVertical: 20,
-        gap: 12,
-        backgroundColor: '#f8fafc',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        marginBottom: 24,
     },
     statCard: {
         flex: 1,
@@ -1198,12 +1212,12 @@ const styles = StyleSheet.create({
         marginLeft: 16,
     },
     cardTitle: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: '800',
         color: '#1e293b',
     },
     cardSubtitle: {
-        fontSize: 14,
+        fontSize: 13,
         color: '#64748b',
         marginTop: 2,
     },
@@ -1242,13 +1256,13 @@ const styles = StyleSheet.create({
         paddingTop: 100,
     },
     emptyTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '800',
         color: '#1e293b',
         marginTop: 20,
     },
     emptySubtitle: {
-        fontSize: 15,
+        fontSize: 13,
         color: '#64748b',
         marginTop: 8,
         textAlign: 'center',
