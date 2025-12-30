@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs, usePathname } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -8,10 +8,51 @@ import PortalTutorial from '@/components/PortalTutorial';
 
 import { StyleSheet } from 'react-native';
 import { Sidebar } from '@/components/Sidebar';
+import { useAppSelector } from '@/store/hooks';
+import { selectToken } from '@/store/slices/authSlice';
+import { analyticsService } from '@/services/analytics.service';
 
 export default function TabLayout() {
   const theme = useAppTheme();
   const isDark = theme === 'dark';
+  const pathname = usePathname();
+  const token = useAppSelector(selectToken);
+  const startTimeRef = useRef<number>(Date.now());
+  const currentTabRef = useRef<string>('dashboard');
+
+  useEffect(() => {
+    // Extract tab name from pathname
+    // e.g. "/(tabs)/music" -> "music", "/" -> "dashboard"
+    let tabName = 'dashboard';
+
+    if (pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/') {
+      tabName = 'dashboard';
+    } else {
+      const parts = pathname.split('/');
+      const lastPart = parts[parts.length - 1];
+      if (lastPart && lastPart !== '(tabs)') {
+        tabName = lastPart;
+      }
+    }
+
+    // Capture previous session duration
+    const endTime = Date.now();
+    const durationSeconds = Math.floor((endTime - startTimeRef.current) / 1000);
+
+    // Track if valid duration (> 1s) and we have a token
+    if (durationSeconds > 1 && token) {
+      // Track the PREVIOUS tab
+      const previousTab = currentTabRef.current;
+      analyticsService.trackTabUsage(token, previousTab, durationSeconds).catch(err =>
+        console.log('Failed to track usage:', err)
+      );
+    }
+
+    // Reset timer and update current tab
+    startTimeRef.current = Date.now();
+    currentTabRef.current = tabName;
+
+  }, [pathname, token]); // Re-run when pathname changes
 
   return (
     <>

@@ -18,7 +18,7 @@ public class TabUsageService {
     private TabUsageRepository tabUsageRepository;
 
     public void logUsage(User user, String tabName, Long durationSeconds) {
-        TabUsage usage = new TabUsage(user, tabName, durationSeconds);
+        TabUsage usage = new TabUsage(user, tabName != null ? tabName.toLowerCase() : "unknown", durationSeconds);
         tabUsageRepository.save(usage);
     }
 

@@ -13,6 +13,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { setSidebarOpen } from '@/store/slices/uiSlice';
 import { Stack, useRouter } from 'expo-router';
 import { HubHeaderBackground } from '@/components/HubHeaderBackground';
+import { LogoutModal } from '@/components/LogoutModal';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const theme = useAppTheme();
   const isDark = theme === 'dark';
 
@@ -33,6 +35,20 @@ export default function ProfileScreen() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
+  // ... (Update Email/Phone handlers remain same, omitted for brevity in instruction but will persist in file if not touched) 
+
+  const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    // Tiny delay to allow modal to close smoothly
+    setTimeout(() => {
+      dispatch(logout());
+      router.replace('/auth/email-login?mode=login');
+    }, 200);
+  };
   const handleUpdateEmail = async () => {
     if (!email.trim()) {
       Alert.alert('Error', 'Email cannot be empty');
@@ -119,23 +135,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            dispatch(logout());
-            router.replace('/auth/email-login');
-          },
-        },
-      ]
-    );
-  };
+
 
   return (
     <ThemedView style={styles.container}>
@@ -322,7 +322,7 @@ export default function ProfileScreen() {
                 <View style={[styles.menuIcon, { backgroundColor: isDark ? '#450a0a' : '#fef2f2' }]}>
                   <Ionicons name="log-out" size={18} color="#ef4444" />
                 </View>
-                <ThemedText style={[styles.menuText, { color: '#ef4444' }]}>Sign Out</ThemedText>
+                <ThemedText style={[styles.menuText, { color: '#ef4444' }]}>Logout</ThemedText>
               </View>
               <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#cbd5e1'} />
             </TouchableOpacity>
@@ -331,6 +331,12 @@ export default function ProfileScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+      <LogoutModal
+        visible={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+        isDark={isDark}
+      />
     </ThemedView>
   );
 }
