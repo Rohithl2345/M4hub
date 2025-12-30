@@ -60,10 +60,10 @@ export const PortalTutorial: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        if (user && user.hasSeenTutorial === false) {
+        if (user && user.hasSeenTutorial === false && !isVisible) {
             setIsVisible(true);
         }
-    }, [user]);
+    }, [user, isVisible]);
 
     const handleNext = async () => {
         if (currentStep < STEPS.length - 1) {
