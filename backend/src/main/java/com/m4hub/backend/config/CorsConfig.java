@@ -28,9 +28,13 @@ public class CorsConfig {
         // Allow credentials
         config.setAllowCredentials(true);
 
-        // Parse and set allowed origins
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        config.setAllowedOrigins(origins);
+        // Parse and set allowed origins with patterns for flexibility
+        List<String> originPatterns = new java.util.ArrayList<>(Arrays.asList(allowedOrigins.split(",")));
+        originPatterns.add("http://localhost:*");
+        originPatterns.add("http://127.0.0.1:*");
+        originPatterns.add("http://192.168.*:*");
+        originPatterns.add("http://10.*:*");
+        config.setAllowedOriginPatterns(originPatterns);
 
         // Allowed headers
         config.addAllowedHeader("*");
