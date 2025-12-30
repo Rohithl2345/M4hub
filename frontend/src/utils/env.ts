@@ -22,14 +22,15 @@ const validateEnv = (): EnvConfig => {
 
     // Validate required variables
     if (!apiUrl) {
-        throw new Error('NEXT_PUBLIC_API_URL is required but not defined');
+        console.warn('NEXT_PUBLIC_API_URL is not defined. Using default localhost.');
     }
+    const finalApiUrl = apiUrl || 'http://localhost:8080';
 
     // Validate API URL format
     try {
-        new URL(apiUrl);
+        new URL(finalApiUrl);
     } catch {
-        throw new Error(`Invalid NEXT_PUBLIC_API_URL: ${apiUrl}`);
+        throw new Error(`Invalid NEXT_PUBLIC_API_URL: ${finalApiUrl}`);
     }
 
     // Validate environment
@@ -38,7 +39,7 @@ const validateEnv = (): EnvConfig => {
     }
 
     return {
-        apiUrl,
+        apiUrl: finalApiUrl,
         appEnv: appEnv as 'development' | 'production' | 'test',
         enableLogging,
         appName,

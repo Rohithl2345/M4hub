@@ -61,7 +61,11 @@ const log = (level: LogLevel, message: string, data?: unknown) => {
             break;
         case 'debug':
             if (isDevelopment) {
-                console.debug(logMessage, sanitizedData);
+                if (sanitizedData !== undefined) {
+                    console.debug(logMessage, sanitizedData);
+                } else {
+                    console.debug(logMessage);
+                }
             }
             break;
         default:
