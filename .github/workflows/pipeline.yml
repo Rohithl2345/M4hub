@@ -1,0 +1,160 @@
+name: Main Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ======================================================================================
+  # PHASE 1: VALIDATION (CI)
+  # Runs on every push and PR
+  # ======================================================================================
+
+  validate-frontend:
+    name: Validate Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    env:
+      NEXT_PUBLIC_API_URL: https://m4hub.onrender.com
+      NEXT_PUBLIC_APP_ENV: production
+      NEXT_PUBLIC_ENABLE_LOGGING: 'false'
+      NEXT_PUBLIC_APP_NAME: M4Hub
+      NEXT_PUBLIC_APP_VERSION: 1.0.0
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  validate-backend:
+    name: Validate Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn -B package -DskipTests --file pom.xml
+
+  validate-mobile:
+    name: Validate Mobile
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+  # ======================================================================================
+  # PHASE 2: DEPLOYMENT (CD)
+  # Runs only on push to main, after validation passes
+  # ======================================================================================
+
+  deploy-frontend:
+    name: Deploy Frontend (Production)
+    runs-on: ubuntu-latest
+    needs: [validate-frontend]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment:
+      name: Production
+      url: https://m4hub.vercel.app # Adjust if you have a custom domain
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          NEXT_PUBLIC_API_URL: https://m4hub.onrender.com
+          NEXT_PUBLIC_APP_ENV: production
+          NEXT_PUBLIC_ENABLE_LOGGING: 'false'
+          NEXT_PUBLIC_APP_NAME: M4Hub
+          NEXT_PUBLIC_APP_VERSION: 1.0.0
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  deploy-backend:
+    name: Deploy Backend (Production)
+    runs-on: ubuntu-latest
+    needs: [validate-backend]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment:
+      name: Production
+      url: https://m4hub.onrender.com
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set."
+            exit 1
+          fi
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
