@@ -1,5 +1,4 @@
-// API Response Interceptor for handling 401 errors globally
-import { env } from '@/utils/env';
+
 
 export class ApiError extends Error {
     constructor(public status: number, message: string) {

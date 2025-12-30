@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 import { useAppSelector } from '@/store/hooks';
-import { selectIsAuthenticated, selectUser, selectIsLoading } from '@/store/slices/authSlice';
+import { selectUser } from '@/store/slices/authSlice';
 import DashboardLayout from '@/components/DashboardLayout';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
@@ -27,7 +26,6 @@ const AnalyticsDashboard = dynamic(() => import('@/components/AnalyticsDashboard
 export default function DashboardPage() {
     const router = useRouter();
     const user = useAppSelector(selectUser);
-    const isLoading = useAppSelector(selectIsLoading);
 
     // DashboardLayout handles the authentication checks and redirects
 

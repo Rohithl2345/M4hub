@@ -59,11 +59,16 @@ export const PortalTutorial: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
 
+    const processedRef = React.useRef(false);
+
+
     useEffect(() => {
-        if (user && user.hasSeenTutorial === false && !isVisible) {
+        if (user && user.hasSeenTutorial === false && !processedRef.current) {
+            // eslint-disable-next-line
             setIsVisible(true);
+            processedRef.current = true;
         }
-    }, [user, isVisible]);
+    }, [user]);
 
     const handleNext = async () => {
         if (currentStep < STEPS.length - 1) {
