@@ -297,8 +297,8 @@ export default function DashboardScreen() {
                 onPress={() => router.push(feature.route as any)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.featureIconBox, { backgroundColor: feature.color }]}>
-                  <Ionicons name={feature.icon as any} size={22} color="white" />
+                <View style={[styles.featureIconBox, { backgroundColor: feature.color, borderLeftWidth: 3, borderLeftColor: 'rgba(255,255,255,0.3)' }]}>
+                  <Ionicons name={feature.icon as any} size={22} color="#ffffff" />
                 </View>
                 <View style={{ flex: 1, justifyContent: 'center' }}>
                   <ThemedText style={[styles.featureTitle, isDark && { color: '#f8fafc' }]}>{feature.title}</ThemedText>
@@ -651,6 +651,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Brighter/Lighter background matching web
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   featureTitle: {
     fontSize: 16,

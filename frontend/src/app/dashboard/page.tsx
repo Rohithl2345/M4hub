@@ -12,6 +12,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AnalyticsDashboard from '@/components/AnalyticsDashboard';
 
 export default function DashboardPage() {
@@ -71,9 +72,12 @@ export default function DashboardPage() {
                             <div className={styles.featureIconWrapper}>
                                 <MusicNoteIcon className={styles.featureIcon} />
                             </div>
-                            <div>
+                            <div className={styles.featureContent}>
                                 <h3>Music</h3>
                                 <p>Stream your favorite tracks</p>
+                            </div>
+                            <div className={styles.featureAction}>
+                                <ChevronRightIcon />
                             </div>
                         </div>
                         <div
@@ -83,9 +87,12 @@ export default function DashboardPage() {
                             <div className={styles.featureIconWrapper}>
                                 <ChatBubbleIcon className={styles.featureIcon} />
                             </div>
-                            <div>
+                            <div className={styles.featureContent}>
                                 <h3>Chat</h3>
                                 <p>Stay connected with friends</p>
+                            </div>
+                            <div className={styles.featureAction}>
+                                <ChevronRightIcon />
                             </div>
                         </div>
                         <div
@@ -95,9 +102,12 @@ export default function DashboardPage() {
                             <div className={styles.featureIconWrapper}>
                                 <AccountBalanceWalletIcon className={styles.featureIcon} />
                             </div>
-                            <div>
+                            <div className={styles.featureContent}>
                                 <h3>Money</h3>
                                 <p>Manage your finances</p>
+                            </div>
+                            <div className={styles.featureAction}>
+                                <ChevronRightIcon />
                             </div>
                         </div>
                         <div
@@ -107,9 +117,12 @@ export default function DashboardPage() {
                             <div className={styles.featureIconWrapper}>
                                 <NewspaperIcon className={styles.featureIcon} />
                             </div>
-                            <div>
+                            <div className={styles.featureContent}>
                                 <h3>News</h3>
                                 <p>Stay informed with updates</p>
+                            </div>
+                            <div className={styles.featureAction}>
+                                <ChevronRightIcon />
                             </div>
                         </div>
                     </div>
