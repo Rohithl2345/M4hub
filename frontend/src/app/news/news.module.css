@@ -182,7 +182,8 @@
     position: relative;
 }
 
-.newsImage img {
+.newsImage img,
+.articleImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -217,6 +218,7 @@
     margin-bottom: 12px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     letter-spacing: -0.5px;
@@ -229,6 +231,7 @@
     margin-bottom: 20px;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

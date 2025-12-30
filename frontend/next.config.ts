@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://usercontent.jamendo.com https://api.jamendo.com https://i.scdn.co https://picsum.photos https://images.unsplash.com https://logo.clearbit.com https://ui-avatars.com; font-src 'self' data:; connect-src 'self' https://api.jamendo.com https://api.spotify.com http://localhost:8080 http://localhost:3000 ws://localhost:8080 https://m4hub.onrender.com; frame-ancestors 'none';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self' data:; connect-src 'self' https://api.jamendo.com https://api.spotify.com http://localhost:8080 http://localhost:3000 ws://localhost:8080 https://m4hub.onrender.com; frame-ancestors 'none';",
           },
           {
             key: 'X-Content-Type-Options',
