@@ -11,8 +11,8 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-function TransitionLeft(props: SlideProps) {
-    return <Slide {...props} direction="left" />;
+function TransitionDown(props: SlideProps) {
+    return <Slide {...props} direction="down" />;
 }
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -43,9 +43,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 open={open}
                 autoHideDuration={4000}
                 onClose={handleClose}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                TransitionComponent={TransitionLeft}
-                sx={{ mt: 7 }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                TransitionComponent={TransitionDown}
+                sx={{ mt: 2 }}
             >
                 <Alert
                     onClose={handleClose}
