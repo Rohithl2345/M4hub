@@ -54,6 +54,27 @@ export interface UserSearchResult {
     lastMessageContent?: string;
 }
 
+export interface Reaction {
+    id: number;
+    emoji: string;
+    userId: number;
+    username: string;
+    messageId: number;
+}
+
+export interface Group {
+    id: number;
+    name: string;
+    description?: string;
+    members: {
+        id: number;
+        username: string;
+        name: string;
+    }[];
+    createdBy: number;
+    createdAt: string;
+}
+
 class ChatService {
     private stompClient: Client | null = null;
     private messageCallbacks: ((message: ChatMessage) => void)[] = [];
@@ -220,11 +241,7 @@ class ChatService {
         // For simplicity, let's assume we might receive presence updates via a public topic or user queue
         // But currently backend sends friend updates via polling.
         // To be truly real-time, we should subscribe to a presence topic.
-        // Let's create a callback array for it.
-        const wrappedCallback = (message: IMessage) => {
-            const data = JSON.parse(message.body);
-            callback(data);
-        };
+
         // This is a placeholder as successful subscription happens in connect()
         // We will need to store these callbacks to be called when message arrives on /topic/presence
         this.presenceCallbacks.push(callback);
@@ -301,11 +318,11 @@ class ChatService {
     }
 
     // REST API Calls
-    async sendFriendRequest(username?: string, userId?: number): Promise<any> {
+    async sendFriendRequest(username?: string, userId?: number): Promise<{ success: boolean; message: string }> {
         const token = this.getToken();
         if (!token) return Promise.reject('No auth token');
 
-        const payload: any = {};
+        const payload: { userId?: number; username?: string } = {};
         if (userId) payload.userId = userId;
         else if (username) payload.username = username;
 
@@ -334,7 +351,7 @@ class ChatService {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return response.data;
-        } catch (error) {
+        } catch {
             logger.warn('Failed to fetch pending requests (backend might be down/restarting)');
             return [];
         }
@@ -349,13 +366,13 @@ class ChatService {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return response.data;
-        } catch (error) {
+        } catch {
             logger.warn('Failed to fetch sent requests');
             return [];
         }
     }
 
-    async acceptRequest(requestId: number): Promise<any> {
+    async acceptRequest(requestId: number): Promise<{ success: boolean; message: string; friend: any }> {
         const token = this.getToken();
         if (!token) return Promise.reject('No auth token');
 
@@ -372,7 +389,7 @@ class ChatService {
         }
     }
 
-    async rejectRequest(requestId: number): Promise<any> {
+    async rejectRequest(requestId: number): Promise<{ success: boolean; message: string }> {
         const token = this.getToken();
         if (!token) return Promise.reject('No auth token');
 
@@ -400,7 +417,7 @@ class ChatService {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return response.data;
-        } catch (error) {
+        } catch {
             logger.warn('Failed to fetch friends list');
             return [];
         }
@@ -427,7 +444,7 @@ class ChatService {
     }
 
     // Reactions
-    async addReaction(messageId: number, emoji: string): Promise<any> {
+    async addReaction(messageId: number, emoji: string): Promise<Reaction> {
         const token = this.getToken();
         const response = await axios.post(
             `${API_URL}/api/chat/message/${messageId}/reaction`,
@@ -437,7 +454,7 @@ class ChatService {
         return response.data;
     }
 
-    async removeReaction(messageId: number): Promise<any> {
+    async removeReaction(messageId: number): Promise<{ success: boolean }> {
         const token = this.getToken();
         const response = await axios.delete(
             `${API_URL}/api/chat/message/${messageId}/reaction`,
@@ -446,7 +463,7 @@ class ChatService {
         return response.data;
     }
 
-    async getReactions(messageId: number): Promise<any[]> {
+    async getReactions(messageId: number): Promise<Reaction[]> {
         const token = this.getToken();
         const response = await axios.get(
             `${API_URL}/api/chat/message/${messageId}/reactions`,
@@ -456,7 +473,7 @@ class ChatService {
     }
 
     // Group Chat
-    async createGroup(name: string, description: string, memberIds: number[]): Promise<any> {
+    async createGroup(name: string, description: string, memberIds: number[]): Promise<Group> {
         const token = this.getToken();
         const response = await axios.post(
             `${API_URL}/api/chat/group/create`,
@@ -466,7 +483,7 @@ class ChatService {
         return response.data;
     }
 
-    async addGroupMember(groupId: number, userId: number): Promise<any> {
+    async addGroupMember(groupId: number, userId: number): Promise<Group> {
         const token = this.getToken();
         const response = await axios.post(
             `${API_URL}/api/chat/group/${groupId}/members`,
@@ -476,7 +493,7 @@ class ChatService {
         return response.data;
     }
 
-    async getGroups(token?: string): Promise<any[]> {
+    async getGroups(token?: string): Promise<Group[]> {
         if (!token && typeof window !== 'undefined') {
             token = this.getToken() || undefined;
         }
@@ -493,7 +510,7 @@ class ChatService {
         }
     }
 
-    async deleteGroup(groupId: number): Promise<any> {
+    async deleteGroup(groupId: number): Promise<{ success: boolean }> {
         const token = this.getToken();
         if (!token) return Promise.reject('No auth token');
 

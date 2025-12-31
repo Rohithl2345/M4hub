@@ -19,9 +19,6 @@ export function useNetworkStatus(): NetworkStatus {
         // Only run in browser environment
         if (typeof window === 'undefined') return;
 
-        // Update online status on mount
-        setIsOnline(navigator.onLine);
-
         const handleOnline = () => {
             setIsOnline(true);
         };
@@ -31,7 +28,18 @@ export function useNetworkStatus(): NetworkStatus {
         };
 
         const updateConnectionInfo = () => {
-            const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+            const nav = navigator as Navigator & {
+                connection?: {
+                    effectiveType?: string;
+                    saveData?: boolean;
+                    addEventListener: (type: string, listener: EventListener) => void;
+                    removeEventListener: (type: string, listener: EventListener) => void;
+                };
+                mozConnection?: any;
+                webkitConnection?: any;
+            };
+
+            const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
 
             if (connection) {
                 setEffectiveType(connection.effectiveType);
@@ -49,7 +57,14 @@ export function useNetworkStatus(): NetworkStatus {
         window.addEventListener('offline', handleOffline);
 
         // Monitor connection changes if available
-        const connection = (navigator as any).connection;
+        const nav = navigator as Navigator & {
+            connection?: {
+                addEventListener: (type: string, listener: EventListener) => void;
+                removeEventListener: (type: string, listener: EventListener) => void;
+            }
+        };
+
+        const connection = nav.connection;
         if (connection) {
             connection.addEventListener('change', updateConnectionInfo);
             updateConnectionInfo();

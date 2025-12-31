@@ -6,6 +6,18 @@ export interface TabUsageStats {
     totalDuration: number;
 }
 
+export interface HubAnalyticsData {
+    messageCount: number;
+    transactionVolume: number;
+    musicMinutes: number;
+    activeUsers: number;
+    trends: {
+        daily: number[];
+        weekly: number[];
+        monthly: number[];
+    };
+}
+
 class AnalyticsService {
     private getHeaders() {
         const token = typeof window !== 'undefined' ? (localStorage.getItem('authToken') || sessionStorage.getItem('authToken')) : null;
@@ -38,7 +50,7 @@ class AnalyticsService {
         }
     }
 
-    async getHubAnalytics(timeframe: string = 'weekly'): Promise<any> {
+    async getHubAnalytics(timeframe: string = 'weekly'): Promise<HubAnalyticsData | null> {
         try {
             const response = await fetchWithAuth(`${env.apiUrl}/api/analytics/hub?timeframe=${timeframe}`);
             if (!response.ok) return null;
