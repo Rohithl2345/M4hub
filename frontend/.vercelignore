@@ -1,0 +1,11 @@
+# Vercel Ignore Rules
+node_modules
+.next
+.git
+.vercel
+build
+coverage
+dist
+*.log
+.DS_Store
+.env*
