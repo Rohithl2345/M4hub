@@ -5,6 +5,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "songs")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class Song {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,9 +23,11 @@ public class Song {
     private Integer duration; // in seconds
 
     @Column(nullable = false, length = 1000)
+    @com.fasterxml.jackson.annotation.JsonProperty("audio_url")
     private String audioUrl;
 
     @Column(length = 1000)
+    @com.fasterxml.jackson.annotation.JsonProperty("image_url")
     private String imageUrl;
 
     private String genre;
@@ -32,6 +35,7 @@ public class Song {
     private Integer releaseYear;
 
     @Column(unique = true)
+    @com.fasterxml.jackson.annotation.JsonProperty("external_id")
     private String externalId; // Jamendo track ID
 
     private Instant createdAt = Instant.now();
@@ -40,7 +44,8 @@ public class Song {
     public Song() {
     }
 
-    public Song(String title, String artist, String album, Integer duration, String audioUrl, String imageUrl, String genre, String externalId) {
+    public Song(String title, String artist, String album, Integer duration, String audioUrl, String imageUrl,
+            String genre, String externalId) {
         this.title = title;
         this.artist = artist;
         this.album = album;
