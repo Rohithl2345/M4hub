@@ -17,7 +17,7 @@ const eslintConfig = defineConfig([
     rules: {
       "react/display-name": "off",
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": "error",
       "react/no-unescaped-entities": "off",
       "react-hooks/exhaustive-deps": "warn",
       "@next/next/no-img-element": "warn"

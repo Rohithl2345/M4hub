@@ -49,11 +49,11 @@ public class User {
     private String passwordHash;
 
     @com.fasterxml.jackson.annotation.JsonIgnore
-    @Column(name = "session_token")
+    @Column(name = "session_token", length = 2048)
     private String sessionToken;
 
     @com.fasterxml.jackson.annotation.JsonIgnore
-    @Column(name = "refresh_token", length = 1000)
+    @Column(name = "refresh_token", length = 2048)
     private String refreshToken;
 
     @Column(name = "session_token_expiry")

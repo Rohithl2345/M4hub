@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import KeyIcon from '@mui/icons-material/Key';
 import AuthLayout from '../AuthLayout';
 import styles from '../email-login/email-login.module.css';
 import { env } from '@/utils/env';
@@ -22,7 +21,7 @@ import { useToast } from '@/components/ToastProvider';
 function ForgotPasswordPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { showToast, showSuccess, showError } = useToast();
+    const { showSuccess, showError } = useToast();
     const emailParam = searchParams.get('email');
     const [email, setEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');

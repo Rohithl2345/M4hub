@@ -13,13 +13,12 @@ import { Track } from '@/services/music.service';
 
 interface AudioPlayerProps {
     track: Track | null;
-    playlist: Track[];
     onNext?: () => void;
     onPrevious?: () => void;
     onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
-export default function AudioPlayer({ track, playlist, onNext, onPrevious, onPlayStateChange }: AudioPlayerProps) {
+export default function AudioPlayer({ track, onNext, onPrevious, onPlayStateChange }: AudioPlayerProps) {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);

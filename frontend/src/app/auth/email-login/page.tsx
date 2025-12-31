@@ -40,7 +40,7 @@ function EmailLoginPageInner() {
     const mode = searchParams.get('mode') || 'signup'; // Default to signup to encourage new users
     const dispatch = useAppDispatch();
     const { isOnline, isSlowConnection } = useNetworkStatus();
-    const { showToast, showSuccess, showError } = useToast();
+    const { showSuccess, showError } = useToast();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

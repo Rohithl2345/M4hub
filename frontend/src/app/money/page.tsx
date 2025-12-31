@@ -17,32 +17,21 @@ import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import Tooltip from '@mui/material/Tooltip';
 import Autocomplete from '@mui/material/Autocomplete';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
 import Fab from '@mui/material/Fab';
 import Paper from '@mui/material/Paper';
 import AddIcon from '@mui/icons-material/Add';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import SendIcon from '@mui/icons-material/Send';
-import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import SearchIcon from '@mui/icons-material/Search';
 import PhoneIcon from '@mui/icons-material/Phone';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NumbersIcon from '@mui/icons-material/Numbers';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShieldIcon from '@mui/icons-material/Shield';
 import { useMediaQuery, useTheme } from '@mui/material';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import LockIcon from '@mui/icons-material/Lock';
 import paymentService, { BankAccount, Transaction, BankInfo } from '@/services/payment.service';
 
@@ -215,7 +204,7 @@ export default function MoneyPage() {
             const user = await paymentService.searchUserByPhone(searchPhone);
             setTargetUser(user);
             setTransferStep(2);
-        } catch (err: any) {
+        } catch {
             setError('User not found or payment not enabled');
         } finally {
             setProcessing(false);

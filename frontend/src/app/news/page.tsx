@@ -97,7 +97,7 @@ export default function NewsPage() {
                     <div className={styles.mainLayout}>
                         {/* Main Feed - Standard Cards */}
                         <div className={styles.newsGrid}>
-                            {newsArticles.length > 0 ? newsArticles.map((article, index) => (
+                            {newsArticles.length > 0 ? newsArticles.map((article) => (
                                 <div key={article.id} className={styles.newsCard}>
                                     <div className={styles.newsImage}>
                                         {/* eslint-disable-next-line @next/next/no-img-element */}

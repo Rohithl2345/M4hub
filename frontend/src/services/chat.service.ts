@@ -140,7 +140,7 @@ class ChatService {
             });
 
             // Subscribe to friend request notifications
-            this.stompClient?.subscribe(`/queue/requests/${userId}`, (message: IMessage) => {
+            this.stompClient?.subscribe(`/queue/requests/${userId}`, () => {
                 logger.info('Friend request notification received');
                 this.requestCallbacks.forEach(callback => callback());
             });

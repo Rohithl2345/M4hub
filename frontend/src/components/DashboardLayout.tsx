@@ -2,13 +2,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { logout, selectIsLoading } from '@/store/slices/authSlice';
+import { logout } from '@/store/slices/authSlice';
 import Badge from '@mui/material/Badge';
 import Switch from '@mui/material/Switch';
 import chatService from '@/services/chat.service';
 import styles from './DashboardLayout.module.css';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -216,7 +214,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const isActive = (path: string) => pathname === path;
 
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
+        const handleClickOutside = () => {
             if (showProfileDropdown) {
                 setShowProfileDropdown(false);
             }

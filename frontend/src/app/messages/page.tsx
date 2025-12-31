@@ -11,8 +11,6 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Badge from '@mui/material/Badge';
@@ -23,13 +21,11 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Avatar from '@mui/material/Avatar';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Chip from '@mui/material/Chip';
 import InputAdornment from '@mui/material/InputAdornment';
 import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -80,8 +76,6 @@ export default function MessagesPage() {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [groupToDelete, setGroupToDelete] = useState<{ id: number; name: string } | null>(null);
     const [headerMenuAnchor, setHeaderMenuAnchor] = useState<null | HTMLElement>(null);
-    const [groupOptionsAnchor, setGroupOptionsAnchor] = useState<null | HTMLElement>(null);
-    const [activeGroupMenu, setActiveGroupMenu] = useState<any | null>(null);
 
 
 
@@ -387,15 +381,11 @@ export default function MessagesPage() {
         }
     };
 
-    const [searchError, setSearchError] = useState<string | null>(null);
-
     const handleSearch = async () => {
         const query = searchQuery.trim();
         if (!query) {
-            setSearchError('Please enter a username or name');
             return;
         }
-        setSearchError(null);
 
         if (query) {
             setIsSearching(true);

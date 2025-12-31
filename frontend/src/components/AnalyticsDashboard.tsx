@@ -9,37 +9,18 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Card from '@mui/material/Card';
-import CircularProgress from '@mui/material/CircularProgress';
 import Skeleton from '@mui/material/Skeleton';
-import { useTheme } from '@mui/material/styles';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import analyticsService, { TabUsageStats } from '@/services/analytics.service';
+import analyticsService from '@/services/analytics.service';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InsightsIcon from '@mui/icons-material/Insights';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4'];
-
-const TAB_NAME_MAP: Record<string, string> = {
-    'DASHBOARD': 'Dashboard',
-    'MUSIC': 'Music',
-    'MESSAGES': 'Messages',
-    'MONEY': 'Money',
-    'NEWS': 'News',
-    'PROFILE': 'Profile',
-    'dashboard': 'Dashboard',
-    'music': 'Music',
-    'messages': 'Messages',
-    'money': 'Money',
-    'news': 'News',
-    'profile': 'Profile',
-    'explore': 'Profile', // Mobile 'explore' tab is Profile
-};
 
 interface ChartData {
     name: string;
@@ -49,7 +30,6 @@ interface ChartData {
 }
 
 export default function AnalyticsDashboard() {
-    const theme = useTheme();
     const [timeframe, setTimeframe] = useState('weekly');
     const [chartType, setChartType] = useState('bar');
     const [data, setData] = useState<ChartData[]>([]);
@@ -118,9 +98,6 @@ export default function AnalyticsDashboard() {
     }, [timeframe]);
 
     const renderChart = () => {
-        const isTrendChart = chartType === 'line' || chartType === 'area';
-        const activeData = isTrendChart ? trendData : data;
-
         switch (chartType) {
             case 'pie':
                 return (

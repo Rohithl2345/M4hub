@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { selectIsAuthenticated, selectUser, selectToken, selectIsLoading, updateUserEmail, updateUserPhone } from '@/store/slices/authSlice';
+import { selectIsAuthenticated, selectUser, selectToken, selectIsLoading, updateUserPhone } from '@/store/slices/authSlice';
 import DashboardLayout from '@/components/DashboardLayout';
 import axios from 'axios';
-import dynamic from 'next/dynamic';
 import { env } from '@/utils/env';
 
 // Icons
@@ -35,7 +34,6 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 export default function ProfilePage() {
