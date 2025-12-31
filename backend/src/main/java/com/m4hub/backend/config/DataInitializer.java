@@ -29,7 +29,7 @@ public class DataInitializer implements CommandLineRunner {
         try {
             logger.info("Starting initial music synchronization...");
             // First try to seed from local JSON for reliability
-            musicService.seedSongsFromJson();
+            musicService.seedSongsFromJson(false);
 
             // Then try to fetch fresh content from API
             musicService.syncSongsFromJamendo(200);

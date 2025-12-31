@@ -62,7 +62,7 @@ export default function MusicPage() {
                     if (category === 'trending') {
                         results = await musicService.getTrendingTracks();
                     } else {
-                        results = await musicService.getPopularTracks(500);
+                        results = await musicService.getPopularTracks(50);
                     }
                 } else if (filter === 'favorites') {
                     results = await musicService.getFavorites();

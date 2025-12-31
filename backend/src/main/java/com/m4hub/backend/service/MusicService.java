@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,10 +51,15 @@ public class MusicService {
     }
 
     @Transactional
-    public void seedSongsFromJson() {
-        if (songRepository.count() > 0) {
+    public void seedSongsFromJson(boolean force) {
+        if (!force && songRepository.count() > 0) {
             logger.info("Songs already exist in database. Skipping JSON seed.");
             return;
+        }
+
+        if (force) {
+            logger.info("Force re-seeding requested. Clearing existing songs...");
+            songRepository.deleteAll();
         }
 
         try {
@@ -135,12 +139,12 @@ public class MusicService {
             }
         } catch (Exception e) {
             logger.error("Error during Jamendo sync: {}. Will try local JSON seed.", e.getMessage());
-            seedSongsFromJson();
+            seedSongsFromJson(false);
         }
 
         // Fallback: If still no songs
         if (songRepository.count() == 0) {
-            seedSongsFromJson();
+            seedSongsFromJson(false);
         }
     }
 

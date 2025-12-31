@@ -38,6 +38,12 @@ public class MusicController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Mock songs seeded successfully"));
     }
 
+    @PostMapping("/seed-json")
+    public ResponseEntity<ApiResponse<String>> seedJsonSongs() {
+        musicService.seedSongsFromJson(true);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Songs re-seeded from JSON successfully."));
+    }
+
     @GetMapping("/songs")
     public ResponseEntity<List<Song>> getAllSongs(
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
