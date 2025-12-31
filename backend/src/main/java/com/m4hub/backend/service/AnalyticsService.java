@@ -26,6 +26,9 @@ public class AnalyticsService {
     @Autowired
     private TabUsageRepository tabUsageRepository;
 
+    @Autowired
+    private com.m4hub.backend.repository.UserRepository userRepository;
+
     private static final Map<String, String> TAB_COLORS = Map.of(
             "music", "#8b5cf6",
             "messages", "#3b82f6",
@@ -318,6 +321,15 @@ public class AnalyticsService {
         TabUsage usage = new TabUsage(user, tabName.toLowerCase(), durationSeconds);
         tabUsageRepository.save(usage);
         logger.info("Tracked {} seconds for user {} on tab {}", durationSeconds, user.getEmail(), tabName);
+    }
+
+    public Map<String, Long> getRegistrationStats() {
+        List<User> users = userRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("web", users.stream().filter(u -> "web".equals(u.getRegistrationSource())).count());
+        stats.put("mobile", users.stream().filter(u -> "mobile".equals(u.getRegistrationSource())).count());
+        stats.put("unknown", users.stream().filter(u -> u.getRegistrationSource() == null).count());
+        return stats;
     }
 
     private String capitalize(String str) {

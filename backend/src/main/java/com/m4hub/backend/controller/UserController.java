@@ -1,6 +1,7 @@
 package com.m4hub.backend.controller;
 
 import com.m4hub.backend.dto.ApiResponse;
+import com.m4hub.backend.dto.DeleteAccountRequest;
 import com.m4hub.backend.dto.ProfileSetupRequest;
 import com.m4hub.backend.dto.UserDto;
 import com.m4hub.backend.model.User;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 @RestController
@@ -105,9 +108,10 @@ public class UserController {
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Profile setup completed successfully", userDto));
         } catch (Exception e) {
-            logger.error("Profile setup failed for user: {}", e.getMessage(), e);
+            logger.error("Profile setup failed", e);
             return ResponseEntity.status(400)
-                    .body(new ApiResponse<>(false, "Failed to setup profile: " + e.getMessage(), null));
+                    .body(new ApiResponse<>(false,
+                            "Unable to complete profile setup: " + e.getMessage(), null));
         }
     }
 
@@ -164,9 +168,9 @@ public class UserController {
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Profile updated successfully", userDto));
         } catch (Exception e) {
-            logger.error("Profile update failed: {}", e.getMessage(), e);
+            logger.error("Profile update failed: ", e);
             return ResponseEntity.status(400)
-                    .body(new ApiResponse<>(false, "Failed to update profile: " + e.getMessage(), null));
+                    .body(new ApiResponse<>(false, "Unable to update profile. Please try again later.", null));
         }
     }
 
@@ -199,8 +203,9 @@ public class UserController {
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Email updated successfully", userDto));
         } catch (Exception e) {
+            logger.error("Email update failed: ", e);
             return ResponseEntity.status(400)
-                    .body(new ApiResponse<>(false, "Failed to update email: " + e.getMessage(), null));
+                    .body(new ApiResponse<>(false, "Unable to update email address. Please try again.", null));
         }
     }
 
@@ -239,8 +244,9 @@ public class UserController {
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Username updated successfully", userDto));
         } catch (Exception e) {
+            logger.error("Username update failed: ", e);
             return ResponseEntity.status(400)
-                    .body(new ApiResponse<>(false, "Failed to update username: " + e.getMessage(), null));
+                    .body(new ApiResponse<>(false, "Unable to update username. Please try again.", null));
         }
     }
 
@@ -283,8 +289,9 @@ public class UserController {
             UserDto userDto = UserDto.fromEntity(user);
             return ResponseEntity.ok(new ApiResponse<>(true, "Phone number updated successfully", userDto));
         } catch (Exception e) {
+            logger.error("Phone update failed: ", e);
             return ResponseEntity.status(400)
-                    .body(new ApiResponse<>(false, "Failed to update phone number: " + e.getMessage(), null));
+                    .body(new ApiResponse<>(false, "Unable to update phone number. Please try again.", null));
         }
     }
 
@@ -301,8 +308,46 @@ public class UserController {
 
             return ResponseEntity.ok(new ApiResponse<>(true, "Tutorial marked as seen", UserDto.fromEntity(user)));
         } catch (Exception e) {
+            logger.error("Tutorial status update failed: ", e);
             return ResponseEntity.status(400)
-                    .body(new ApiResponse<>(false, "Failed to update tutorial status: " + e.getMessage(), null));
+                    .body(new ApiResponse<>(false, "Unable to update tutorial status. Please try again.", null));
+        }
+    }
+
+    /**
+     * Delete or Pause account
+     */
+    @DeleteMapping("/account")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody DeleteAccountRequest request) {
+        try {
+            User user = getUserFromToken(authHeader);
+            logger.info("Account action requested for user: {}, action: {}", user.getEmail(), request.getType());
+
+            if ("delete".equalsIgnoreCase(request.getType())) {
+                user.setIsDeleted(true);
+                user.setIsActive(false);
+                user.setSessionToken(null);
+                user.setRefreshToken(null);
+                userRepository.save(user);
+                return ResponseEntity.ok(new ApiResponse<>(true, "Account has been permanently deleted", null));
+            } else if ("pause".equalsIgnoreCase(request.getType())) {
+                int days = request.getDays() != null ? request.getDays() : 30;
+                user.setIsActive(false);
+                user.setDeactivatedUntil(Instant.now().plus(days, ChronoUnit.DAYS));
+                user.setSessionToken(null);
+                user.setRefreshToken(null);
+                userRepository.save(user);
+                return ResponseEntity
+                        .ok(new ApiResponse<>(true, "Account has been paused for " + days + " days", null));
+            } else {
+                return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Invalid action type", null));
+            }
+        } catch (Exception e) {
+            logger.error("Account action failed: ", e);
+            return ResponseEntity.status(400)
+                    .body(new ApiResponse<>(false, "Unable to perform account action. Please try again later.", null));
         }
     }
 }

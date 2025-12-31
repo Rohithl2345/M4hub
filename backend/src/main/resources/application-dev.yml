@@ -3,18 +3,28 @@ spring:
     url: jdbc:postgresql://localhost:5433/m4hub_db
     username: m4hub
     password: m4hub_pass
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-timeout: 30000
   jpa:
+    show-sql: true
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         jdbc:
           time_zone: UTC
-    show-sql: true
 
 server:
   port: 8080
   address: 0.0.0.0
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 1024
 
 # SMS Configuration (Development)
 sms:

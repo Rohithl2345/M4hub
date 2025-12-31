@@ -39,6 +39,7 @@ public class NewsService {
     }
 
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "news", allEntries = true)
     @SuppressWarnings("unchecked")
     public void syncNews() {
         // One-time cleanup: Remove legacy mock data if it exists
@@ -102,10 +103,12 @@ public class NewsService {
         }
     }
 
+    @org.springframework.cache.annotation.Cacheable("news")
     public List<NewsArticle> getAllNews() {
         return newsArticleRepository.findAllByOrderByPublishedAtDesc();
     }
 
+    @org.springframework.cache.annotation.Cacheable(value = "news", key = "#category")
     public List<NewsArticle> getNewsByCategory(String category) {
         return newsArticleRepository.findByCategoryOrderByPublishedAtDesc(category);
     }

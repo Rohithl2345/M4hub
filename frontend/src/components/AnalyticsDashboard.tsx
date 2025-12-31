@@ -14,12 +14,14 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
+import Skeleton from '@mui/material/Skeleton';
 import { useTheme } from '@mui/material/styles';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import analyticsService, { TabUsageStats } from '@/services/analytics.service';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InsightsIcon from '@mui/icons-material/Insights';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4'];
 
@@ -53,9 +55,13 @@ export default function AnalyticsDashboard() {
     const [data, setData] = useState<ChartData[]>([]);
     const [trendData, setTrendData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const loadData = async () => {
-        setLoading(true);
         try {
             const hubData = await analyticsService.getHubAnalytics(timeframe);
             if (!hubData) return;
@@ -96,8 +102,19 @@ export default function AnalyticsDashboard() {
         }
     };
 
+    // Load data on mount and when timeframe changes
     useEffect(() => {
+        setLoading(true);
         loadData();
+    }, [timeframe]);
+
+    // Auto-refresh data every 3 seconds to catch updates from navigation
+    useEffect(() => {
+        const interval = setInterval(() => {
+            loadData();
+        }, 3000);
+
+        return () => clearInterval(interval);
     }, [timeframe]);
 
     const renderChart = () => {
@@ -241,79 +258,43 @@ export default function AnalyticsDashboard() {
                 </Box>
             </Box>
 
-            <Box sx={{ height: 350, width: '100%', position: 'relative' }}>
+            <Box sx={{
+                height: 350,
+                width: '100%',
+                minWidth: 0,
+                position: 'relative',
+                display: 'block',
+                '& .recharts-responsive-container': {
+                    minWidth: 0
+                }
+            }}>
                 {loading ? (
-                    <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.8)', zIndex: 1 }}>
-                        <CircularProgress size={30} />
-                    </Box>
-                ) : (
-                    data.length === 0 ? (
-                        <Box sx={{
-                            height: '100%',
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexDirection: 'column',
-                            gap: 2,
-                            background: 'linear-gradient(135deg, rgba(241, 245, 249, 0.5) 0%, rgba(226, 232, 240, 0.5) 100%)',
-                            borderRadius: 6,
-                            border: '2px dashed #e2e8f0',
-                            textAlign: 'center',
-                            p: 3
-                        }}>
-                            <Box sx={{
-                                width: 80,
-                                height: 80,
-                                borderRadius: '50%',
-                                bgcolor: 'white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)',
-                                mb: 1,
-                                animation: 'pulse 2s infinite ease-in-out'
-                            }}>
-                                <InsightsIcon sx={{ fontSize: 40, color: '#6366f1', opacity: 0.8 }} />
-                                <style>{`
-                                    @keyframes pulse {
-                                        0% { scale: 1; }
-                                        50% { scale: 1.05; }
-                                        100% { scale: 1; }
-                                    }
-                                `}</style>
+                    <Box sx={{ p: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                            <Skeleton variant="circular" width={48} height={48} animation="wave" />
+                            <Box sx={{ flex: 1 }}>
+                                <Skeleton variant="text" width="40%" height={24} animation="wave" />
+                                <Skeleton variant="text" width="60%" height={20} animation="wave" />
                             </Box>
-                            <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ letterSpacing: '-0.5px' }}>
-                                No Hub Activity
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 280, lineHeight: 1.6 }}>
-                                We haven't recorded any activity for this period yet.
-                                <span style={{ display: 'block', marginTop: '8px', fontWeight: 600, color: '#6366f1' }}>
-                                    Your journey starts here!
-                                </span>
-                            </Typography>
                         </Box>
-                    ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                            {renderChart()}
-                        </ResponsiveContainer>
-                    )
+                        <Skeleton variant="rectangular" height={250} sx={{ borderRadius: 3 }} animation="wave" />
+                        <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                            <Skeleton variant="rectangular" height={60} sx={{ flex: 1, borderRadius: 2 }} animation="wave" />
+                            <Skeleton variant="rectangular" height={60} sx={{ flex: 1, borderRadius: 2 }} animation="wave" />
+                            <Skeleton variant="rectangular" height={60} sx={{ flex: 1, borderRadius: 2 }} animation="wave" />
+                        </Box>
+                    </Box>
+                ) : data.length === 0 ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.secondary' }}>
+                        <TrendingUpIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
+                        <Typography variant="h6" fontWeight={700}>No Activity Data</Typography>
+                        <Typography variant="body2">Start using M4Hub to see your analytics</Typography>
+                    </Box>
+                ) : isMounted && (
+                    <ResponsiveContainer width="99%" height="100%" debounce={50}>
+                        {renderChart()}
+                    </ResponsiveContainer>
                 )}
-            </Box>
-
-            <Box sx={{ mt: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 4, display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={700}>MOST ACTIVE HUB</Typography>
-                    <Typography variant="body1" fontWeight={900} color="primary">
-                        {data.length > 0 ? [...data].sort((a, b) => b.duration - a.duration)[0].name : '--'}
-                    </Typography>
-                </Box>
-                <Box sx={{ borderLeft: '2px solid #e2e8f0', pl: 3 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={700}>TOTAL ENGAGEMENT</Typography>
-                    <Typography variant="body1" fontWeight={900}>
-                        {Math.round(data.reduce((acc, curr) => acc + curr.duration, 0) / 60)} Minutes
-                    </Typography>
-                </Box>
             </Box>
         </Card>
     );

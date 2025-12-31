@@ -63,39 +63,16 @@ M4hub/
 
 ## 📚 Documentation
 
-### 🎯 Getting Started
-- **[Implementation Plan](docs/IMPLEMENTATION_PLAN.md)** - Complete development roadmap
-- **[Tomorrow's Checklist](docs/TOMORROW_CHECKLIST.md)** - Next day's action items
+### 🎯 Core Documentation
+- **[TECHNICAL_GUIDE.md](TECHNICAL_GUIDE.md)** - Comprehensive ecosystem overview, architecture, and guides.
+- **[Folder Structure](docs/FOLDER_STRUCTURE.md)** - Project layout details.
 - [Development Guide](docs/README_DEV.md)
-- [Folder Structure](docs/FOLDER_STRUCTURE.md)
-
 ### 🎵 Music System
-- [Music Quick Start](MUSIC_QUICK_START.md)
 - [Database Music System](docs/DATABASE_MUSIC_SYSTEM.md) (Future)
 
-### Production
-- [Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT_GUIDE.md)
-- [Production Checklist](docs/PRODUCTION_CHECKLIST.md)
-- [Production Readiness Audit](docs/PRODUCTION_READINESS_AUDIT.md)
-
-### Platform-Specific
-- **Mobile**: See [docs/mobile/](docs/mobile/)
-  - [Setup Guide](docs/mobile/SETUP_GUIDE.md)
-  - [Icon Setup](docs/mobile/ICON_SETUP.md)
-  - [Checklist](docs/mobile/CHECKLIST.md)
-
-- **Backend**: See [docs/backend/](docs/backend/)
-  - [Backend Testing](docs/backend/BACKEND_TESTING.md)
-  - [Firebase Setup](docs/backend/FIREBASE_SETUP.md)
-  - [SMS Integration](docs/backend/SMS_INTEGRATION.md)
-  - [Free SMS Options](docs/backend/FREE_SMS_OPTIONS.md)
-
-- **Frontend**: See [docs/web/](docs/web/)
-  - [Setup Guide](docs/web/SETUP_GUIDE.md)
-  - [Styling Guide](docs/web/STYLING_GUIDE.md)
-
-### Infrastructure
+### 🚀 Infrastructure
 - [Docker Setup Guide](infra/SETUP_GUIDE.md)
+- [Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT_GUIDE.md)
 
 ## 🎨 Theme & Styling
 

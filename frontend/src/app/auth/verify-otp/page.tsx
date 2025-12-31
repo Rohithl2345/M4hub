@@ -18,9 +18,11 @@ import {
 } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import styles from './verify-otp.module.css';
+import { useToast } from '@/components/ToastProvider';
 
 function VerifyOTPContent() {
     const router = useRouter();
+    const { showSuccess, showError } = useToast();
     const searchParams = useSearchParams();
     const phoneNumber = searchParams.get('phone');
     const dispatch = useAppDispatch();
@@ -77,10 +79,9 @@ function VerifyOTPContent() {
                 otpCode: otpCode,
             }).unwrap();
 
-            logger.info('OTP verification successful');
-
             if (result.success && result.token && result.user) {
-                logger.debug('Saving credentials');
+                logger.info('OTP verification successful');
+                showSuccess('Login successful!');
 
                 // Save to localStorage first
                 if (typeof window !== 'undefined') {
@@ -107,12 +108,16 @@ function VerifyOTPContent() {
                 }
             } else {
                 logger.error('OTP verification failed', { message: result.message });
-                setError(result.message || 'Invalid OTP');
+                const errMsg = result.message || 'Invalid OTP';
+                setError(errMsg);
+                showError(errMsg);
             }
         } catch (err: unknown) {
             logger.error('Failed to verify OTP', { error: err });
             const error = err as { data?: { message?: string }; status?: number };
-            setError(error?.data?.message || 'Failed to verify OTP. Please try again.');
+            const errMsg = error?.data?.message || 'Failed to verify OTP. Please try again.';
+            setError(errMsg);
+            showError(errMsg);
         }
     };
 
@@ -125,14 +130,19 @@ function VerifyOTPContent() {
             const result = await sendOtp({ phoneNumber: phoneNumber || '' }).unwrap();
 
             if (result.success) {
+                showSuccess('Verification code resent successfully!');
                 setTimer(30);
                 setOtp(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
             } else {
-                setError(result.message || 'Failed to resend OTP');
+                const errMsg = result.message || 'Failed to resend OTP';
+                setError(errMsg);
+                showError(errMsg);
             }
         } catch (err: unknown) {
-            setError('Failed to resend OTP. Please try again.');
+            const errMsg = 'Failed to resend OTP. Please try again.';
+            setError(errMsg);
+            showError(errMsg);
             logger.error('Failed to resend OTP', { error: err });
         }
     };

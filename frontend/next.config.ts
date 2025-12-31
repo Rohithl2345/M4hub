@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 
 const nextConfig: NextConfig = {
-  // Allow images from Jamendo API and Spotify
+  // Allow images from Jamendo API
   images: {
     remotePatterns: [
       {
@@ -13,11 +13,6 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'api.jamendo.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'i.scdn.co',
         pathname: '/**',
       },
       {
@@ -53,7 +48,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; media-src 'self' https: http: blob: data:; font-src 'self' data:; connect-src 'self' https://api.jamendo.com https://api.spotify.com http://localhost:8080 http://localhost:3000 ws://localhost:8080 wss://m4hub.onrender.com https://m4hub.onrender.com https://*.jamendo.com; frame-ancestors 'none';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; media-src 'self' https: http: blob: data:; font-src 'self' data:; connect-src 'self' https://api.jamendo.com http://localhost:8080 http://localhost:3000 ws://localhost:8080 wss://m4hub.onrender.com https://m4hub.onrender.com https://*.jamendo.com; frame-ancestors 'none';",
           },
           {
             key: 'X-Content-Type-Options',

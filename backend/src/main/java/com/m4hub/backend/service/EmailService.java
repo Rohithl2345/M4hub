@@ -28,6 +28,7 @@ public class EmailService {
     /**
      * Send OTP to email address
      */
+    @org.springframework.scheduling.annotation.Async
     public void sendOtp(String email, String otpCode) {
         try {
             if ("console".equals(emailProvider)) {
@@ -79,6 +80,7 @@ public class EmailService {
     /**
      * Send welcome email after successful registration
      */
+    @org.springframework.scheduling.annotation.Async
     public void sendWelcomeEmail(String email, String userName) {
         try {
             logger.info("📧 Sending welcome email to: {} ({})", email, userName);

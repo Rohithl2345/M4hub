@@ -30,8 +30,7 @@
     "react-dom": "19.2.0",
     "react-redux": "^9.2.0",
     "recharts": "^3.6.0",
-    "sockjs-client": "^1.6.1",
-    "spotify-web-api-js": "^1.5.2"
+    "sockjs-client": "^1.6.1"
   },
   "devDependencies": {
     "@types/node": "^20",

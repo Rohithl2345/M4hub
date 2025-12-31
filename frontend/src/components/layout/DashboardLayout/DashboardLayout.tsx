@@ -13,6 +13,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import HubIcon from '@mui/icons-material/Hub';
 import { Avatar, Switch } from '@mui/material';
 import { useState } from 'react';
+import SessionTimeoutDialog from '@/components/SessionTimeoutDialog';
+import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 
 function FloatingSidebarIcons({ Icon }: { Icon: any }) {
     const items = Array.from({ length: 15 }).map((_, i) => ({
@@ -57,6 +59,19 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         dispatch(logout());
         router.push('/auth/email-login');
     };
+
+    // Session timeout management
+    const {
+        showWarning,
+        remainingTime,
+        extendSession,
+        handleLogout: handleSessionTimeout,
+    } = useSessionTimeout({
+        timeoutDuration: 30 * 60 * 1000, // 30 minutes
+        warningDuration: 2 * 60 * 1000, // 2 minutes warning
+        onTimeout: handleLogout,
+        enabled: true,
+    });
 
     const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
 
@@ -192,6 +207,15 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     {children}
                 </div>
             </div>
+
+            {/* Session Timeout Dialog */}
+            <SessionTimeoutDialog
+                open={showWarning}
+                remainingTime={remainingTime}
+                onExtendSession={extendSession}
+                onLogout={handleSessionTimeout}
+                warningThreshold={120}
+            />
         </div>
     );
 }

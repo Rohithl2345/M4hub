@@ -28,7 +28,8 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(new AuthResponse(false, "Server error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(new AuthResponse(false, "An unexpected error occurred. Please try again later."));
         }
     }
 
@@ -43,21 +44,26 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(
-                    new AuthResponse(false, "Server error: " + e.getMessage()));
+                    new AuthResponse(false, "An unexpected error occurred. Please try again later."));
         }
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> loginWithEmail(@RequestBody com.m4hub.backend.dto.LoginRequest request) {
         try {
+            logger.info("Login attempt for identifier: {}", request.getEmail());
             AuthResponse response = authService.loginWithEmail(request);
             if (response.isSuccess()) {
+                logger.info("Login successful for: {}", request.getEmail());
                 return ResponseEntity.ok(response);
             }
+            logger.warn("Login failed for: {} - Reason: {}", request.getEmail(), response.getMessage());
             return ResponseEntity.status(401).body(response);
         } catch (Exception e) {
+            logger.error("Unexpected error during login for: {}", request.getEmail(), e);
             e.printStackTrace();
-            return ResponseEntity.status(500).body(new AuthResponse(false, "Server error: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(new AuthResponse(false, "An unexpected error occurred. Please try again later."));
         }
     }
 
@@ -72,7 +78,7 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(
-                    new AuthResponse(false, "Server error: " + e.getMessage()));
+                    new AuthResponse(false, "An unexpected error occurred. Please try again later."));
         }
     }
 
@@ -87,7 +93,31 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(
-                    new AuthResponse(false, "Server error: " + e.getMessage()));
+                    new AuthResponse(false, "An unexpected error occurred. Please try again later."));
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@RequestBody java.util.Map<String, String> body) {
+        try {
+            String refreshToken = body.get("refreshToken");
+
+            if (refreshToken == null || refreshToken.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(new AuthResponse(false, "Refresh token is required"));
+            }
+
+            AuthResponse response = authService.refreshToken(refreshToken);
+
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(401).body(response);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(
+                    new AuthResponse(false, "An unexpected error occurred. Please try again later."));
         }
     }
 }

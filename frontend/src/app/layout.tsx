@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/store/ReduxProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { ToastProvider } from "@/components/ToastProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -32,7 +33,9 @@ export default function RootLayout({
       <body className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
         <ErrorBoundary>
           <ReduxProvider>
-            {children}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </ReduxProvider>
         </ErrorBoundary>
       </body>

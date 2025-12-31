@@ -58,7 +58,9 @@ public class ChatController {
 
             return ResponseEntity.ok(Map.of("success", true, "message", "Request sent"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            logger.error("Error sending friend request: ", e);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Unable to send friend request. Please try again."));
         }
     }
 
@@ -233,7 +235,8 @@ public class ChatController {
             chatService.addReaction(messageId, user.getId(), emoji);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            logger.error("Error adding reaction: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to add reaction."));
         }
     }
 
@@ -248,7 +251,8 @@ public class ChatController {
             chatService.removeReaction(messageId, user.getId());
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            logger.error("Error removing reaction: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to remove reaction."));
         }
     }
 
@@ -282,7 +286,8 @@ public class ChatController {
             return ResponseEntity.ok(new com.m4hub.backend.dto.GroupChatDto(
                     chatService.createGroup(user.getId(), name, description, memberIds)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            logger.error("Error creating group: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to create group at this time."));
         }
     }
 
@@ -299,7 +304,8 @@ public class ChatController {
             chatService.addGroupMember(groupId, userId, user.getId());
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            logger.error("Error adding group member: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to add member to group."));
         }
     }
 
@@ -317,8 +323,8 @@ public class ChatController {
                     .toList();
             return ResponseEntity.ok(dtos);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            logger.error("Error fetching groups: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to fetch groups."));
         }
     }
 
@@ -332,7 +338,8 @@ public class ChatController {
             }
             return ResponseEntity.ok(chatService.getGroupMessages(groupId, user.getId()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            logger.error("Error fetching group messages: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to fetch group messages."));
         }
     }
 
@@ -362,7 +369,8 @@ public class ChatController {
             chatService.deleteGroup(groupId, currentUser.getId());
             return ResponseEntity.ok(Map.of("message", "Group deleted successfully"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            logger.error("Error deleting group: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to delete group."));
         }
     }
 
@@ -384,7 +392,8 @@ public class ChatController {
 
             return ResponseEntity.ok(results);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            logger.error("Error searching users: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Search failed. Please try again."));
         }
     }
 }

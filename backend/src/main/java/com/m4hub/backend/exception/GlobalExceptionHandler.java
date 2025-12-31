@@ -17,8 +17,7 @@ public class GlobalExceptionHandler {
         logger.error("Unhandled exception occurred: ", ex);
         return ResponseEntity.status(500).body(Map.of(
                 "success", false,
-                "message", "An unexpected error occurred",
-                "error", ex.getMessage() != null ? ex.getMessage() : "Unknown error"));
+                "message", "An unexpected error occurred. Please try again later."));
     }
 
     @ExceptionHandler(RuntimeException.class)
@@ -34,8 +33,7 @@ public class GlobalExceptionHandler {
         logger.error("Database error occurred: ", ex);
         return ResponseEntity.status(500).body(Map.of(
                 "success", false,
-                "message", "Database error occurred",
-                "error", ex.getMostSpecificCause().getMessage()));
+                "message", "A temporary database error occurred. Please try again shortly."));
     }
 
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)

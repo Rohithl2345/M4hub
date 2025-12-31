@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppDispatch } from '@/store/hooks';
-import { setCredentials } from '@/store/slices/authSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setCredentials, selectUser } from '@/store/slices/authSlice';
 import axios from 'axios';
 import logger from '@/utils/logger';
 import {
@@ -23,9 +23,11 @@ import dayjs, { Dayjs } from 'dayjs';
 import AuthLayout from '../auth/AuthLayout';
 import styles from '../auth/email-login/email-login.module.css';
 import { env } from '@/utils/env';
+import { useToast } from '@/components/ToastProvider';
 
 export default function ProfileSetupPage() {
     const router = useRouter();
+    const { showSuccess, showError } = useToast();
     const dispatch = useAppDispatch();
 
     const [firstName, setFirstName] = useState('');
@@ -37,6 +39,14 @@ export default function ProfileSetupPage() {
     const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [touched, setTouched] = useState({
+        firstName: false,
+        lastName: false,
+        username: false,
+        dateOfBirth: false
+    });
+
+    const user = useAppSelector(selectUser);
 
     useEffect(() => {
         const token = localStorage.getItem('authToken');
@@ -44,6 +54,12 @@ export default function ProfileSetupPage() {
             router.push('/auth/email-login');
         }
     }, [router]);
+
+    useEffect(() => {
+        if (user?.email) {
+            setEmail(user.email);
+        }
+    }, [user]);
 
     const checkUsername = async (value: string) => {
         if (value.length < 3) {
@@ -63,12 +79,35 @@ export default function ProfileSetupPage() {
         }
     };
 
+    const fieldErrors = {
+        firstName: !firstName.trim() && touched.firstName ? 'First name is required' : '',
+        lastName: !lastName.trim() && touched.lastName ? 'Last name is required' : '',
+        username: touched.username ? (
+            !username.trim() ? 'Username is required' :
+                usernameStatus === 'taken' ? 'Username is already taken' :
+                    username.length < 3 ? 'Username must be at least 3 characters' : ''
+        ) : '',
+        dateOfBirth: !dateOfBirth && touched.dateOfBirth ? 'Date of birth is required' : '',
+        email: email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/) ? 'Invalid email address' : ''
+    };
+
+    const handleBlur = (field: keyof typeof touched) => {
+        setTouched(prev => ({ ...prev, [field]: true }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (!firstName.trim() || !lastName.trim()) {
-            setError('Please enter your first and last name');
+        setTouched({
+            firstName: true,
+            lastName: true,
+            username: true,
+            dateOfBirth: true
+        });
+
+        if (!firstName.trim() || !lastName.trim() || !username.trim() || !dateOfBirth) {
+            setError('Please fill in all required fields');
             return;
         }
 
@@ -121,6 +160,7 @@ export default function ProfileSetupPage() {
             );
 
             if (response.data.success && response.data.data) {
+                showSuccess('Profile setup successful! Welcome to M4Hub.');
                 dispatch(setCredentials({
                     token: token,
                     user: response.data.data,
@@ -129,7 +169,9 @@ export default function ProfileSetupPage() {
                 router.push('/dashboard');
             } else {
                 logger.warn('Profile setup response not successful', response.data);
-                setError(response.data.message || 'Failed to setup profile');
+                const errMsg = response.data.message || 'Failed to setup profile';
+                setError(errMsg);
+                showError(errMsg);
             }
         } catch (err) {
             logger.error('Profile setup failed', err);
@@ -137,14 +179,15 @@ export default function ProfileSetupPage() {
             const backendMessage = error.response?.data?.message;
             const validationErrors = error.response?.data?.errors;
 
+            let finalMsg = backendMessage || 'Failed to setup profile';
             if (validationErrors) {
                 const detailedError = Object.entries(validationErrors)
                     .map(([field, msg]) => `${field}: ${msg}`)
                     .join(', ');
-                setError(`Validation failed: ${detailedError}`);
-            } else {
-                setError(backendMessage || 'Failed to setup profile');
+                finalMsg = `Validation failed: ${detailedError}`;
             }
+            setError(finalMsg);
+            showError(finalMsg);
         } finally {
             setIsLoading(false);
         }
@@ -197,7 +240,9 @@ export default function ProfileSetupPage() {
                         placeholder="Enter your first name"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        required
+                        onBlur={() => handleBlur('firstName')}
+                        error={!!fieldErrors.firstName}
+                        helperText={fieldErrors.firstName}
                         autoComplete="off"
                         className={styles.emailField}
                         InputProps={{
@@ -233,7 +278,9 @@ export default function ProfileSetupPage() {
                         placeholder="Enter your last name"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        required
+                        onBlur={() => handleBlur('lastName')}
+                        error={!!fieldErrors.lastName}
+                        helperText={fieldErrors.lastName}
                         autoComplete="off"
                         className={styles.emailField}
                         InputProps={{
@@ -273,18 +320,20 @@ export default function ProfileSetupPage() {
                             setUsername(val);
                             checkUsername(val);
                         }}
-                        required
                         autoComplete="off"
                         className={styles.emailField}
                         helperText={
-                            usernameStatus === 'checking' ? 'Checking...' :
-                                usernameStatus === 'available' ? '✓ Username available' :
-                                    usernameStatus === 'taken' ? '✗ Username already taken' :
-                                        'Username will be used to find you'
+                            fieldErrors.username || (
+                                usernameStatus === 'checking' ? 'Checking...' :
+                                    usernameStatus === 'available' ? '✓ Username available' :
+                                        usernameStatus === 'taken' ? '✗ Username already taken' :
+                                            'Username will be used to find you'
+                            )
                         }
-                        error={usernameStatus === 'taken'}
+                        error={!!fieldErrors.username}
+                        onBlur={() => handleBlur('username')}
                         FormHelperTextProps={{
-                            sx: { color: usernameStatus === 'available' ? 'green' : undefined }
+                            sx: { color: usernameStatus === 'available' ? 'green' : (!!fieldErrors.username ? '#ef4444' : undefined) }
                         }}
                         InputProps={{
                             sx: {
@@ -322,7 +371,9 @@ export default function ProfileSetupPage() {
                                 textField: {
                                     id: 'dob-input',
                                     fullWidth: true,
-                                    required: true,
+                                    error: !!fieldErrors.dateOfBirth,
+                                    helperText: fieldErrors.dateOfBirth,
+                                    onBlur: () => handleBlur('dateOfBirth'),
                                     placeholder: 'Select your date of birth',
                                     className: styles.emailField,
                                     InputProps: {
@@ -467,13 +518,13 @@ export default function ProfileSetupPage() {
                 <TextField
                     fullWidth
                     type="email"
-                    label="Email (Optional)"
-                    placeholder="Enter email address"
+                    label="Email Address"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    disabled
                     autoComplete="off"
                     className={styles.emailField}
                     InputProps={{
+                        readOnly: true,
                         sx: {
                             backgroundColor: '#f8fafc',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',

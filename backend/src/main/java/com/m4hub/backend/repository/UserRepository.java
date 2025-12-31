@@ -30,11 +30,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.transaction.annotation.Transactional
-    @org.springframework.data.jpa.repository.Query("UPDATE User u SET u.isActive = false")
+    @org.springframework.data.jpa.repository.Query("UPDATE User u SET u.isOnline = false")
     void resetAllUsersStatus();
 
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.transaction.annotation.Transactional
-    @org.springframework.data.jpa.repository.Query("UPDATE User u SET u.isActive = :status WHERE u.id = :userId")
+    @org.springframework.data.jpa.repository.Query("UPDATE User u SET u.isOnline = :status WHERE u.id = :userId")
     void updateUserStatus(Long userId, Boolean status);
 }

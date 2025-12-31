@@ -11,6 +11,14 @@ import { authService } from '@/services/auth.service';
 import { AuthBackground, authThemes } from '@/components/AuthBackground';
 import { Toast } from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import {
+    validateEmail,
+    validateIdentifier,
+    validatePassword,
+    getPasswordStrengthColor,
+    getPasswordStrengthLabel
+} from '@/utils/authValidation';
+import ErrorHandler, { AuthErrors } from '@/utils/errorHandler';
 
 import Animated, {
     useSharedValue,
@@ -30,6 +38,23 @@ export default function EmailLoginScreen() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [currentThemeIndex, setCurrentThemeIndex] = useState(0);
+    const [attemptCount, setAttemptCount] = useState(0);
+    const [isRateLimited, setIsRateLimited] = useState(false);
+
+    // Enhanced password strength using validation utility
+    const [passwordStrength, setPasswordStrength] = useState({
+        score: 0,
+        feedback: [] as string[],
+        isValid: false
+    });
+
+    // Update password strength when password changes
+    useEffect(() => {
+        if (mode === 'signup' && password) {
+            const strength = validatePassword(password);
+            setPasswordStrength(strength);
+        }
+    }, [password, mode]);
 
     // Auto-cycle themes every 10 seconds (matching web app)
     useEffect(() => {
@@ -43,57 +68,57 @@ export default function EmailLoginScreen() {
         setEmail('');
         setPassword('');
         setTouched({ email: false, password: false });
+        setAttemptCount(0);
+        setIsRateLimited(false);
     }, [mode]);
-
-    const validateEmail = (email: string) => {
-        return authService.validateEmail(email);
-    };
-
-    const validateIdentifier = (id: string) => {
-        if (id.includes('@')) {
-            return validateEmail(id);
-        }
-        return id.length >= 3;
-    };
 
     const [touched, setTouched] = useState({ email: false, password: false });
 
     const errors = {
         email: (() => {
-            if (!email && touched.email) return 'Email is required';
-            if (email && mode === 'login' && !validateIdentifier(email)) return 'Invalid email or username';
-            if (email && mode === 'signup' && !validateEmail(email)) return 'Invalid email address';
+            if (!email && touched.email) {
+                return mode === 'login' ? 'Email or username is required' : 'Email is required';
+            }
+            if (email) {
+                if (mode === 'login') {
+                    const result = validateIdentifier(email);
+                    return result.isValid ? '' : result.error || '';
+                } else {
+                    const result = validateEmail(email);
+                    return result.isValid ? '' : result.error || '';
+                }
+            }
             return '';
         })(),
         password: (() => {
             if (!password && touched.password) return 'Password is required';
-            if (password && password.length < 8) return 'Password must be at least 8 characters';
+            if (password && password.length < 6) return 'Password must be at least 6 characters';
+            if (mode === 'signup' && password && !passwordStrength.isValid) {
+                return 'Password does not meet security requirements';
+            }
             return '';
         })(),
     };
 
-    const passwordStrength = (() => {
-        if (password.length < 8) return 0;
-        let strength = 1;
-        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-        if (/[0-9]/.test(password)) strength++;
-        if (/[^a-zA-Z0-9]/.test(password)) strength++;
-        return strength;
-    })();
-
     // Check if form is valid and ready to submit
     const isFormValid = (() => {
-        // Must have both fields filled
+        // Must have both fields filled  
         if (!email || !password) return false;
         // Must have no validation errors
         if (errors.email || errors.password) return false;
-        // For signup, password must be strong enough (at least 8 chars)
-        if (mode === 'signup' && password.length < 8) return false;
+        // For signup, password must meet strength requirements
+        if (mode === 'signup' && !passwordStrength.isValid) return false;
         return true;
     })();
 
     const handleContinue = async () => {
         setTouched({ email: true, password: true });
+
+        // Check if rate limited
+        if (isRateLimited) {
+            showError('Too many failed attempts. Please wait 5 minutes before trying again.');
+            return;
+        }
 
         // Check for empty fields first
         if (!email || !password) {
@@ -107,21 +132,58 @@ export default function EmailLoginScreen() {
             return;
         }
 
+        // For signup, ensure password meets strength requirements
+        if (mode === 'signup' && !passwordStrength.isValid) {
+            showError('Password does not meet all security requirements');
+            return;
+        }
+
         setIsLoading(true);
+
         try {
             if (mode === 'login') {
                 const data = await authService.login(email, password);
+
                 if (data.success) {
+                    // Success - reset attempt counter
+                    setAttemptCount(0);
                     showSuccess('Welcome back!');
                     dispatch(setCredentials({ token: data.token!, user: data.user }));
                     setTimeout(() => {
                         router.replace('/(tabs)');
                     }, 1000);
                 } else {
-                    showError(data.message || 'Invalid credentials');
+                    // Check if it's an authentication failure (wrong credentials)
+                    // Only increment counter for 401 (wrong credentials)
+                    if (data.code === 'INVALID_CREDENTIALS' || data.status === 401) {
+                        const newCount = attemptCount + 1;
+                        setAttemptCount(newCount);
+
+                        // Check if we've hit rate limit
+                        if (newCount >= 5) {
+                            setIsRateLimited(true);
+                            setTimeout(() => {
+                                setIsRateLimited(false);
+                                setAttemptCount(0);
+                            }, 5 * 60 * 1000); // 5 minutes
+                            showError('Too many failed attempts. Please wait 5 minutes before trying again.');
+                        } else {
+                            showError(data.message || AuthErrors.INVALID_CREDENTIALS);
+                        }
+                    } else if (data.status === 429) {
+                        setIsRateLimited(true);
+                        showError('Too many login attempts. Please wait a few minutes and try again.');
+                    } else if (data.status === 403) {
+                        showError(AuthErrors.EMAIL_NOT_VERIFIED);
+                    } else {
+                        // Other errors (validation, server, etc.) - don't increment counter
+                        showError(data.message || 'An error occurred. Please try again.');
+                    }
                 }
             } else {
+                // Signup mode
                 const data = await authService.sendEmailOtp(email, password);
+
                 if (data.success) {
                     showSuccess('Verification code sent!');
                     setTimeout(() => {
@@ -131,12 +193,34 @@ export default function EmailLoginScreen() {
                         });
                     }, 1000);
                 } else {
-                    showError(data.message || 'Failed to send OTP. Please try again.');
+                    const errorMessage = data.message || 'Failed to send verification code. Please try again.';
+
+                    if (data.message?.toLowerCase().includes('already exists')) {
+                        showError(AuthErrors.EMAIL_EXISTS);
+                    } else {
+                        showError(errorMessage);
+                    }
                 }
             }
         } catch (error: any) {
             console.error('Auth error:', error);
-            showError(error.message || 'Network error. Please check your connection.');
+
+            // Use ErrorHandler to classify error
+            const appError = ErrorHandler.handleError(error);
+            ErrorHandler.logError(appError, 'Mobile Login');
+
+            // Network/Server errors - DO NOT increment attempt counter
+            // These are not authentication failures (wrong password)
+            if (error.message?.includes('fetch') || error.message?.includes('Failed to fetch')) {
+                showError('Cannot connect to server. Please check your connection and try again.');
+            } else if (error.message?.includes('timeout')) {
+                showError('Request timed out. Please try again.');
+            } else {
+                showError(appError.userMessage);
+            }
+
+            // NOTE: We DO NOT increment attemptCount here!
+            // Network/server errors are not the user's fault
         } finally {
             setIsLoading(false);
         }
@@ -238,13 +322,13 @@ export default function EmailLoginScreen() {
                                             />
                                             <TextInput
                                                 style={styles.input}
-                                                placeholder={mode === 'login' ? 'Enter your email or username' : 'Enter your email'}
+                                                placeholder={mode === 'login' ? 'Email or Username' : 'Enter your email'}
                                                 placeholderTextColor="#94a3b8"
                                                 value={email}
                                                 onChangeText={setEmail}
                                                 onBlur={() => setTouched({ ...touched, email: true })}
                                                 autoCapitalize="none"
-                                                keyboardType="email-address"
+                                                keyboardType={mode === 'login' ? 'default' : 'email-address'}
                                                 editable={!isLoading}
                                             />
                                         </View>
@@ -294,29 +378,51 @@ export default function EmailLoginScreen() {
 
                                     {/* Password Strength Indicator (Signup only) */}
                                     {mode === 'signup' && password.length > 0 && (
-                                        <View style={styles.strengthContainer}>
-                                            <View style={styles.strengthBars}>
-                                                {[...Array(4)].map((_, i) => (
-                                                    <View
-                                                        key={i}
-                                                        style={[
-                                                            styles.strengthBar,
-                                                            i < passwordStrength && styles.strengthBarActive,
-                                                            passwordStrength === 1 && styles.strengthWeak,
-                                                            passwordStrength === 2 && styles.strengthFair,
-                                                            passwordStrength === 3 && styles.strengthGood,
-                                                            passwordStrength === 4 && styles.strengthStrong,
-                                                        ]}
-                                                    />
-                                                ))}
+                                        <View style={styles.strengthWrapper}>
+                                            <View style={styles.strengthHeader}>
+                                                <View style={styles.strengthBars}>
+                                                    {[...Array(4)].map((_, i) => (
+                                                        <View
+                                                            key={i}
+                                                            style={[
+                                                                styles.strengthBar,
+                                                                i < passwordStrength.score && styles.strengthBarActive,
+                                                                passwordStrength.score === 1 && styles.strengthWeak,
+                                                                passwordStrength.score === 2 && styles.strengthFair,
+                                                                passwordStrength.score === 3 && styles.strengthGood,
+                                                                passwordStrength.score === 4 && styles.strengthStrong,
+                                                            ]}
+                                                        />
+                                                    ))}
+                                                </View>
+                                                <ThemedText style={[
+                                                    styles.strengthText,
+                                                    { color: getPasswordStrengthColor(passwordStrength.score) }
+                                                ]}>
+                                                    {getPasswordStrengthLabel(passwordStrength.score)}
+                                                </ThemedText>
                                             </View>
-                                            <ThemedText style={styles.strengthText}>
-                                                {passwordStrength === 0 && ''}
-                                                {passwordStrength === 1 && 'Weak'}
-                                                {passwordStrength === 2 && 'Fair'}
-                                                {passwordStrength === 3 && 'Good'}
-                                                {passwordStrength === 4 && 'Strong'}
-                                            </ThemedText>
+
+                                            {/* Requirements Checklist (Compact) */}
+                                            {passwordStrength.feedback.length > 0 && (
+                                                <View style={styles.feedbackContainer}>
+                                                    {passwordStrength.feedback.map((feedback, idx) => (
+                                                        <View key={idx} style={styles.feedbackItem}>
+                                                            <Ionicons name="close-circle-outline" size={12} color="#ef4444" />
+                                                            <ThemedText style={styles.feedbackText}>{feedback}</ThemedText>
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            )}
+
+                                            {passwordStrength.isValid && (
+                                                <View style={styles.feedbackItem}>
+                                                    <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+                                                    <ThemedText style={[styles.feedbackText, { color: '#10b981', fontWeight: '700' }]}>
+                                                        Password is secure
+                                                    </ThemedText>
+                                                </View>
+                                            )}
                                         </View>
                                     )}
 
@@ -545,22 +651,25 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginTop: 3,
     },
-    strengthContainer: {
+    strengthWrapper: {
+        marginTop: -8,
+        gap: 8,
+    },
+    strengthHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
-        marginTop: -6,
+        gap: 12,
     },
     strengthBars: {
         flexDirection: 'row',
-        gap: 3,
+        gap: 4,
         flex: 1,
     },
     strengthBar: {
         flex: 1,
-        height: 3,
+        height: 6,
         backgroundColor: '#e2e8f0',
-        borderRadius: 1.5,
+        borderRadius: 3,
     },
     strengthBarActive: {
         backgroundColor: '#10b981',
@@ -579,8 +688,28 @@ const styles = StyleSheet.create({
     },
     strengthText: {
         fontSize: 11,
-        fontWeight: '700',
+        fontWeight: '800',
+        minWidth: 45,
+        textAlign: 'right',
+    },
+    feedbackContainer: {
+        backgroundColor: '#f8fafc',
+        borderRadius: 10,
+        padding: 10,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    feedbackItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    feedbackText: {
+        fontSize: 11,
         color: '#64748b',
+        fontWeight: '600',
+        flexShrink: 1,
     },
     forgotPassword: {
         alignSelf: 'flex-end',

@@ -17,10 +17,12 @@ import KeyIcon from '@mui/icons-material/Key';
 import AuthLayout from '../AuthLayout';
 import styles from '../email-login/email-login.module.css';
 import { env } from '@/utils/env';
+import { useToast } from '@/components/ToastProvider';
 
 function ForgotPasswordPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { showToast, showSuccess, showError } = useToast();
     const emailParam = searchParams.get('email');
     const [email, setEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -68,13 +70,18 @@ function ForgotPasswordPageInner() {
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                setSuccess('Password reset successful! Redirecting to login...');
+                showSuccess('Password reset successful! Redirecting to login...');
+                setSuccess('Success! Redirecting...');
                 setTimeout(() => router.push('/auth/email-login?mode=login'), 1800);
             } else {
-                setError(data.message || 'Failed to reset password');
+                const errMsg = data.message || 'Failed to reset password';
+                setError(errMsg);
+                showError(errMsg);
             }
         } catch {
-            setError('Cannot connect to server. Please ensure the backend is running.');
+            const errMsg = 'Cannot connect to server. Please ensure the backend is running.';
+            setError(errMsg);
+            showError(errMsg);
         } finally {
             setLoading(false);
         }
@@ -144,7 +151,6 @@ function ForgotPasswordPageInner() {
                         value={newPassword}
                         onChange={e => setNewPassword(e.target.value)}
                         className={styles.passwordField}
-                        required
                         autoComplete="new-password"
                         InputProps={{
                             endAdornment: (
@@ -170,7 +176,6 @@ function ForgotPasswordPageInner() {
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
                         className={styles.passwordField}
-                        required
                         autoComplete="new-password"
                         error={confirmPassword.length > 0 && newPassword !== confirmPassword}
                         helperText={confirmPassword.length > 0 && newPassword !== confirmPassword ? "Passwords don't match" : ""}

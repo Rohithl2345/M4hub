@@ -179,9 +179,6 @@ export const musicStyles = StyleSheet.create({
         fontSize: 12,
         color: '#666',
     },
-    spotifyButton: {
-        padding: 4,
-    },
     playButton: {
         marginLeft: 4,
     },

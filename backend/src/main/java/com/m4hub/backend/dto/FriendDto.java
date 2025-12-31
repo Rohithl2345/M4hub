@@ -8,9 +8,9 @@ public class FriendDto extends UserDto {
 
     public FriendDto(Long id, String phoneNumber, String email, String username, String name, String firstName,
             String lastName, String dateOfBirth, String gender, Boolean isVerified, Boolean isActive,
-            Boolean hasSeenTutorial) {
+            Boolean hasSeenTutorial, Boolean isOnline) {
         super(id, phoneNumber, email, username, name, firstName, lastName, dateOfBirth, gender, isVerified, isActive,
-                hasSeenTutorial);
+                hasSeenTutorial, isOnline);
     }
 
     public String getLastMessageContent() {
@@ -44,6 +44,7 @@ public class FriendDto extends UserDto {
                 user.getGender(),
                 user.getIsVerified(),
                 user.getIsActive(),
-                user.getHasSeenTutorial());
+                user.getHasSeenTutorial(),
+                user.getIsOnline());
     }
 }

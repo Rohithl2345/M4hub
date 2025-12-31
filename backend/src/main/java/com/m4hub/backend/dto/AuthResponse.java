@@ -1,11 +1,16 @@
 package com.m4hub.backend.dto;
 
+/**
+ * Enhanced Auth Response with JWT and refresh token support
+ */
 public class AuthResponse {
     private boolean success;
     private String message;
-    private String token;
+    private String token; // JWT access token
+    private String refreshToken; // JWT refresh token
     private UserDto user;
 
+    // Constructors
     public AuthResponse() {
     }
 
@@ -18,6 +23,14 @@ public class AuthResponse {
         this.success = success;
         this.message = message;
         this.token = token;
+        this.user = user;
+    }
+
+    public AuthResponse(boolean success, String message, String token, String refreshToken, UserDto user) {
+        this.success = success;
+        this.message = message;
+        this.token = token;
+        this.refreshToken = refreshToken;
         this.user = user;
     }
 
@@ -44,6 +57,14 @@ public class AuthResponse {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 
     public UserDto getUser() {

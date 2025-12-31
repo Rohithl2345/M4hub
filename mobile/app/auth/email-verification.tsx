@@ -79,7 +79,7 @@ export default function EmailVerificationScreen() {
 
         setIsLoading(true);
         try {
-            const data = await authService.verifyEmailOtp(email, verificationCode, password);
+            const data = await authService.verifyEmailOtp(email, verificationCode, password, 'mobile');
             if (data.success) {
                 showSuccess('Email verified successfully!');
                 dispatch(setCredentials({ token: data.token!, user: data.user }));

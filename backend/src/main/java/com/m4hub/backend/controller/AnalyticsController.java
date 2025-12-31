@@ -65,7 +65,8 @@ public class AnalyticsController {
             return ResponseEntity.ok(analytics);
         } catch (Exception e) {
             logger.error("Error fetching usage", e);
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "An unexpected error occurred. Please try again later."));
         }
     }
 
@@ -80,7 +81,12 @@ public class AnalyticsController {
         } catch (Exception e) {
             logger.error("Error fetching hub analytics", e);
             return ResponseEntity.status(500)
-                    .body(new ApiResponse<>(false, "Error fetching analytics: " + e.getMessage(), null));
+                    .body(new ApiResponse<>(false, "Unable to fetch analytics data at this time.", null));
         }
+    }
+
+    @GetMapping("/registrations")
+    public ResponseEntity<Map<String, Long>> getRegistrationStats() {
+        return ResponseEntity.ok(analyticsService.getRegistrationStats());
     }
 }

@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions, RefreshControl, ActivityIndicator, Modal, Text } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
@@ -6,7 +7,6 @@ import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { HubHeaderBackground } from '@/components/HubHeaderBackground';
-import { useState, useEffect } from 'react';
 import { analyticsService, HubAnalytics } from '@/services/analytics.service';
 import storageService from '@/services/storage.service';
 import BarChart from 'react-native-chart-kit/dist/BarChart';
@@ -24,7 +24,7 @@ import Reanimated, {
   withDelay,
 } from 'react-native-reanimated';
 
-function MagicParticle({ index }: { index: number }) {
+const MagicParticle = React.memo(({ index }: { index: number }) => {
   const translateY = useSharedValue(0);
   const opacity = useSharedValue(0);
   const posX = ((index * 13 + 7) % 100) / 100 * width;
@@ -68,7 +68,7 @@ function MagicParticle({ index }: { index: number }) {
       ]}
     />
   );
-}
+});
 // Magic Background removed from page, now restricted to Sidebar only.
 
 const { width, height } = Dimensions.get('window');
@@ -134,7 +134,7 @@ export default function DashboardScreen() {
     setRefreshing(false);
   };
 
-  const features = [
+  const features = useMemo(() => [
     {
       id: 'music',
       title: 'Music',
@@ -171,9 +171,9 @@ export default function DashboardScreen() {
       color: '#ef4444',
       route: '/news',
     },
-  ];
+  ], []);
 
-  const chartConfig = {
+  const chartConfig = useMemo(() => ({
     backgroundGradientFrom: 'transparent',
     backgroundGradientTo: 'transparent',
     backgroundGradientFromOpacity: 0,
@@ -193,7 +193,7 @@ export default function DashboardScreen() {
     useShadowColorFromDataset: false,
     fillShadowGradient: '#7c3aed',
     fillShadowGradientOpacity: 0.1,
-  };
+  }), [isDark]);
 
   return (
     <ThemedView style={styles.container}>
@@ -382,18 +382,32 @@ export default function DashboardScreen() {
                     <ThemedText style={styles.chartTitle}>Time Spent (Minutes)</ThemedText>
                     <BarChart
                       data={{
-                        labels: analyticsData.tabAnalytics.map(t => t.name),
+                        labels: analyticsData.tabAnalytics.map(t => {
+                          // Shorten labels for mobile
+                          const name = t.name;
+                          if (name.length > 8) return name.substring(0, 7) + '.';
+                          return name;
+                        }),
                         datasets: [{
-                          data: analyticsData.tabAnalytics.map(t => Math.round(t.totalSeconds / 60))
+                          data: analyticsData.tabAnalytics.map(t => Math.max(1, Math.round(t.totalSeconds / 60)))
                         }]
                       }}
-                      width={width - 72}
-                      height={180}
+                      width={width - 64}
+                      height={220}
                       yAxisLabel=""
-                      yAxisSuffix=""
-                      chartConfig={chartConfig}
+                      yAxisSuffix="m"
+                      chartConfig={{
+                        ...chartConfig,
+                        barPercentage: 0.6,
+                        propsForLabels: {
+                          fontSize: 10,
+                          fontWeight: '600',
+                        },
+                      }}
                       style={styles.chart}
-                      verticalLabelRotation={30}
+                      verticalLabelRotation={0}
+                      fromZero
+                      showValuesOnTopOfBars
                     />
                   </View>
                 )}
@@ -402,20 +416,23 @@ export default function DashboardScreen() {
                   <View style={{ width: '100%', alignItems: 'center' }}>
                     <ThemedText style={styles.chartTitle}>Usage Distribution</ThemedText>
                     <PieChart
-                      data={analyticsData.tabAnalytics.map(t => ({
-                        name: t.name,
-                        population: Math.round(t.totalSeconds / 60),
-                        color: t.color || '#6366f1',
-                        legendFontColor: isDark ? '#cbd5e1' : '#64748b',
-                        legendFontSize: 12
+                      data={analyticsData.tabAnalytics.map((t, idx) => ({
+                        name: t.name.length > 10 ? t.name.substring(0, 9) + '.' : t.name,
+                        population: Math.max(1, Math.round(t.totalSeconds / 60)),
+                        color: ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4'][idx % 7],
+                        legendFontColor: isDark ? '#cbd5e1' : '#475569',
+                        legendFontSize: 11,
+                        legendFontWeight: '600',
                       }))}
-                      width={width - 72}
-                      height={160}
+                      width={width - 64}
+                      height={180}
                       chartConfig={chartConfig}
                       accessor="population"
                       backgroundColor="transparent"
-                      paddingLeft="15"
+                      paddingLeft="0"
+                      center={[10, 0]}
                       absolute
+                      hasLegend
                     />
                   </View>
                 )}
@@ -426,32 +443,35 @@ export default function DashboardScreen() {
                     <LineChart
                       data={{
                         labels: timeframe === 'monthly'
-                          ? ['3W Ago', '2W Ago', 'Last W', 'This W']
+                          ? ['3W', '2W', '1W', 'Now']
                           : timeframe === 'yearly'
-                            ? Array.from({ length: 12 }, (_, i) => {
-                              const d = new Date();
-                              d.setMonth(d.getMonth() - (11 - i));
-                              return d.toLocaleDateString('en-US', { month: 'short' });
-                            })
-                            : Array.from({ length: 7 }, (_, i) => {
-                              const d = new Date();
-                              d.setDate(d.getDate() - (6 - i));
-                              return d.toLocaleDateString('en-US', { weekday: 'short' });
-                            }),
+                            ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+                            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                         datasets: [{
                           data: analyticsData.weeklyActivity && analyticsData.weeklyActivity.length > 0
-                            ? analyticsData.weeklyActivity
+                            ? analyticsData.weeklyActivity.map(v => Math.max(0, v))
                             : (timeframe === 'monthly' ? [0, 0, 0, 0] : (timeframe === 'yearly' ? new Array(12).fill(0) : new Array(7).fill(0)))
                         }]
                       }}
-                      width={width - 72}
-                      height={180}
+                      width={width - 64}
+                      height={220}
+                      yAxisSuffix="m"
                       chartConfig={{
                         ...chartConfig,
                         color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+                        propsForLabels: {
+                          fontSize: 10,
+                          fontWeight: '600',
+                        },
+                        propsForDots: {
+                          r: '4',
+                          strokeWidth: '2',
+                          stroke: '#8b5cf6',
+                        },
                       }}
                       bezier
                       style={styles.chart}
+                      fromZero
                     />
                   </View>
                 )}

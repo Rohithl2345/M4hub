@@ -101,6 +101,14 @@ export const newsStyles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 32,
     },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        marginTop: 24,
+        marginBottom: 8,
+    },
     sectionTitle: {
         fontSize: 20,
         fontWeight: '700',

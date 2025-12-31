@@ -41,7 +41,8 @@ public class PaymentController {
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.noContent().build());
         } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(401)
+                    .body(Map.of("success", false, "message", "Authentication or session error. Please try again."));
         }
     }
 
@@ -60,7 +61,8 @@ public class PaymentController {
                     ifscCode, accountHolderName, upiPin);
             return ResponseEntity.ok(account);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "Transaction failed to initialize. Please try again later."));
         }
     }
 
@@ -90,7 +92,8 @@ public class PaymentController {
             Transaction tx = paymentService.transferMoney(user, receiverId, amount, upiPin, description);
             return ResponseEntity.ok(tx);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Transaction verification failed."));
         }
     }
 
@@ -110,7 +113,8 @@ public class PaymentController {
                     description);
             return ResponseEntity.ok(tx);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Unable to list transactions."));
         }
     }
 
@@ -120,7 +124,7 @@ public class PaymentController {
             User user = getUserFromToken(authHeader);
             return ResponseEntity.ok(paymentService.getTransactionHistory(user));
         } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized access."));
         }
     }
 

@@ -24,6 +24,7 @@ export default function ProfileSetupScreen() {
     const [lastName, setLastName] = useState('');
     const [username, setUsername] = useState('');
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+    const [email, setEmail] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [dateOfBirth, setDateOfBirth] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -38,6 +39,13 @@ export default function ProfileSetupScreen() {
         }, 10000);
         return () => clearInterval(interval);
     }, []);
+
+    // Pre-fill email from user data
+    useEffect(() => {
+        if (user?.email) {
+            setEmail(user.email);
+        }
+    }, [user]);
 
     const checkUsername = async (value: string) => {
         if (value.length < 3) {
@@ -84,19 +92,22 @@ export default function ProfileSetupScreen() {
 
         setIsLoading(true);
         try {
-            const response = await axios.put(
-                `${APP_CONFIG.API_URL}/api/users/profile`,
-                {
-                    firstName,
-                    lastName,
-                    username: username.toLowerCase().trim(),
-                    phoneNumber,
-                    dateOfBirth: formatDate(dateOfBirth),
-                    gender,
-                },
+            const payload = {
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                username: username.toLowerCase().trim(),
+                email: email.trim() || null,
+                phoneNumber: phoneNumber.trim() || null,
+                dateOfBirth: formatDate(dateOfBirth),
+                gender,
+            };
+
+            const response = await axios.post(
+                `${APP_CONFIG.API_URL}/api/users/profile/setup`,
+                payload,
                 {
                     headers: {
-                        Authorization: token,
+                        Authorization: `Bearer ${token}`,
                     },
                 }
             );
@@ -232,6 +243,20 @@ export default function ProfileSetupScreen() {
                                     {usernameStatus === 'taken' && (
                                         <ThemedText style={styles.errorText}>Username is already taken</ThemedText>
                                     )}
+                                </View>
+
+                                {/* Email Address (Read Only) */}
+                                <View style={styles.inputWrapper}>
+                                    <ThemedText style={styles.label}>EMAIL ADDRESS</ThemedText>
+                                    <View style={[styles.inputContainer, { backgroundColor: '#f1f5f9', opacity: 0.8 }]}>
+                                        <Ionicons name="mail-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={[styles.input, { color: '#64748b' }]}
+                                            value={email}
+                                            editable={false}
+                                        />
+                                        <Ionicons name="lock-closed" size={16} color="#94a3b8" />
+                                    </View>
                                 </View>
 
                                 {/* Phone Number */}

@@ -15,9 +15,11 @@ import {
 } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import styles from './phone-login.module.css';
+import { useToast } from '@/components/ToastProvider';
 
 export default function PhoneLoginPage() {
     const router = useRouter();
+    const { showSuccess, showError } = useToast();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [countryCode, setCountryCode] = useState('+91');
     const [error, setError] = useState('');
@@ -42,10 +44,13 @@ export default function PhoneLoginPage() {
 
             if (result.success) {
                 logger.debug('Redirecting to OTP verification');
+                showSuccess('OTP sent successfully!');
                 router.push(`/auth/verify-otp?phone=${encodeURIComponent(fullPhoneNumber)}`);
             } else {
                 logger.error('OTP send failed', { message: result.message });
-                setError(result.message || 'Failed to send OTP');
+                const errMsg = result.message || 'Failed to send OTP';
+                setError(errMsg);
+                showError(errMsg);
             }
         } catch (err: unknown) {
             // Define possible RTK Query error shape
@@ -70,11 +75,12 @@ export default function PhoneLoginPage() {
             logger.error('Failed to send OTP', { error: errorMessage });
 
             // Check if it's a network error
+            let finalError = errorMessage;
             if (errorStatus === 'FETCH_ERROR' || !errorStatus) {
-                setError('Cannot connect to server. Please ensure the backend is running.');
-            } else {
-                setError(errorMessage);
+                finalError = 'Cannot connect to server. Please ensure the backend is running.';
             }
+            setError(finalError);
+            showError(finalError);
         }
     };
 

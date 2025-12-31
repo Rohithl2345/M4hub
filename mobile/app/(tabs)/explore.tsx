@@ -14,6 +14,7 @@ import { setSidebarOpen } from '@/store/slices/uiSlice';
 import { Stack, useRouter } from 'expo-router';
 import { HubHeaderBackground } from '@/components/HubHeaderBackground';
 import { LogoutModal } from '@/components/LogoutModal';
+import { ConfirmationModal } from '@/components/ConfirmationModal';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -22,10 +23,15 @@ export default function ProfileScreen() {
   const token = useAppSelector(selectToken);
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phoneNumber || '');
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
+  const [isDangerZoneExpanded, setIsDangerZoneExpanded] = useState(false);
+  const [pauseDays, setPauseDays] = useState<number>(30);
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const theme = useAppTheme();
   const isDark = theme === 'dark';
 
@@ -49,49 +55,7 @@ export default function ProfileScreen() {
       router.replace('/auth/email-login?mode=login');
     }, 200);
   };
-  const handleUpdateEmail = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Email cannot be empty');
-      return;
-    }
-
-    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
-    setIsUpdating(true);
-
-    try {
-      const response = await axios.put(
-        `${APP_CONFIG.API_URL}/api/users/profile/update-email`,
-        { email: email.trim() },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (response.data.success && response.data.data) {
-        dispatch(setCredentials({
-          token: token!,
-          user: response.data.data,
-        }));
-        setIsEditingEmail(false);
-        Alert.alert('Success', 'Email updated successfully');
-      } else {
-        Alert.alert('Error', response.data.message || 'Failed to update email');
-      }
-    } catch (error: any) {
-      console.error('Update email error:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to update email');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
+  // Phone number update handler
   const handleUpdatePhone = async () => {
     if (!phone.trim()) {
       Alert.alert('Error', 'Phone number cannot be empty');
@@ -132,6 +96,46 @@ export default function ProfileScreen() {
       Alert.alert('Error', error.response?.data?.message || 'Failed to update phone number');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const confirmDeleteAccount = async () => {
+    setShowDeleteModal(false);
+    setIsDeleting(true);
+    try {
+      const response = await axios.delete(`${APP_CONFIG.API_URL}/api/users/account`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        data: { type: 'delete' }
+      });
+      if (response.data.success) {
+        Alert.alert('Success', 'Your account has been permanently deleted.');
+        dispatch(logout());
+        router.replace('/auth/email-login?mode=signup');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to delete account');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const confirmPauseAccount = async () => {
+    setShowPauseModal(false);
+    setIsPausing(true);
+    try {
+      const response = await axios.delete(`${APP_CONFIG.API_URL}/api/users/account`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        data: { type: 'pause', days: pauseDays }
+      });
+      if (response.data.success) {
+        Alert.alert('Success', `Account paused for ${pauseDays} days.`);
+        dispatch(logout());
+        router.replace('/auth/email-login?mode=login');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to pause account');
+    } finally {
+      setIsPausing(false);
     }
   };
 
@@ -329,12 +333,125 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[
+              styles.dangerHeaderBanner,
+              { borderColor: '#fee2e2', backgroundColor: isDark ? '#1a0d0d' : '#fef2f2' },
+              isDangerZoneExpanded && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
+            ]}
+            onPress={() => setIsDangerZoneExpanded(!isDangerZoneExpanded)}
+          >
+            <View style={styles.dangerHeaderLeft}>
+              <View style={[styles.menuIcon, { backgroundColor: '#fee2e2' }]}>
+                <Ionicons name="warning" size={20} color="#ef4444" />
+              </View>
+              <View>
+                <ThemedText style={{ color: '#ef4444', fontWeight: '800', fontSize: 16 }}>Danger Zone</ThemedText>
+                <Text style={{ fontSize: 11, color: '#ef4444', opacity: 0.7 }}>Sensitive account actions</Text>
+              </View>
+            </View>
+            <Ionicons
+              name={isDangerZoneExpanded ? "chevron-up" : "chevron-down"}
+              size={20}
+              color="#ef4444"
+            />
+          </TouchableOpacity>
+
+          {isDangerZoneExpanded && (
+            <View style={[
+              styles.dangerContent,
+              { borderColor: '#fee2e2', backgroundColor: isDark ? '#1a0d0d' : '#fef2f2' }
+            ]}>
+              {/* Pause Account Options */}
+              <View style={{ marginBottom: 20 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                  <Ionicons name="pause-circle-outline" size={18} color={isDark ? '#cbd5e1' : '#475569'} />
+                  <ThemedText style={{ fontSize: 14, fontWeight: '700' }}>Temporarily Pause Account</ThemedText>
+                </View>
+
+                <View style={styles.pauseOptionsGrid}>
+                  {[30, 60, 90].map(days => (
+                    <TouchableOpacity
+                      key={days}
+                      style={[
+                        styles.pauseOption,
+                        pauseDays === days && styles.pauseOptionActive,
+                        isDark && { backgroundColor: '#0f172a', borderColor: '#334155' },
+                        pauseDays === days && { borderColor: '#7c3aed' }
+                      ]}
+                      onPress={() => setPauseDays(days)}
+                    >
+                      <Text style={[
+                        styles.pauseOptionText,
+                        pauseDays === days && styles.pauseOptionTextActive,
+                        isDark && { color: '#94a3b8' },
+                        pauseDays === days && { color: '#7c3aed' }
+                      ]}>{days} Days</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: isDark ? '#1e293b' : '#334155' }]}
+                  onPress={() => setShowPauseModal(true)}
+                  disabled={isPausing || isDeleting}
+                >
+                  <Text style={styles.actionBtnText}>{isPausing ? 'Processing...' : 'Deactivate Temporarily'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: 'rgba(239, 68, 68, 0.1)', marginLeft: 0, marginBottom: 20 }]} />
+
+              {/* Permanent Delete */}
+              <View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+                  <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                  <ThemedText style={{ fontSize: 14, fontWeight: '700', color: '#ef4444' }}>Permanent Deletion</ThemedText>
+                </View>
+                <Text style={{ fontSize: 12, color: '#ef4444', opacity: 0.8, marginBottom: 16 }}>
+                  All your data, music preferences, and history will be cleared permanently.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: '#ef4444' }]}
+                  onPress={() => setShowDeleteModal(true)}
+                  disabled={isDeleting || isPausing}
+                >
+                  <Text style={styles.actionBtnText}>{isDeleting ? 'Deleting Account...' : 'Delete My Account'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+
         <View style={{ height: 40 }} />
       </ScrollView>
       <LogoutModal
         visible={showLogoutModal}
         onCancel={() => setShowLogoutModal(false)}
         onConfirm={confirmLogout}
+        isDark={isDark}
+      />
+      <ConfirmationModal
+        visible={showPauseModal}
+        title="Pause Account?"
+        message={`You are about to deactivate your account for ${pauseDays} days. You will be logged out and cannot login until this period ends.`}
+        confirmLabel="Pause Now"
+        confirmColor={['#7c3aed', '#6d28d9']}
+        icon="pause-circle"
+        onCancel={() => setShowPauseModal(false)}
+        onConfirm={confirmPauseAccount}
+        isDark={isDark}
+      />
+      <ConfirmationModal
+        visible={showDeleteModal}
+        title="Permanent Deletion?"
+        message="Are you absolutely sure? This action is irreversible. All your data, playlists, and settings will be lost forever."
+        confirmLabel="Delete Forever"
+        confirmColor={['#ef4444', '#dc2626']}
+        icon="warning"
+        onCancel={() => setShowDeleteModal(false)}
+        onConfirm={confirmDeleteAccount}
         isDark={isDark}
       />
     </ThemedView>
@@ -497,5 +614,72 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1e293b',
+  },
+  dangerHeaderBanner: {
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dangerHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dangerContent: {
+    padding: 16,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  dangerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  pauseOptionsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  pauseOption: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pauseOptionActive: {
+    backgroundColor: 'rgba(124, 58, 237, 0.05)',
+  },
+  pauseOptionText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#64748b',
+  },
+  pauseOptionTextActive: {
+    color: '#7c3aed',
+  },
+  actionBtn: {
+    width: '100%',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

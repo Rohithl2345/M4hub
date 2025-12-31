@@ -131,100 +131,103 @@ export default function MusicScreen() {
         }
     };
 
-    const renderTrackItem = ({ item, index }: { item: Track; index: number }) => (
-        <TouchableOpacity
-            onPress={() => playTrack(item, index)}
-            activeOpacity={0.7}
-            style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: currentTrack?.id === item.id
-                    ? (isDark ? '#1e3a2e' : '#f0fdf4')
-                    : (isDark ? '#1e293b' : '#ffffff'),
-                padding: 12,
-                marginHorizontal: 16,
-                marginVertical: 4,
-                borderRadius: 12,
-                borderWidth: currentTrack?.id === item.id ? 1 : 0,
-                borderColor: '#10b981',
-            }}
-        >
-            {/* Green Gradient Icon */}
-            <LinearGradient
-                colors={['#10b981', '#059669']}
+    const renderTrackItem = useCallback(({ item, index }: { item: Track; index: number }) => {
+        const isActive = currentTrack?.id === item.id;
+        return (
+            <TouchableOpacity
+                onPress={() => playTrack(item, index)}
+                activeOpacity={0.7}
                 style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 10,
-                    justifyContent: 'center',
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    marginRight: 12,
+                    backgroundColor: isActive
+                        ? (isDark ? '#1e3a2e' : '#f0fdf4')
+                        : (isDark ? '#1e293b' : '#ffffff'),
+                    padding: 12,
+                    marginHorizontal: 16,
+                    marginVertical: 4,
+                    borderRadius: 12,
+                    borderWidth: isActive ? 1 : 0,
+                    borderColor: '#10b981',
                 }}
             >
-                <Ionicons name="musical-note" size={24} color="white" />
-            </LinearGradient>
-
-            {/* Track Info */}
-            <View style={{ flex: 1, marginRight: 8 }}>
-                <Text
-                    numberOfLines={1}
+                {/* Green Gradient Icon */}
+                <LinearGradient
+                    colors={['#10b981', '#059669']}
                     style={{
-                        fontSize: 15,
-                        fontWeight: '600',
-                        color: isDark ? '#f8fafc' : '#1e293b',
-                        marginBottom: 4,
+                        width: 48,
+                        height: 48,
+                        borderRadius: 10,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginRight: 12,
                     }}
                 >
-                    {item.name}
-                </Text>
+                    <Ionicons name="musical-note" size={24} color="white" />
+                </LinearGradient>
+
+                {/* Track Info */}
+                <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text
+                        numberOfLines={1}
+                        style={{
+                            fontSize: 15,
+                            fontWeight: '600',
+                            color: isDark ? '#f8fafc' : '#1e293b',
+                            marginBottom: 4,
+                        }}
+                    >
+                        {item.name}
+                    </Text>
+                    <Text
+                        numberOfLines={1}
+                        style={{
+                            fontSize: 13,
+                            color: isDark ? '#94a3b8' : '#64748b',
+                        }}
+                    >
+                        {item.artist_name}
+                    </Text>
+                </View>
+
+                {/* Duration */}
                 <Text
-                    numberOfLines={1}
                     style={{
-                        fontSize: 13,
+                        fontSize: 12,
                         color: isDark ? '#94a3b8' : '#64748b',
+                        marginRight: 8,
+                        minWidth: 40,
+                        textAlign: 'right',
                     }}
                 >
-                    {item.artist_name}
+                    {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, '0')}
                 </Text>
-            </View>
 
-            {/* Duration */}
-            <Text
-                style={{
-                    fontSize: 12,
-                    color: isDark ? '#94a3b8' : '#64748b',
-                    marginRight: 8,
-                    minWidth: 40,
-                    textAlign: 'right',
-                }}
-            >
-                {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, '0')}
-            </Text>
-
-            {/* Action Buttons */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <TouchableOpacity onPress={() => toggleFavorite(item)}>
+                {/* Action Buttons */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity onPress={() => toggleFavorite(item)}>
+                        <Ionicons
+                            name={item.isFavorite ? 'heart' : 'heart-outline'}
+                            size={22}
+                            color={item.isFavorite ? '#ef4444' : '#94a3b8'}
+                        />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => toggleWishlist(item)}>
+                        <Ionicons
+                            name={item.isInWishlist ? 'bookmark' : 'bookmark-outline'}
+                            size={22}
+                            color={item.isInWishlist ? '#f59e0b' : '#94a3b8'}
+                        />
+                    </TouchableOpacity>
                     <Ionicons
-                        name={item.isFavorite ? 'heart' : 'heart-outline'}
-                        size={22}
-                        color={item.isFavorite ? '#ef4444' : '#94a3b8'}
+                        name={isActive && isPlaying ? 'pause-circle' : 'play-circle'}
+                        size={36}
+                        color="#10b981"
                     />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => toggleWishlist(item)}>
-                    <Ionicons
-                        name={item.isInWishlist ? 'bookmark' : 'bookmark-outline'}
-                        size={22}
-                        color={item.isInWishlist ? '#f59e0b' : '#94a3b8'}
-                    />
-                </TouchableOpacity>
-                <Ionicons
-                    name={currentTrack?.id === item.id && isPlaying ? 'pause-circle' : 'play-circle'}
-                    size={36}
-                    color="#10b981"
-                />
-            </View>
-        </TouchableOpacity>
-    );
+                </View>
+            </TouchableOpacity>
+        );
+    }, [currentTrack, isPlaying, isDark, playTrack, toggleFavorite, toggleWishlist]);
 
     const categories: { key: CategoryType; icon: string; label: string }[] = [
         { key: 'songs', icon: 'musical-notes', label: 'Songs' },
@@ -421,6 +424,10 @@ export default function MusicScreen() {
                     data={tracks}
                     renderItem={renderTrackItem}
                     keyExtractor={(item) => item.id.toString()}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
                     contentContainerStyle={{
                         paddingBottom: currentTrack ? 140 : 20,
                         paddingTop: 8

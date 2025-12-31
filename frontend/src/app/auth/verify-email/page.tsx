@@ -16,10 +16,12 @@ import {
 import AuthLayout from '../AuthLayout';
 import styles from '../email-login/email-login.module.css';
 import { env } from '@/utils/env';
+import { useToast } from '@/components/ToastProvider';
 
 function VerifyEmailContent() {
     const router = useRouter();
     const dispatch = useAppDispatch();
+    const { showSuccess, showError } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -100,7 +102,7 @@ function VerifyEmailContent() {
             const response = await fetch(`${env.apiUrl}/api/auth/verify-email-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, otpCode }),
+                body: JSON.stringify({ email, password, otpCode, registrationSource: 'web' }),
             });
 
             if (!response.ok) {
@@ -114,6 +116,7 @@ function VerifyEmailContent() {
             const data = await response.json();
 
             if (data.success) {
+                showSuccess('Email verified successfully!');
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 dispatch(setCredentials({ token: data.token, user: data.user }));
@@ -125,12 +128,16 @@ function VerifyEmailContent() {
                     router.push('/dashboard');
                 }
             } else {
-                setError(data.message || 'Invalid OTP code');
+                const msg = data.message || 'Invalid OTP code';
+                setError(msg);
+                showError(msg);
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
             }
         } catch {
-            setError('Cannot connect to server. Please ensure backend is running.');
+            const msg = 'Cannot connect to server. Please ensure backend is running.';
+            setError(msg);
+            showError(msg);
         } finally {
             setLoading(false);
         }
@@ -152,20 +159,25 @@ function VerifyEmailContent() {
             const data = await response.json();
 
             if (data.success) {
+                showSuccess('A new code has been sent to ' + email);
                 setTimer(60);
                 setCanResend(false);
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
                 setError('');
             } else {
-                setError(data.message || 'Failed to resend OTP');
+                const msg = data.message || 'Failed to resend OTP';
+                setError(msg);
+                showError(msg);
                 if (!data.message?.includes('wait')) {
                     setTimer(60);
                     setCanResend(false);
                 }
             }
         } catch {
-            setError('Network error. Please try again.');
+            const msg = 'Network error. Please try again.';
+            setError(msg);
+            showError(msg);
         } finally {
             setLoading(false);
         }

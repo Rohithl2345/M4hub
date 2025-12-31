@@ -4,14 +4,16 @@ public class VerifyEmailOtpRequest {
     private String email;
     private String password;
     private String otpCode;
+    private String registrationSource;
 
     public VerifyEmailOtpRequest() {
     }
 
-    public VerifyEmailOtpRequest(String email, String password, String otpCode) {
+    public VerifyEmailOtpRequest(String email, String password, String otpCode, String registrationSource) {
         this.email = email;
         this.password = password;
         this.otpCode = otpCode;
+        this.registrationSource = registrationSource;
     }
 
     public String getEmail() {
@@ -36,5 +38,13 @@ public class VerifyEmailOtpRequest {
 
     public void setOtpCode(String otpCode) {
         this.otpCode = otpCode;
+    }
+
+    public String getRegistrationSource() {
+        return registrationSource;
+    }
+
+    public void setRegistrationSource(String registrationSource) {
+        this.registrationSource = registrationSource;
     }
 }

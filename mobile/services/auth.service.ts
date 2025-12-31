@@ -11,6 +11,8 @@ export interface AuthResponse {
     message: string;
     token?: string;
     user?: any;
+    code?: string; // Error code like 'INVALID_CREDENTIALS', 'EMAIL_NOT_VERIFIED', etc.
+    status?: number; // HTTP status code (401, 403, 429, etc.)
 }
 
 class AuthService {
@@ -42,7 +44,12 @@ class AuthService {
             const data: AuthResponse = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to send OTP');
+                return {
+                    success: false,
+                    message: data.message || 'Failed to send OTP',
+                    status: response.status,
+                    code: data.code || this.getErrorCodeFromStatus(response.status)
+                };
             }
 
             config.log('OTP sent successfully');
@@ -56,12 +63,12 @@ class AuthService {
     /**
      * Verify Email OTP
      */
-    async verifyEmailOtp(email: string, otpCode: string, password?: string): Promise<AuthResponse> {
+    async verifyEmailOtp(email: string, otpCode: string, password?: string, source?: string): Promise<AuthResponse> {
         try {
             config.log('Verifying Email OTP for:', email);
 
             const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.VERIFY_EMAIL_OTP}`;
-            const payload = { email, otpCode, password };
+            const payload = { email, otpCode, password, registrationSource: source };
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -74,7 +81,12 @@ class AuthService {
             const data: AuthResponse = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to verify OTP');
+                return {
+                    success: false,
+                    message: data.message || 'Failed to verify OTP',
+                    status: response.status,
+                    code: data.code || this.getErrorCodeFromStatus(response.status)
+                };
             }
 
             config.log('Email verified successfully');
@@ -85,9 +97,6 @@ class AuthService {
         }
     }
 
-    /**
-     * Login with Email/Username and Password
-     */
     async login(identifier: string, password: string): Promise<AuthResponse> {
         try {
             config.log('Logging in user:', identifier);
@@ -103,17 +112,69 @@ class AuthService {
                 body: JSON.stringify(payload),
             });
 
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                config.error('Non-JSON response received:', await response.text());
+                return {
+                    success: false,
+                    message: 'Server error. Please try again later.',
+                    status: response.status,
+                    code: 'SERVER_ERROR'
+                };
+            }
+
             const data: AuthResponse = await response.json();
 
+            // Capture HTTP status code for error handling
             if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
+                // Include the HTTP status code and any error code from backend
+                return {
+                    success: false,
+                    message: data.message || 'Login failed',
+                    status: response.status,
+                    code: data.code || this.getErrorCodeFromStatus(response.status)
+                };
+            }
+
+            // Ensure we have the required fields for successful login
+            if (!data.token || !data.user) {
+                config.error('Login response missing required fields:', data);
+                return {
+                    success: false,
+                    message: 'Invalid server response. Please try again.',
+                    status: 500,
+                    code: 'INVALID_RESPONSE'
+                };
             }
 
             config.log('Login successful');
-            return data;
-        } catch (err) {
+            return {
+                success: true,
+                message: data.message || 'Login successful',
+                token: data.token,
+                user: data.user
+            };
+        } catch (err: any) {
             config.error('Error during login:', err);
+            // Re-throw to let the calling code handle it with ErrorHandler
             throw err;
+        }
+    }
+
+    /**
+     * Helper method to map HTTP status codes to error codes
+     */
+    private getErrorCodeFromStatus(status: number): string {
+        switch (status) {
+            case 401:
+                return 'INVALID_CREDENTIALS';
+            case 403:
+                return 'EMAIL_NOT_VERIFIED';
+            case 429:
+                return 'RATE_LIMITED';
+            default:
+                return 'UNKNOWN_ERROR';
         }
     }
 
@@ -138,7 +199,12 @@ class AuthService {
             const data: AuthResponse = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to resend OTP');
+                return {
+                    success: false,
+                    message: data.message || 'Failed to resend OTP',
+                    status: response.status,
+                    code: data.code || this.getErrorCodeFromStatus(response.status)
+                };
             }
 
             config.log('OTP resent successfully');
@@ -170,7 +236,12 @@ class AuthService {
             const data: AuthResponse = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to reset password');
+                return {
+                    success: false,
+                    message: data.message || 'Failed to reset password',
+                    status: response.status,
+                    code: data.code || this.getErrorCodeFromStatus(response.status)
+                };
             }
 
             return data;
@@ -232,7 +303,12 @@ class AuthService {
             const data: AuthResponse = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to reset password');
+                return {
+                    success: false,
+                    message: data.message || 'Failed to reset password',
+                    status: response.status,
+                    code: data.code || this.getErrorCodeFromStatus(response.status)
+                };
             }
 
             config.log('Password reset successfully');

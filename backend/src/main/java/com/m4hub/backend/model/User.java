@@ -35,6 +35,9 @@ public class User {
     @Column(nullable = false)
     private Boolean isVerified = false;
 
+    @Column(nullable = false)
+    private Boolean isOnline = false;
+
     private Instant createdAt = Instant.now();
 
     private Instant lastLoginAt;
@@ -49,8 +52,27 @@ public class User {
     @Column(name = "session_token")
     private String sessionToken;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "refresh_token", length = 1000)
+    private String refreshToken;
+
+    @Column(name = "session_token_expiry")
+    private Instant sessionTokenExpiry;
+
+    @Column(name = "refresh_token_expiry")
+    private Instant refreshTokenExpiry;
+
     @Column(name = "has_seen_tutorial")
     private Boolean hasSeenTutorial = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private Boolean isDeleted = false;
+
+    @Column(name = "deactivated_until")
+    private Instant deactivatedUntil;
+
+    @Column(name = "registration_source")
+    private String registrationSource; // "web" or "mobile"
 
     // Constructors
     public User() {
@@ -134,7 +156,7 @@ public class User {
     }
 
     public Boolean getIsActive() {
-        return isActive;
+        return isActive != null ? isActive : true;
     }
 
     public void setIsActive(Boolean isActive) {
@@ -142,11 +164,19 @@ public class User {
     }
 
     public Boolean getIsVerified() {
-        return isVerified;
+        return isVerified != null ? isVerified : false;
     }
 
     public void setIsVerified(Boolean isVerified) {
         this.isVerified = isVerified;
+    }
+
+    public Boolean getIsOnline() {
+        return isOnline != null ? isOnline : false;
+    }
+
+    public void setIsOnline(Boolean isOnline) {
+        this.isOnline = isOnline;
     }
 
     public Instant getCreatedAt() {
@@ -187,5 +217,53 @@ public class User {
 
     public void setHasSeenTutorial(Boolean hasSeenTutorial) {
         this.hasSeenTutorial = hasSeenTutorial;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public Instant getSessionTokenExpiry() {
+        return sessionTokenExpiry;
+    }
+
+    public void setSessionTokenExpiry(Instant sessionTokenExpiry) {
+        this.sessionTokenExpiry = sessionTokenExpiry;
+    }
+
+    public Instant getRefreshTokenExpiry() {
+        return refreshTokenExpiry;
+    }
+
+    public void setRefreshTokenExpiry(Instant refreshTokenExpiry) {
+        this.refreshTokenExpiry = refreshTokenExpiry;
+    }
+
+    public Boolean getIsDeleted() {
+        return isDeleted != null ? isDeleted : false;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
+    public Instant getDeactivatedUntil() {
+        return deactivatedUntil;
+    }
+
+    public void setDeactivatedUntil(Instant deactivatedUntil) {
+        this.deactivatedUntil = deactivatedUntil;
+    }
+
+    public String getRegistrationSource() {
+        return registrationSource;
+    }
+
+    public void setRegistrationSource(String registrationSource) {
+        this.registrationSource = registrationSource;
     }
 }
