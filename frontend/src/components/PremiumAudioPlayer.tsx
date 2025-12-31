@@ -40,7 +40,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
     const [showQueue, setShowQueue] = useState(false);
 
     useEffect(() => {
-        if (audioRef.current && track) {
+        if (audioRef.current && track && track.audio) {
             audioRef.current.load();
 
             // Auto-play when track changes
