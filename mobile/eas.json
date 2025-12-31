@@ -6,14 +6,33 @@
     "build": {
         "development": {
             "developmentClient": true,
-            "distribution": "internal"
+            "distribution": "internal",
+            "android": {
+                "gradleCommand": ":app:assembleDebug"
+            }
         },
         "preview": {
             "android": {
                 "buildType": "apk"
+            },
+            "distribution": "internal"
+        },
+        "production": {
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://m4hub.onrender.com"
             }
         },
-        "production": {}
+        "production-aab": {
+            "android": {
+                "buildType": "app-bundle"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://m4hub.onrender.com"
+            }
+        }
     },
     "submit": {
         "production": {}
