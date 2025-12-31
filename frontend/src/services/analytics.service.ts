@@ -16,6 +16,11 @@ export interface HubAnalyticsData {
         weekly: number[];
         monthly: number[];
     };
+    tabAnalytics: {
+        name: string;
+        totalSeconds: number;
+    }[];
+    weeklyActivity: number[];
 }
 
 class AnalyticsService {

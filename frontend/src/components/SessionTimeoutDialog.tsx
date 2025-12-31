@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import Box from '@mui/material/Box';
@@ -57,16 +57,19 @@ export default function SessionTimeoutDialog({
     warningThreshold = 120 // default 2 minutes
 }: SessionTimeoutDialogProps) {
     const [countdown, setCountdown] = useState(remainingTime);
-    const progress = (countdown / warningThreshold) * 100;
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
+    if (open !== prevOpen) {
+        setPrevOpen(open);
         if (open) {
             setCountdown(remainingTime);
         }
-    }, [open, remainingTime]);
+    }
+
+    const progress = (countdown / warningThreshold) * 100;
 
     useEffect(() => {
-        if (!open || countdown <= 0) return;
+        if (!open) return;
 
         const timer = setInterval(() => {
             setCountdown((prev) => {
@@ -80,7 +83,7 @@ export default function SessionTimeoutDialog({
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [open, countdown, onLogout]);
+    }, [open, onLogout]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
