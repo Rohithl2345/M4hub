@@ -28,7 +28,10 @@ public class DataInitializer implements CommandLineRunner {
 
         try {
             logger.info("Starting initial music synchronization...");
-            // Sync 200 songs for a rich database
+            // First try to seed from local JSON for reliability
+            musicService.seedSongsFromJson();
+
+            // Then try to fetch fresh content from API
             musicService.syncSongsFromJamendo(200);
         } catch (Exception e) {
             logger.error("Failed to perform initial music synchronization: {}", e.getMessage());

@@ -18,6 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.core.io.ClassPathResource;
+import java.io.InputStream;
+
 @Service
 public class MusicService {
     private static final Logger logger = LoggerFactory.getLogger(MusicService.class);
@@ -27,6 +32,7 @@ public class MusicService {
     private final WishlistRepository wishlistRepository;
     private final RestTemplate restTemplate;
     private final DataGenerator dataGenerator;
+    private final ObjectMapper objectMapper;
 
     @Value("${jamendo.api.client_id:56d30c95}")
     private String clientId;
@@ -35,12 +41,57 @@ public class MusicService {
             FavoriteRepository favoriteRepository,
             WishlistRepository wishlistRepository,
             RestTemplate restTemplate,
-            DataGenerator dataGenerator) {
+            DataGenerator dataGenerator,
+            ObjectMapper objectMapper) {
         this.songRepository = songRepository;
         this.favoriteRepository = favoriteRepository;
         this.wishlistRepository = wishlistRepository;
         this.restTemplate = restTemplate;
         this.dataGenerator = dataGenerator;
+        this.objectMapper = objectMapper;
+    }
+
+    @Transactional
+    public void seedSongsFromJson() {
+        if (songRepository.count() > 0) {
+            logger.info("Songs already exist in database. Skipping JSON seed.");
+            return;
+        }
+
+        try {
+            logger.info("Loading songs from simplified local JSON seed file...");
+            ClassPathResource resource = new ClassPathResource("songs.json");
+            if (!resource.exists()) {
+                logger.warn("songs.json not found in resources. Falling back to mock data.");
+                seedMockSongs();
+                return;
+            }
+
+            InputStream inputStream = resource.getInputStream();
+            List<Song> songs = objectMapper.readValue(inputStream, new TypeReference<List<Song>>() {
+            });
+
+            logger.info("Found {} songs in JSON file. Saving to database...", songs.size());
+
+            // Deduplicate and save
+            int savedCount = 0;
+            for (Song song : songs) {
+                if (songRepository.findByExternalId(song.getExternalId()).isEmpty()) {
+                    // Ensure ID is null so JPA generates a new one
+                    song.setId(null);
+                    songRepository.save(song);
+                    savedCount++;
+                }
+            }
+            logger.info("Successfully seeded {} songs from JSON.", savedCount);
+
+        } catch (Exception e) {
+            logger.error("Failed to seed songs from JSON: {}", e.getMessage(), e);
+            // Fallback to internal mock
+            if (songRepository.count() == 0) {
+                seedMockSongs();
+            }
+        }
     }
 
     @Transactional
@@ -83,30 +134,13 @@ public class MusicService {
                 logger.info("Sync complete. Saved {} new songs.", savedCount);
             }
         } catch (Exception e) {
-            logger.error("Error during Jamendo sync: {}. Will use mock data if needed.", e.getMessage());
+            logger.error("Error during Jamendo sync: {}. Will try local JSON seed.", e.getMessage());
+            seedSongsFromJson();
         }
 
-        // Fallback: If no songs in DB after sync attempt (API failure or suspension),
-        // add mock songs
+        // Fallback: If still no songs
         if (songRepository.count() == 0) {
-            logger.info("Adding mock fallback songs because database is empty...");
-            List<Song> mockSongs = new ArrayList<>();
-            mockSongs.add(new Song("Stellar Drift", "Solaris", "Space Dreams", 185,
-                    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-                    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400", "Lo-Fi", "mock-1"));
-            mockSongs.add(new Song("Neon Nights", "Cyber-A", "Synthwave 2077", 210,
-                    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-                    "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400", "Electronic", "mock-2"));
-            mockSongs.add(new Song("Midnight Piano", "Clara Oaks", "Pure Solitude", 145,
-                    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-                    "https://images.unsplash.com/photo-1520529611442-eabb01c5029c?w=400", "Classical", "mock-3"));
-
-            for (Song mock : mockSongs) {
-                if (songRepository.findByExternalId(mock.getExternalId()).isEmpty()) {
-                    songRepository.save(mock);
-                }
-            }
-            logger.info("Added 3 fallback mock songs.");
+            seedSongsFromJson();
         }
     }
 
