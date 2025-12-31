@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "vercel deploy --prebuilt --prod --archive=tgz",
+    "deploy": "vercel deploy --prod",
     "prepare": "husky"
   },
   "lint-staged": {
