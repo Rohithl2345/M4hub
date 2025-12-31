@@ -42,15 +42,22 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
     useEffect(() => {
         if (audioRef.current && track) {
             audioRef.current.load();
-            if (isPlaying) {
-                const playPromise = audioRef.current.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
+
+            // Auto-play when track changes
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        setIsPlaying(true);
+                        onPlayStateChange?.(true);
+                    })
+                    .catch(error => {
                         if (error.name !== 'AbortError') {
                             console.error('Playback error:', error);
+                            setIsPlaying(false);
+                            onPlayStateChange?.(false);
                         }
                     });
-                }
             }
         }
     }, [track]);
