@@ -2,13 +2,9 @@ name: Mobile Pipeline
 
 on:
   push:
-    branches: [ "main" ]
-    paths:
-      - 'mobile/**'
+    branches: [ "**" ] # Runs on ALL branches
   pull_request:
-    branches: [ "main" ]
-    paths:
-      - 'mobile/**'
+    branches: [ "main" ] # Runs on PRs targeting main
   workflow_dispatch:
     inputs:
       build_profile:
