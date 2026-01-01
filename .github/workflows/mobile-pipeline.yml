@@ -48,7 +48,7 @@ jobs:
         run: npx tsc --noEmit
 
   build-mobile:
-    name: 📱 Build with EAS
+    name: 📱 Manual Build (Preview/Prod)
     needs: [check-mobile]
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -74,3 +74,34 @@ jobs:
 
       - name: Build
         run: eas build --platform android --profile ${{ github.event.inputs.build_profile }} --non-interactive
+
+  deploy-to-playstore:
+    name: 🚀 Production Deploy (Play Store)
+    needs: [check-mobile]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: 📦 Build & 🚀 Submit to Play Store
+        run: |
+          # Uses --auto-submit to automatically push the build to Play Store once finished
+          eas build --platform android --profile production-aab --non-interactive --auto-submit
+
