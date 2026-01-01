@@ -154,7 +154,7 @@ export default function ProfileScreen() {
           ),
           headerBackground: () => (
             <HubHeaderBackground
-              colors={['#4c1d95', '#2e1065']}
+              colors={['#312e81', '#1e40af']}
               icon="person"
             />
           ),
@@ -163,8 +163,13 @@ export default function ProfileScreen() {
           headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity
-              onPress={() => dispatch(setSidebarOpen(true))}
+              onPress={() => {
+                console.log('Menu button pressed in profile');
+                dispatch(setSidebarOpen(true));
+              }}
               style={{ marginLeft: 16, marginRight: 8 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              activeOpacity={0.7}
             >
               <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
                 <Ionicons name="menu" size={22} color="#ffffff" />
@@ -181,6 +186,29 @@ export default function ProfileScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+        {/* Simplified Profile Header - Matching Web App */}
+        <View style={{ marginBottom: 24 }}>
+          <LinearGradient
+            colors={['#312e81', '#1e40af']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 20 }}
+          >
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' }}>
+              <ThemedText style={{ fontSize: 28, fontWeight: '900', color: 'white' }}>
+                {(user?.firstName || user?.username || 'U').charAt(0).toUpperCase()}
+              </ThemedText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={{ fontSize: 22, fontWeight: '900', color: '#ffffff', letterSpacing: -0.5 }}>
+                User Profile
+              </ThemedText>
+              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                Manage your personal information and settings
+              </Text>
+            </View>
+          </LinearGradient>
+        </View>
         <View style={styles.section}>
           <ThemedText style={[styles.sectionLabel, isDark && { color: '#94a3b8' }]}>PERSONAL INFORMATION</ThemedText>
           <View style={[styles.infoCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
@@ -467,7 +495,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 140,
   },
   section: {
     marginBottom: 24,

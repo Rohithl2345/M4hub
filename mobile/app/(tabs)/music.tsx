@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ScrollView, View, TouchableOpacity, TextInput, Text, FlatList, RefreshControl } from 'react-native';
+import { ScrollView, View, TouchableOpacity, TextInput, Text, FlatList, RefreshControl, Alert } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -282,18 +282,40 @@ export default function MusicScreen() {
                         </TouchableOpacity>
                     ),
                     headerRight: () => (
-                        <TouchableOpacity onPress={() => loadTracksData(true)} style={{ marginRight: 16 }}>
-                            <View style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 10,
-                                backgroundColor: 'rgba(255,255,255,0.15)',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}>
-                                <Ionicons name="refresh" size={18} color="#ffffff" />
-                            </View>
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+                            <TouchableOpacity
+                                onPress={() => loadTracksData(true)}
+                                style={{ padding: 8 }}
+                                activeOpacity={0.7}
+                            >
+                                <View style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 10,
+                                    backgroundColor: 'rgba(255,255,255,0.15)',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}>
+                                    <Ionicons name="refresh" size={18} color="#ffffff" />
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => Alert.alert('Options', 'Sorting and settings coming soon.')}
+                                style={{ padding: 8 }}
+                                activeOpacity={0.7}
+                            >
+                                <View style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 10,
+                                    backgroundColor: 'rgba(255,255,255,0.15)',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}>
+                                    <Ionicons name="ellipsis-horizontal" size={18} color="#ffffff" />
+                                </View>
+                            </TouchableOpacity>
+                        </View>
                     ),
                 }}
             />
@@ -429,7 +451,7 @@ export default function MusicScreen() {
                     windowSize={5}
                     removeClippedSubviews={true}
                     contentContainerStyle={{
-                        paddingBottom: currentTrack ? 140 : 20,
+                        paddingBottom: currentTrack ? 150 : 20,
                         paddingTop: 8
                     }}
                     refreshControl={

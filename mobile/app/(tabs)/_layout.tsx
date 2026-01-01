@@ -1,16 +1,49 @@
 import { Tabs, usePathname } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Platform, View, Text } from 'react-native';
+import Reanimated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import PortalTutorial from '@/components/PortalTutorial';
-
-import { StyleSheet } from 'react-native';
 import { Sidebar } from '@/components/Sidebar';
 import { useAppSelector } from '@/store/hooks';
 import { selectToken } from '@/store/slices/authSlice';
 import { analyticsService } from '@/services/analytics.service';
+
+const TabIcon = ({ name, color, focused }: { name: any, color: string, focused: boolean }) => {
+  const scale = useSharedValue(focused ? 1.2 : 1);
+
+  useEffect(() => {
+    scale.value = withSpring(focused ? 1.2 : 1, {
+      damping: 10,
+      stiffness: 100,
+    });
+  }, [focused]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <Reanimated.View style={animatedStyle}>
+        <Ionicons name={name} size={24} color={color} />
+      </Reanimated.View>
+      {focused && (
+        <View style={{
+          position: 'absolute',
+          bottom: -10,
+          width: 5,
+          height: 5,
+          borderRadius: 2.5,
+          backgroundColor: color,
+        }} />
+      )}
+    </View>
+  );
+};
 
 export default function TabLayout() {
   const theme = useAppTheme();
@@ -63,26 +96,29 @@ export default function TabLayout() {
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarStyle: {
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-            borderTopWidth: 1,
-            borderTopColor: isDark ? '#334155' : '#e2e8f0',
-            height: 68,
-            paddingBottom: 10,
-            paddingTop: 10,
-            elevation: 12,
+            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 64,
+            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+            paddingTop: 8,
+            elevation: 20,
+            borderTopWidth: 0,
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.12,
-            shadowRadius: 12,
+            shadowOffset: { width: 0, height: -10 },
+            shadowOpacity: 0.1,
+            shadowRadius: 15,
           },
           tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: '600',
-            marginTop: 4,
-            letterSpacing: 0.3,
+            fontSize: 11,
+            fontWeight: '700',
+            marginTop: -2,
+            letterSpacing: 0.2,
           },
           tabBarIconStyle: {
-            marginTop: 2,
+            marginBottom: 2,
           },
         }}>
         {/* Home/Dashboard - Main Hub (like web Dashboard) */}
@@ -91,11 +127,7 @@ export default function TabLayout() {
           options={{
             title: 'Home',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons
-                name={focused ? "apps" : "apps-outline"}
-                size={26}
-                color={color}
-              />
+              <TabIcon name={focused ? "apps" : "apps-outline"} color={color} focused={focused} />
             ),
           }}
         />
@@ -106,7 +138,7 @@ export default function TabLayout() {
           options={{
             title: 'Music',
             href: null,
-            tabBarIcon: ({ color }) => <Ionicons name="musical-notes" size={24} color={color} />,
+            tabBarIcon: ({ color, focused }) => <TabIcon name="musical-notes" color={color} focused={focused} />,
           }}
         />
 
@@ -116,7 +148,7 @@ export default function TabLayout() {
           options={{
             title: 'Messages',
             href: null,
-            tabBarIcon: ({ color }) => <Ionicons name="chatbubbles" size={24} color={color} />,
+            tabBarIcon: ({ color, focused }) => <TabIcon name="chatbubbles" color={color} focused={focused} />,
           }}
         />
 
@@ -126,7 +158,7 @@ export default function TabLayout() {
           options={{
             title: 'Money',
             href: null,
-            tabBarIcon: ({ color }) => <Ionicons name="wallet" size={24} color={color} />,
+            tabBarIcon: ({ color, focused }) => <TabIcon name="wallet" color={color} focused={focused} />,
           }}
         />
 
@@ -136,7 +168,7 @@ export default function TabLayout() {
           options={{
             title: 'News',
             href: null,
-            tabBarIcon: ({ color }) => <Ionicons name="newspaper" size={24} color={color} />,
+            tabBarIcon: ({ color, focused }) => <TabIcon name="newspaper" color={color} focused={focused} />,
           }}
         />
 
@@ -146,7 +178,7 @@ export default function TabLayout() {
           options={{
             title: 'More',
             href: null,
-            tabBarIcon: ({ color }) => <Ionicons name="menu" size={24} color={color} />,
+            tabBarIcon: ({ color, focused }) => <TabIcon name="menu" color={color} focused={focused} />,
           }}
         />
 
@@ -156,11 +188,7 @@ export default function TabLayout() {
           options={{
             title: 'Profile',
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons
-                name={focused ? "person" : "person-outline"}
-                size={26}
-                color={color}
-              />
+              <TabIcon name={focused ? "person" : "person-outline"} color={color} focused={focused} />
             ),
           }}
         />

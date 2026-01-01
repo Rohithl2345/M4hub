@@ -4,10 +4,13 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import org.springframework.stereotype.Component;
+import org.springframework.lang.NonNull;
+import javax.annotation.Nonnull;
 
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Objects;
 
 /**
  * Rate limiter utility using Guava's LoadingCache
@@ -20,20 +23,20 @@ public class RateLimiter {
 
     // Login attempts: 5 per 15 minutes
     private final LoadingCache<String, AtomicInteger> loginAttempts = CacheBuilder.newBuilder()
-            .expireAfterWrite(Duration.ofMinutes(15))
+            .expireAfterWrite(15, TimeUnit.MINUTES)
             .build(new CacheLoader<String, AtomicInteger>() {
                 @Override
-                public AtomicInteger load(String key) {
+                public AtomicInteger load(@Nonnull String key) {
                     return new AtomicInteger(0);
                 }
             });
 
     // OTP requests: 3 per 15 minutes
     private final LoadingCache<String, AtomicInteger> otpRequests = CacheBuilder.newBuilder()
-            .expireAfterWrite(Duration.ofMinutes(15))
+            .expireAfterWrite(15, TimeUnit.MINUTES)
             .build(new CacheLoader<String, AtomicInteger>() {
                 @Override
-                public AtomicInteger load(String key) {
+                public AtomicInteger load(@Nonnull String key) {
                     return new AtomicInteger(0);
                 }
             });
@@ -44,9 +47,9 @@ public class RateLimiter {
      * @param identifier Email or username
      * @return true if allowed, false if rate limit exceeded
      */
-    public boolean allowLogin(String identifier) {
+    public boolean allowLogin(@NonNull String identifier) {
         try {
-            AtomicInteger attempts = loginAttempts.get(identifier.toLowerCase());
+            AtomicInteger attempts = loginAttempts.get(Objects.requireNonNull(identifier.toLowerCase()));
             int count = attempts.incrementAndGet();
 
             if (count > 5) {
@@ -67,8 +70,8 @@ public class RateLimiter {
      * 
      * @param identifier Email or username
      */
-    public void resetLoginAttempts(String identifier) {
-        loginAttempts.invalidate(identifier.toLowerCase());
+    public void resetLoginAttempts(@NonNull String identifier) {
+        loginAttempts.invalidate(Objects.requireNonNull(identifier.toLowerCase()));
         logger.debug("Reset login attempts for: {}", identifier);
     }
 
@@ -78,9 +81,9 @@ public class RateLimiter {
      * @param identifier Email or phone number
      * @return true if allowed, false if rate limit exceeded
      */
-    public boolean allowOtpRequest(String identifier) {
+    public boolean allowOtpRequest(@NonNull String identifier) {
         try {
-            AtomicInteger requests = otpRequests.get(identifier.toLowerCase());
+            AtomicInteger requests = otpRequests.get(Objects.requireNonNull(identifier.toLowerCase()));
             int count = requests.incrementAndGet();
 
             if (count > 3) {
@@ -102,9 +105,9 @@ public class RateLimiter {
      * @param identifier Email or username
      * @return Number of attempts remaining
      */
-    public int getRemainingLoginAttempts(String identifier) {
+    public int getRemainingLoginAttempts(@NonNull String identifier) {
         try {
-            AtomicInteger attempts = loginAttempts.get(identifier.toLowerCase());
+            AtomicInteger attempts = loginAttempts.get(Objects.requireNonNull(identifier.toLowerCase()));
             return Math.max(0, 5 - attempts.get());
         } catch (ExecutionException e) {
             return 5;
@@ -117,9 +120,9 @@ public class RateLimiter {
      * @param identifier Email or phone number
      * @return Number of OTP requests remaining
      */
-    public int getRemainingOtpRequests(String identifier) {
+    public int getRemainingOtpRequests(@NonNull String identifier) {
         try {
-            AtomicInteger requests = otpRequests.get(identifier.toLowerCase());
+            AtomicInteger requests = otpRequests.get(Objects.requireNonNull(identifier.toLowerCase()));
             return Math.max(0, 3 - requests.get());
         } catch (ExecutionException e) {
             return 3;

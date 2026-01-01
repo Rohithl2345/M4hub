@@ -25,7 +25,6 @@ export default function ProfileSetupScreen() {
     const [username, setUsername] = useState('');
     const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [email, setEmail] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
     const [dateOfBirth, setDateOfBirth] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
@@ -97,7 +96,6 @@ export default function ProfileSetupScreen() {
                 lastName: lastName.trim(),
                 username: username.toLowerCase().trim(),
                 email: email.trim() || null,
-                phoneNumber: phoneNumber.trim() || null,
                 dateOfBirth: formatDate(dateOfBirth),
                 gender,
             };
@@ -259,22 +257,7 @@ export default function ProfileSetupScreen() {
                                     </View>
                                 </View>
 
-                                {/* Phone Number */}
-                                <View style={styles.inputWrapper}>
-                                    <ThemedText style={styles.label}>PHONE NUMBER (OPTIONAL)</ThemedText>
-                                    <View style={styles.inputContainer}>
-                                        <Ionicons name="call-outline" size={20} color="#64748b" style={styles.inputIcon} />
-                                        <TextInput
-                                            style={styles.input}
-                                            placeholder="Enter your phone number"
-                                            placeholderTextColor="#94a3b8"
-                                            value={phoneNumber}
-                                            onChangeText={setPhoneNumber}
-                                            keyboardType="phone-pad"
-                                            editable={!isLoading}
-                                        />
-                                    </View>
-                                </View>
+
 
                                 {/* Date of Birth */}
                                 <View style={styles.inputWrapper}>

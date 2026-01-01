@@ -314,6 +314,26 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
                     </View>
 
                     <View style={[styles.footer, { borderTopColor: 'rgba(255,255,255,0.1)' }]}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                onClose();
+                                dispatch(logout());
+                                router.replace('/auth/email-login?mode=login');
+                            }}
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 8,
+                                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                paddingHorizontal: 16,
+                                paddingVertical: 8,
+                                borderRadius: 10,
+                                marginBottom: 12
+                            }}
+                        >
+                            <Ionicons name="log-out" size={18} color="#ef4444" />
+                            <Text style={{ color: '#ef4444', fontWeight: '800', fontSize: 13 }}>Logout Session</Text>
+                        </TouchableOpacity>
                         <ThemedText style={[styles.version, { color: 'rgba(255,255,255,0.4)', marginBottom: 4 }]}>M4hub Mobile v1.0.0</ThemedText>
                     </View>
                 </View>

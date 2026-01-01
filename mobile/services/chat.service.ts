@@ -337,6 +337,31 @@ class ChatService {
         return response.data;
     }
 
+    async deleteGroup(groupId: number, token: string): Promise<{ success: boolean }> {
+        try {
+            const response = await axios.delete(`${API_URL}/api/chat/groups/${groupId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting group:', error);
+            throw error;
+        }
+    }
+
+    async uploadFile(file: any, token: string): Promise<{ url: string; fileName: string; type: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await axios.post(`${API_URL}/api/files/upload`, formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    }
+
     // Get relationship status with a user
     async getUserRelationshipStatus(userId: number, token: string): Promise<{
         isFriend: boolean;

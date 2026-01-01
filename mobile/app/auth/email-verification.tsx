@@ -126,7 +126,8 @@ export default function EmailVerificationScreen() {
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
                 <View style={styles.container}>
                     {/* Dynamic Background with Floating Icons */}
@@ -136,6 +137,7 @@ export default function EmailVerificationScreen() {
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.scrollContent}
                         bounces={false}
+                        keyboardShouldPersistTaps="handled"
                     >
                         {/* Professional Header */}
                         <View style={styles.headerSection}>
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         paddingHorizontal: 20,
         paddingTop: Platform.OS === 'ios' ? 70 : 50,
-        paddingBottom: 40,
+        paddingBottom: 100,
     },
     headerSection: {
         alignItems: 'center',

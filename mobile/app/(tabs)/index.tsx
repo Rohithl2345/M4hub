@@ -189,10 +189,15 @@ export default function DashboardScreen() {
       strokeWidth: '2',
       stroke: '#7c3aed',
     },
-    barPercentage: 0.7,
+    barPercentage: 0.5,
     useShadowColorFromDataset: false,
-    fillShadowGradient: '#7c3aed',
-    fillShadowGradientOpacity: 0.1,
+    fillShadowGradient: isDark ? '#818cf8' : '#6366f1',
+    fillShadowGradientOpacity: 1, // Solid bars like web
+    propsForBackgroundLines: {
+      strokeDasharray: '', // Solid grid lines or none
+      stroke: isDark ? '#334155' : '#f1f5f9',
+      strokeWidth: 1,
+    },
   }), [isDark]);
 
   return (
@@ -227,8 +232,13 @@ export default function DashboardScreen() {
             headerShadowVisible: false,
             headerLeft: () => (
               <TouchableOpacity
-                onPress={() => dispatch(setSidebarOpen(true))}
+                onPress={() => {
+                  console.log('Menu button pressed in dashboard');
+                  dispatch(setSidebarOpen(true));
+                }}
                 style={{ marginLeft: 16, marginRight: 8 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
               >
                 <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
                   <Ionicons name="menu" size={22} color="#ffffff" />
@@ -339,19 +349,45 @@ export default function DashboardScreen() {
             </View>
           ) : (
             <View style={styles.chartsContainer}>
-              {/* Timeframe Selector */}
-              <View style={[styles.chartSelector, isDark && { backgroundColor: '#1e293b' }, { marginBottom: 12 }]}>
-                {(['daily', 'weekly', 'monthly'] as const).map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[styles.selectorBtn, timeframe === t && styles.selectorBtnActive, timeframe === t && isDark && { backgroundColor: '#334155' }]}
-                    onPress={() => setTimeframe(t)}
-                  >
-                    <ThemedText style={[styles.selectorText, timeframe === t && styles.selectorTextActive, timeframe === t && isDark && { color: '#818cf8' }]}>
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
+              {/* Timeframe Selector - iOS Segmented Control Style */}
+              <View style={{
+                flexDirection: 'row',
+                backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#f1f5f9',
+                borderRadius: 12,
+                padding: 4,
+                marginBottom: 16
+              }}>
+                {(['daily', 'weekly', 'monthly'] as const).map((t) => {
+                  const isActive = timeframe === t;
+                  return (
+                    <TouchableOpacity
+                      key={t}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isActive ? (isDark ? '#334155' : 'white') : 'transparent',
+                        borderRadius: 8,
+                        shadowColor: isActive ? '#000' : 'transparent',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: isActive ? 0.1 : 0,
+                        shadowRadius: 2,
+                        elevation: isActive ? 1 : 0,
+                      }}
+                      onPress={() => setTimeframe(t)}
+                    >
+                      <Text style={{
+                        fontSize: 12,
+                        fontWeight: isActive ? '700' : '600',
+                        color: isActive ? (isDark ? '#fff' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b'),
+                        textTransform: 'capitalize'
+                      }}>
+                        {t}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               {/* Chart Toggles (Visual Style) */}
@@ -512,7 +548,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 150,
   },
   barChartContainer: {
     flexDirection: 'row',

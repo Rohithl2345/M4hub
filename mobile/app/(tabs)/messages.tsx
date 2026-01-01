@@ -7,12 +7,13 @@ import {
     TouchableOpacity,
     StyleSheet,
     Modal,
-    Alert,
+    Alert, // Keep Alert for critical fallback
     Dimensions,
     KeyboardAvoidingView,
     Platform,
     Image,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -26,6 +27,8 @@ import { useFocusEffect, Stack, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { setSidebarOpen } from '@/store/slices/uiSlice';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { Toast } from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,6 +47,7 @@ export default function MessagesScreen() {
     const theme = useAppTheme();
     const router = useRouter();
     const isDark = theme === 'dark';
+    const { toast, showSuccess, showError, hideToast } = useToast();
 
     // Dialog/Search states
     const [showSearch, setShowSearch] = useState(false);
@@ -59,10 +63,16 @@ export default function MessagesScreen() {
     const [groupFormError, setGroupFormError] = useState<{ name?: string, members?: string } | null>(null);
     const [groupSearchResults, setGroupSearchResults] = useState<UserSearchResult[]>([]);
     const [isSearchingMembers, setIsSearchingMembers] = useState(false);
+    const [isCreatingGroup, setIsCreatingGroup] = useState(false);
     const [showAttachMenu, setShowAttachMenu] = useState(false);
 
-    const flatListRef = useRef<FlatList>(null);
+    // New features
+    const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
+    const [typingUsers, setTypingUsers] = useState<{ [key: number]: boolean }>({});
+    const [groupToDelete, setGroupToDelete] = useState<{ id: number; name: string } | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
+    const flatListRef = useRef<FlatList>(null);
 
 
     useEffect(() => {
@@ -113,6 +123,9 @@ export default function MessagesScreen() {
         if (!user?.id || !token) return;
 
         const unsubMessage = chatService.onMessage((message) => {
+            const currentUserId = user?.id;
+            const messageSenderId = message.senderId;
+
             const isCurrentChat = selectedEntity && (
                 (selectedEntity.type === 'friend' && (message.senderId === selectedEntity.data.id || message.receiverId === selectedEntity.data.id)) ||
                 (selectedEntity.type === 'group' && message.receiverId === selectedEntity.data.id)
@@ -120,6 +133,19 @@ export default function MessagesScreen() {
 
             if (isCurrentChat) {
                 setMessages((prev) => [...prev, message]);
+                // Mark as read if we're viewing the conversation
+                if (message.id && message.senderId !== currentUserId) {
+                    chatService.markAsRead(message.id, message.senderId);
+                }
+            } else {
+                // Background message - increment unread count
+                if (Number(messageSenderId) !== Number(currentUserId)) {
+                    const key = selectedEntity?.type === 'friend' ? `friend-${messageSenderId}` : `group-${message.receiverId}`;
+                    setUnreadCounts(prev => ({
+                        ...prev,
+                        [key]: (prev[key] || 0) + 1
+                    }));
+                }
             }
             loadFriends();
         });
@@ -140,6 +166,23 @@ export default function MessagesScreen() {
             }));
         });
 
+        // Subscribe to typing indicators
+        const unsubTyping = chatService.onTyping((data) => {
+            setTypingUsers(prev => ({
+                ...prev,
+                [data.userId]: data.isTyping
+            }));
+            // Clear typing indicator after 3 seconds
+            if (data.isTyping) {
+                setTimeout(() => {
+                    setTypingUsers(prev => ({
+                        ...prev,
+                        [data.userId]: false
+                    }));
+                }, 3000);
+            }
+        });
+
         loadFriends();
         loadGroups();
         loadPendingRequests();
@@ -151,6 +194,7 @@ export default function MessagesScreen() {
             unsubMessage();
             unsubRequest();
             unsubPresence();
+            unsubTyping();
             clearInterval(interval);
         };
     }, [user?.id, token, selectedEntity]);
@@ -212,9 +256,21 @@ export default function MessagesScreen() {
     const handleSelectFriend = async (friend: UserSearchResult) => {
         if (!token) return;
         setSelectedEntity({ type: 'friend', data: friend });
+        // Clear unread count
+        setUnreadCounts(prev => {
+            const next = { ...prev };
+            delete next[`friend-${friend.id}`];
+            return next;
+        });
         try {
             const conversation = await chatService.getConversation(friend.id, token);
             setMessages(conversation);
+            // Mark messages as read
+            conversation.forEach(msg => {
+                if (msg.id && msg.senderId !== user?.id) {
+                    chatService.markAsRead(msg.id, msg.senderId);
+                }
+            });
         } catch (error) {
             console.error('Error loading conversation:', error);
         }
@@ -223,6 +279,12 @@ export default function MessagesScreen() {
     const handleSelectGroup = async (group: any) => {
         if (!token) return;
         setSelectedEntity({ type: 'group', data: group });
+        // Clear unread count
+        setUnreadCounts(prev => {
+            const next = { ...prev };
+            delete next[`group-${group.id}`];
+            return next;
+        });
         try {
             const conversation = await chatService.getGroupMessages(group.id, token);
             setMessages(conversation);
@@ -310,14 +372,17 @@ export default function MessagesScreen() {
             return;
         }
 
+        setIsCreatingGroup(true);
         try {
             await chatService.createGroup(newGroupName, newGroupDesc, token, selectedMemberIds);
             resetGroupForm();
             loadGroups();
-            Alert.alert('Success', 'Group created successfully!');
+            showSuccess('Group created successfully!');
         } catch (error) {
             console.error('Error creating group:', error);
-            Alert.alert('Error', 'Failed to create group');
+            showError('Failed to create group');
+        } finally {
+            setIsCreatingGroup(false);
         }
     };
 
@@ -327,6 +392,51 @@ export default function MessagesScreen() {
                 ? prev.filter(id => id !== friendId)
                 : [...prev, friendId]
         );
+    };
+
+    const handleDeleteGroup = (groupId: number, groupName: string) => {
+        setGroupToDelete({ id: groupId, name: groupName });
+        setDeleteConfirmOpen(true);
+    };
+
+    const confirmDeleteGroup = async () => {
+        if (!groupToDelete || !token) return;
+
+        try {
+            await chatService.deleteGroup(groupToDelete.id, token);
+            if (selectedEntity?.type === 'group' && selectedEntity.data.id === groupToDelete.id) {
+                setSelectedEntity(null);
+                setMessages([]);
+            }
+            loadGroups();
+            setDeleteConfirmOpen(false);
+            setGroupToDelete(null);
+            showSuccess('Group deleted successfully');
+        } catch (error: any) {
+            console.error('Error deleting group:', error);
+            showError(error.response?.data?.error || 'Failed to delete group');
+        }
+    };
+
+    const handleFileUpload = async (file: any) => {
+        if (!file || !user || !selectedEntity || !token) return;
+
+        try {
+            console.log('Uploading file...');
+            const result = await chatService.uploadFile(file, token);
+            console.log('File uploaded:', result);
+            const msgType = file.type?.startsWith('image/') ? 'IMAGE' : 'FILE';
+
+            if (selectedEntity.type === 'friend') {
+                chatService.sendMessage(user.id, selectedEntity.data.id, result.fileName, msgType, result.url);
+            } else if (selectedEntity.type === 'group') {
+                chatService.sendGroupMessage(user.id, selectedEntity.data.id, result.fileName, msgType);
+            }
+            setShowAttachMenu(false);
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            showError('Failed to upload file');
+        }
     };
 
     const renderEmptyState = (type: string) => {
@@ -367,39 +477,63 @@ export default function MessagesScreen() {
             );
         }
 
+
         const isFriend = type === 'friend';
+        const unreadKey = isFriend ? `friend-${item.id}` : `group-${item.id}`;
+        const unreadCount = unreadCounts[unreadKey] || 0;
+        const isGroupCreator = !isFriend && user?.id === item.createdBy?.id;
+
         return (
-            <TouchableOpacity
-                style={styles.cardItem}
-                onPress={() => isFriend ? handleSelectFriend(item) : handleSelectGroup(item)}
-            >
-                <View style={[styles.avatar, { backgroundColor: isFriend ? COLORS.PRIMARY : COLORS.SECONDARY }]}>
-                    {isFriend ? (
-                        <>
-                            <Text style={styles.avatarText}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
-                            <View style={[styles.statusDotList, item.isActive ? styles.online : styles.offline]} />
-                        </>
-                    ) : (
-                        <Ionicons name="people" size={24} color="white" />
-                    )}
-                </View>
-                <View style={styles.cardContent}>
-                    <View style={styles.cardHeader}>
-                        <Text style={styles.cardTitle} numberOfLines={1}>
-                            {isFriend ? (item.name || (item.username ? `@${item.username}` : item.email)) : item.name}
-                        </Text>
-                        {item.lastMessageAt && (
-                            <Text style={styles.listTimestamp}>
-                                {new Date(item.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
+            <View style={{ marginBottom: 12 }}>
+                <TouchableOpacity
+                    style={styles.cardItem}
+                    onPress={() => isFriend ? handleSelectFriend(item) : handleSelectGroup(item)}
+                >
+                    <View style={[styles.avatar, { backgroundColor: isFriend ? COLORS.PRIMARY : COLORS.SECONDARY }]}>
+                        {isFriend ? (
+                            <>
+                                <Text style={styles.avatarText}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
+                                <View style={[styles.statusDotList, item.isActive ? styles.online : styles.offline]} />
+                            </>
+                        ) : (
+                            <Ionicons name="people" size={24} color="white" />
+                        )}
+                        {unreadCount > 0 && (
+                            <View style={styles.unreadBadge}>
+                                <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                            </View>
                         )}
                     </View>
-                    <Text style={styles.cardSubtitle} numberOfLines={1}>
-                        {isFriend ? (item.lastMessageContent || (item.username ? `@${item.username}` : item.email)) : (item.description || 'Global Team')}
-                    </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
-            </TouchableOpacity>
+                    <View style={styles.cardContent}>
+                        <View style={styles.cardHeader}>
+                            <Text style={styles.cardTitle} numberOfLines={1}>
+                                {isFriend ? (item.name || (item.username ? `@${item.username}` : item.email)) : item.name}
+                            </Text>
+                            {item.lastMessageAt && (
+                                <Text style={styles.listTimestamp}>
+                                    {new Date(item.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                            )}
+                        </View>
+                        <Text style={styles.cardSubtitle} numberOfLines={1}>
+                            {isFriend ? (item.lastMessageContent || (item.username ? `@${item.username}` : item.email)) : (item.description || 'Global Team')}
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                </TouchableOpacity>
+                {isGroupCreator && (
+                    <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, padding: 8, backgroundColor: '#fee2e2', borderRadius: 8 }}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleDeleteGroup(item.id, item.name);
+                        }}
+                    >
+                        <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                        <Text style={{ marginLeft: 6, fontSize: 13, fontWeight: '700', color: '#ef4444' }}>Delete Group</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
         );
     };
 
@@ -426,43 +560,30 @@ export default function MessagesScreen() {
                         headerShadowVisible: false,
                         headerLeft: () => (
                             <TouchableOpacity
-                                onPress={() => dispatch(setSidebarOpen(true))}
+                                onPress={() => {
+                                    console.log('Menu button pressed in messenger');
+                                    dispatch(setSidebarOpen(true));
+                                }}
                                 style={{ marginLeft: 16, marginRight: 8 }}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                activeOpacity={0.7}
                             >
                                 <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
                                     <Ionicons name="menu" size={22} color="#ffffff" />
                                 </View>
                             </TouchableOpacity>
                         ),
-                        headerRight: () => (
-                            <View style={{ flexDirection: 'row', gap: 12, marginRight: 16 }}>
-                                <TouchableOpacity onPress={() => setShowSearch(true)}>
-                                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
-                                        <Ionicons name="person-add" size={18} color="#ffffff" />
-                                    </View>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setShowCreateGroup(true)}>
-                                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
-                                        <Ionicons name="add-circle" size={18} color="#ffffff" />
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-                        )
                     }}
                 />
 
-                {/* Search Bar - Professional & Compact */}
-                <View style={{ backgroundColor: isDark ? '#0f172a' : '#ffffff', paddingHorizontal: 20, paddingBottom: 10 }}>
-                    <TouchableOpacity
-                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f1f5f9', padding: 12, borderRadius: 12, gap: 10 }}
-                        onPress={() => setShowSearch(true)}
-                    >
-                        <Ionicons name="search" size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                        <ThemedText style={{ color: isDark ? '#4b5563' : '#94a3b8', fontSize: 13, fontWeight: '500' }}>Search messages or people...</ThemedText>
-                    </TouchableOpacity>
-                </View>
+                <Toast
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type}
+                    onHide={hideToast}
+                />
 
-                {/* Segmented Tabs - Styled with absolute professionalism */}
+                {/* Segmented Tabs - Clean Design Matching Web */}
                 <View style={[styles.segmentContainer, isDark && { backgroundColor: '#1e293b' }]}>
                     <TouchableOpacity
                         style={[styles.segmentButton, activeTab === 0 && styles.segmentButtonActive, activeTab === 0 && isDark && { backgroundColor: '#334155' }]}
@@ -473,6 +594,7 @@ export default function MessagesScreen() {
                             setHasSearched(false);
                         }}
                     >
+                        <Ionicons name="people" size={18} color={activeTab === 0 ? '#4c669f' : '#64748b'} />
                         <ThemedText style={[styles.segmentText, activeTab === 0 && styles.segmentTextActive]}>Friends</ThemedText>
                         {friends.length > 0 && (
                             <View style={[styles.tabBadge, { backgroundColor: '#3b82f6' }]}>
@@ -489,6 +611,7 @@ export default function MessagesScreen() {
                             setHasSearched(false);
                         }}
                     >
+                        <Ionicons name="people-circle" size={18} color={activeTab === 1 ? '#4c669f' : '#64748b'} />
                         <ThemedText style={[styles.segmentText, activeTab === 1 && styles.segmentTextActive]}>Groups</ThemedText>
                         {groups.length > 0 && (
                             <View style={[styles.tabBadge, { backgroundColor: '#8b5cf6' }]}>
@@ -505,6 +628,7 @@ export default function MessagesScreen() {
                             setHasSearched(false);
                         }}
                     >
+                        <Ionicons name="person-add" size={18} color={activeTab === 2 ? '#4c669f' : '#64748b'} />
                         <ThemedText style={[styles.segmentText, activeTab === 2 && styles.segmentTextActive]}>Requests</ThemedText>
                         {(pendingRequests.length + sentRequests.length) > 0 && (
                             <View style={[styles.tabBadge, { backgroundColor: '#ef4444' }]}>
@@ -513,6 +637,68 @@ export default function MessagesScreen() {
                         )}
                     </TouchableOpacity>
                 </View>
+
+                {/* Professional Action Buttons */}
+                {(activeTab === 0 || activeTab === 1) && (
+                    <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12, backgroundColor: isDark ? '#0f172a' : '#ffffff' }}>
+                        {activeTab === 0 && (
+                            <TouchableOpacity
+                                onPress={() => {
+                                    console.log('Add Friend button pressed');
+                                    setShowSearch(true);
+                                }}
+                                activeOpacity={0.7}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: '#1e3a8a',
+                                    paddingVertical: 10,
+                                    paddingHorizontal: 20,
+                                    borderRadius: 10,
+                                    shadowColor: '#1e3a8a',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.2,
+                                    shadowRadius: 4,
+                                    elevation: 2,
+                                }}
+                            >
+                                <Ionicons name="person-add" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                                <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
+                                    Add Friend
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                        {activeTab === 1 && (
+                            <TouchableOpacity
+                                onPress={() => {
+                                    console.log('Create Group button pressed');
+                                    setShowCreateGroup(true);
+                                }}
+                                activeOpacity={0.7}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: '#1e3a8a',
+                                    paddingVertical: 10,
+                                    paddingHorizontal: 20,
+                                    borderRadius: 10,
+                                    shadowColor: '#1e3a8a',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.2,
+                                    shadowRadius: 4,
+                                    elevation: 2,
+                                }}
+                            >
+                                <Ionicons name="add-circle" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                                <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
+                                    Create Group
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
 
                 {/* List Content */}
                 <View style={styles.section}>
@@ -527,7 +713,7 @@ export default function MessagesScreen() {
                                 <View style={{ height: 10 }} />
                             )}
                             ListEmptyComponent={() => renderEmptyState('friends')}
-                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 150 }}
                         />
                     )}
                     {activeTab === 1 && (
@@ -541,7 +727,7 @@ export default function MessagesScreen() {
                                 <View style={{ height: 10 }} />
                             )}
                             ListEmptyComponent={() => renderEmptyState('groups')}
-                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 150 }}
                         />
                     )}
                     {activeTab === 2 && (
@@ -621,7 +807,8 @@ export default function MessagesScreen() {
                                         </View>
                                     </View>
                                 }
-                                contentContainerStyle={{ padding: 20 }}
+                                contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
+                                showsVerticalScrollIndicator={false}
                             />
                         </View>
                     )}
@@ -632,6 +819,7 @@ export default function MessagesScreen() {
                     visible={showSearch}
                     animationType="slide"
                     transparent={false}
+                    onRequestClose={() => setShowSearch(false)}
                     onShow={() => {
                         setHasSearched(false);
                         setSearchResults([]);
@@ -639,54 +827,111 @@ export default function MessagesScreen() {
                         setSearchError(null);
                     }}
                 >
-                    <View style={styles.modalBody}>
-                        <View style={styles.modalHeader}>
-                            <TouchableOpacity onPress={resetSearchForm}>
-                                <Ionicons name="close" size={28} color="#1e293b" />
-                            </TouchableOpacity>
-                            <Text style={styles.modalTitle}>Find Friends</Text>
-                            <View style={{ width: 28 }} />
-                        </View>
-                        <View style={styles.searchBar}>
-                            <Ionicons name="search" size={20} color="#64748b" />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search username..."
-                                value={searchQuery}
-                                onChangeText={(text) => {
-                                    setSearchQuery(text);
-                                    if (text.trim()) setSearchError(null);
-                                }}
-                                onSubmitEditing={handleSearch}
-                            />
-                            <TouchableOpacity onPress={handleSearch}>
-                                <Text style={styles.searchBtnText}>Go</Text>
-                            </TouchableOpacity>
-                        </View>
-                        {searchError && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fee2e2', padding: 8, marginHorizontal: 24, borderRadius: 8, marginBottom: 12 }}>
-                                <Ionicons name="alert-circle" size={16} color="#ef4444" style={{ marginRight: 6 }} />
-                                <Text style={{ color: '#b91c1c', fontSize: 12, fontWeight: '500' }}>
-                                    {searchError}
-                                </Text>
+                    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+                        {/* Professional Header - Matching Messenger Theme */}
+                        <LinearGradient
+                            colors={['#1e3a8a', '#172554']}
+                            style={{
+                                paddingTop: Platform.OS === 'ios' ? 50 : 20,
+                                paddingBottom: 20,
+                                paddingHorizontal: 20,
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <TouchableOpacity
+                                    onPress={resetSearchForm}
+                                    style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: 10,
+                                        backgroundColor: 'rgba(255,255,255,0.15)',
+                                        justifyContent: 'center',
+                                        alignItems: 'center'
+                                    }}
+                                >
+                                    <Ionicons name="close" size={22} color="#ffffff" />
+                                </TouchableOpacity>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#ffffff' }}>Find Friends</Text>
+                                <View style={{ width: 36 }} />
                             </View>
-                        )}
+                        </LinearGradient>
+
+                        {/* Search Bar */}
+                        <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, backgroundColor: '#f8fafc' }}>
+                            <View style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: '#ffffff',
+                                borderRadius: 10,
+                                paddingHorizontal: 16,
+                                paddingVertical: 12,
+                                borderWidth: 1,
+                                borderColor: '#e2e8f0',
+                            }}>
+                                <Ionicons name="search" size={20} color="#1e3a8a" />
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder="Search by username..."
+                                    value={searchQuery}
+                                    onChangeText={(text) => {
+                                        setSearchQuery(text);
+                                        if (text.trim()) setSearchError(null);
+                                    }}
+                                    onSubmitEditing={handleSearch}
+                                    returnKeyType="search"
+                                    autoCapitalize="none"
+                                />
+                                {searchQuery.length > 0 && (
+                                    <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
+                                        <Ionicons name="close-circle" size={18} color="#cbd5e1" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+
+                            {searchError && (
+                                <View style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: '#fee2e2',
+                                    padding: 12,
+                                    borderRadius: 10,
+                                    marginTop: 12,
+                                    gap: 8,
+                                }}>
+                                    <Ionicons name="alert-circle" size={18} color="#ef4444" />
+                                    <Text style={{ color: '#dc2626', fontSize: 13, fontWeight: '600', flex: 1 }}>{searchError}</Text>
+                                </View>
+                            )}
+                        </View>
+
                         <FlatList
                             data={searchResults}
                             keyExtractor={(item) => item.id.toString()}
                             ListEmptyComponent={() => {
                                 if (isSearching) {
-                                    return <Text style={{ textAlign: 'center', marginTop: 40, color: '#64748b', fontWeight: 'bold' }}>Searching...</Text>;
-                                }
-                                if (hasSearched) {
                                     return (
-                                        <View style={{ alignItems: 'center', marginTop: 60 }}>
-                                            <Ionicons name="search-outline" size={60} color="#cbd5e1" />
-                                            <Text style={{ textAlign: 'center', marginTop: 16, color: '#64748b', fontWeight: 'bold', fontSize: 18 }}>No users found for "{searchQuery}"</Text>
+                                        <View style={styles.centerState}>
+                                            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+                                            <Text style={styles.centerStateText}>Searching users...</Text>
                                         </View>
                                     );
                                 }
-                                return null;
+                                if (hasSearched) {
+                                    return (
+                                        <View style={styles.centerState}>
+                                            <Ionicons name="search-outline" size={60} color="#e2e8f0" />
+                                            <Text style={styles.centerStateTitle}>No results found</Text>
+                                            <Text style={styles.centerStateSubtitle}>Try searching for a different username</Text>
+                                        </View>
+                                    );
+                                }
+                                return (
+                                    <View style={styles.centerState}>
+                                        <Ionicons name="people-outline" size={60} color="#e2e8f0" />
+                                        <Text style={styles.centerStateTitle}>Find People</Text>
+                                        <Text style={styles.centerStateSubtitle}>Search for friends by their username to connect.</Text>
+                                    </View>
+                                );
                             }}
                             renderItem={({ item }) => {
                                 if (!item) return null;
@@ -695,21 +940,40 @@ export default function MessagesScreen() {
                                 const isSent = (sentRequests || []).some(r => r?.receiver?.id === item.id);
                                 const isSelf = user?.id === item.id;
 
-                                let statusText = '';
-                                if (isFriend) statusText = 'Friend';
-                                else if (isPending) statusText = 'Request Received';
-                                else if (isSent) statusText = 'Request Pending';
-                                else if (isSelf) statusText = 'You';
-
                                 return (
                                     <View style={styles.cardItem}>
-                                        <View style={[styles.avatar, { backgroundColor: isSelf ? COLORS.PRIMARY : '#cbd5e1' }]}>
-                                            <Text style={styles.avatarText}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
+                                        <View style={[styles.avatar, { backgroundColor: isSelf ? COLORS.PRIMARY : COLORS.SECONDARY, width: 50, height: 50, borderRadius: 25 }]}>
+                                            <Text style={[styles.avatarText, { fontSize: 20 }]}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
                                         </View>
                                         <View style={styles.cardContent}>
-                                            <Text style={styles.cardTitle}>{item.name || (item.username ? `@${item.username}` : item.email)}</Text>
-                                            <Text style={styles.cardSubtitle}>{statusText || (item.username ? `@${item.username}` : item.email)}</Text>
+                                            <Text style={[styles.cardTitle, { fontSize: 16 }]}>{item.name || (item.username ? `@${item.username}` : item.email)}</Text>
+                                            {item.username && <Text style={styles.cardSubtitle}>@{item.username}</Text>}
                                         </View>
+
+                                        {isFriend && (
+                                            <View style={styles.statusBadge}>
+                                                <Ionicons name="checkmark" size={14} color="#10b981" />
+                                                <Text style={[styles.statusBadgeText, { color: '#10b981' }]}>Friend</Text>
+                                            </View>
+                                        )}
+                                        {isPending && (
+                                            <View style={[styles.statusBadge, { backgroundColor: '#fff7ed' }]}>
+                                                <Ionicons name="time" size={14} color="#f97316" />
+                                                <Text style={[styles.statusBadgeText, { color: '#f97316' }]}>Accept</Text>
+                                            </View>
+                                        )}
+                                        {isSent && (
+                                            <View style={[styles.statusBadge, { backgroundColor: '#f1f5f9' }]}>
+                                                <Ionicons name="arrow-forward" size={14} color="#64748b" />
+                                                <Text style={[styles.statusBadgeText, { color: '#64748b' }]}>Sent</Text>
+                                            </View>
+                                        )}
+                                        {isSelf && (
+                                            <View style={[styles.statusBadge, { backgroundColor: '#eff6ff' }]}>
+                                                <Text style={[styles.statusBadgeText, { color: '#3b82f6' }]}>You</Text>
+                                            </View>
+                                        )}
+
                                         {(!isFriend && !isSent && !isSelf && !isPending) && (
                                             <TouchableOpacity
                                                 style={styles.addBtn}
@@ -717,141 +981,191 @@ export default function MessagesScreen() {
                                                     if (!token) return;
                                                     try {
                                                         await chatService.sendFriendRequest(token, undefined, item.id);
-                                                        Alert.alert('Success', 'Friend request sent!');
+                                                        showSuccess('Friend request sent!');
                                                         loadPendingRequests();
-                                                        // Immediately refresh search to show pending status
                                                         handleSearch();
                                                     } catch (err) {
-                                                        Alert.alert('Error', 'Failed to send request');
+                                                        showError('Failed to send request');
                                                     }
                                                 }}
                                             >
-                                                <Ionicons name="person-add" size={20} color="white" />
+                                                <Ionicons name="person-add" size={18} color="white" />
+                                                <Text style={styles.addBtnText}>Add</Text>
                                             </TouchableOpacity>
                                         )}
-                                        {isSent && <Ionicons name="checkmark-circle" size={24} color="#cbd5e1" />}
                                     </View>
                                 );
                             }}
-                            contentContainerStyle={{ padding: 16 }}
+                            contentContainerStyle={{ padding: 20 }}
                         />
                     </View>
                 </Modal>
 
                 {/* Create Group Modal */}
-                <Modal visible={showCreateGroup} animationType="slide" transparent={false}>
-                    <View style={styles.modalBody}>
-                        <View style={styles.modalHeader}>
-                            <TouchableOpacity onPress={resetGroupForm}>
-                                <Ionicons name="close" size={28} color="#1e293b" />
-                            </TouchableOpacity>
-                            <Text style={styles.modalTitle}>New Group</Text>
-                            <TouchableOpacity onPress={handleCreateGroup}>
-                                <Ionicons name="checkmark-circle" size={32} color={COLORS.PRIMARY} />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-                            <View style={{ padding: 24 }}>
-                                <Text style={styles.fieldLabel}>GROUP INFO</Text>
-                                <TextInput
-                                    style={[styles.inputField, groupFormError?.name && styles.inputError]}
-                                    placeholder="Group Name *"
-                                    value={newGroupName}
-                                    onChangeText={(text) => {
-                                        setNewGroupName(text);
-                                        if (groupFormError?.name) setGroupFormError(prev => prev ? { ...prev, name: undefined } : null);
+                <Modal
+                    visible={showCreateGroup}
+                    animationType="slide"
+                    transparent={false}
+                    onRequestClose={resetGroupForm}
+                >
+                    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+                        {/* Professional Header - Matching Messenger Theme */}
+                        <LinearGradient
+                            colors={['#1e3a8a', '#172554']}
+                            style={{
+                                paddingTop: Platform.OS === 'ios' ? 50 : 20,
+                                paddingBottom: 20,
+                                paddingHorizontal: 20,
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <TouchableOpacity
+                                    onPress={resetGroupForm}
+                                    style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: 10,
+                                        backgroundColor: 'rgba(255,255,255,0.15)',
+                                        justifyContent: 'center',
+                                        alignItems: 'center'
                                     }}
-                                />
-                                {groupFormError?.name && <Text style={styles.errorText}>{groupFormError.name}</Text>}
-
-                                <TextInput
-                                    style={[styles.inputField, { height: 80, textAlignVertical: 'top' }]}
-                                    placeholder="Description (Optional)"
-                                    value={newGroupDesc}
-                                    onChangeText={setNewGroupDesc}
-                                    multiline
-                                />
-
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 15 }}>
-                                    <Text style={[styles.fieldLabel, groupFormError?.members && { color: '#ef4444' }]}>
-                                        ADD MEMBERS ({selectedMemberIds.length})
-                                    </Text>
-                                    {groupFormError?.members && <Text style={styles.errorText}>{groupFormError.members}</Text>}
-                                </View>
-
-                                {/* Selected Members Horizontal Scroll */}
-                                {selectedMemberIds.length > 0 && (
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-                                        {selectedMemberIds.map(id => {
-                                            const friend = friends.find(f => f.id === id);
-                                            return (
-                                                <TouchableOpacity key={id} onPress={() => toggleMemberSelection(id)} style={styles.selectedMember}>
-                                                    <View style={styles.selectedAvatar}>
-                                                        <Text style={styles.selectedAvatarText}>{(friend?.name || friend?.username || 'U').charAt(0).toUpperCase()}</Text>
-                                                        <View style={styles.removeIcon}>
-                                                            <Ionicons name="close" size={10} color="white" />
-                                                        </View>
-                                                    </View>
-                                                    <Text style={styles.selectedName} numberOfLines={1}>{friend?.name || friend?.username}</Text>
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </ScrollView>
-                                )}
-
-                                <View style={styles.searchBar}>
-                                    <Ionicons name="search" size={20} color="#64748b" />
-                                    <TextInput
-                                        style={styles.searchInput}
-                                        placeholder="Search friends to add..."
-                                        value={groupSearchQuery}
-                                        onChangeText={setGroupSearchQuery}
-                                    />
-                                    {isSearchingMembers && <Text style={{ fontSize: 10, color: COLORS.PRIMARY }}>Searching...</Text>}
-                                </View>
-
-                                <View style={styles.memberList}>
-                                    {(groupSearchQuery.length >= 3 ? groupSearchResults : friends).map((item) => {
-                                        const isSelected = selectedMemberIds.includes(item.id);
-                                        return (
-                                            <TouchableOpacity
-                                                key={item.id}
-                                                style={[styles.memberItem, isSelected && styles.memberItemSelected]}
-                                                onPress={() => toggleMemberSelection(item.id)}
-                                            >
-                                                <View style={[styles.avatar, { width: 40, height: 40, backgroundColor: isSelected ? COLORS.PRIMARY : '#e2e8f0' }]}>
-                                                    <Text style={[styles.avatarText, { fontSize: 16 }]}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
-                                                </View>
-                                                <Text style={styles.memberName}>{item.name || item.username}</Text>
-                                                <Ionicons
-                                                    name={isSelected ? "checkmark-circle" : "add-circle-outline"}
-                                                    size={24}
-                                                    color={isSelected ? COLORS.PRIMARY : '#cbd5e1'}
-                                                />
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                    {groupSearchQuery.length >= 3 && groupSearchResults.length === 0 && !isSearchingMembers && (
-                                        <View style={styles.noResultsContainer}>
-                                            <Ionicons name="search-outline" size={40} color="#cbd5e1" />
-                                            <Text style={styles.noResultsText}>No friends found for "{groupSearchQuery}"</Text>
-                                        </View>
-                                    )}
-                                    {groupSearchQuery.length > 0 && groupSearchQuery.length < 3 && (
-                                        <Text style={styles.searchHint}>Type at least 3 characters...</Text>
-                                    )}
-                                    {friends.length === 0 && groupSearchQuery.length === 0 && (
-                                        <Text style={styles.searchHint}>You don't have any friends to add yet.</Text>
-                                    )}
-                                </View>
-
-                                <TouchableOpacity style={styles.primaryBtn} onPress={handleCreateGroup}>
-                                    <Text style={styles.primaryBtnText}>Create Group</Text>
+                                >
+                                    <Ionicons name="close" size={22} color="#ffffff" />
                                 </TouchableOpacity>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#ffffff' }}>Create Group</Text>
+                                <View style={{ width: 36 }} />
                             </View>
+                        </LinearGradient>
+
+                        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                            <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+                                {/* Group Name and Description */}
+                                <View style={{ marginBottom: 20 }}>
+                                    <Text style={[styles.fieldLabel, { marginBottom: 8 }]}>GROUP NAME *</Text>
+                                    <TextInput
+                                        style={[styles.inputField, groupFormError?.name && styles.inputError]}
+                                        placeholder="Enter group name"
+                                        value={newGroupName}
+                                        onChangeText={(text) => {
+                                            setNewGroupName(text);
+                                            if (groupFormError?.name) setGroupFormError(prev => prev ? { ...prev, name: undefined } : null);
+                                        }}
+                                    />
+                                    {groupFormError?.name && <Text style={styles.errorText}>{groupFormError.name}</Text>}
+                                </View>
+
+                                <View style={{ marginBottom: 24 }}>
+                                    <Text style={[styles.fieldLabel, { marginBottom: 8 }]}>DESCRIPTION (OPTIONAL)</Text>
+                                    <TextInput
+                                        style={[styles.inputField, { height: 80, textAlignVertical: 'top' }]}
+                                        placeholder="What's this group about?"
+                                        value={newGroupDesc}
+                                        onChangeText={setNewGroupDesc}
+                                        multiline
+                                    />
+                                </View>
+
+                                {/* Add Members Section */}
+                                <View style={{ marginBottom: 16 }}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                        <Text style={[styles.fieldLabel, groupFormError?.members && { color: '#ef4444' }]}>
+                                            ADD MEMBERS ({selectedMemberIds.length})
+                                        </Text>
+                                        {groupFormError?.members && <Text style={styles.errorText}>{groupFormError.members}</Text>}
+                                    </View>
+
+                                    {/* Search Field at Top */}
+                                    <View style={[styles.searchBar, { margin: 0, marginBottom: 16 }]}>
+                                        <Ionicons name="search" size={20} color="#1e3a8a" />
+                                        <TextInput
+                                            style={styles.searchInput}
+                                            placeholder="Search friends to add..."
+                                            value={groupSearchQuery}
+                                            onChangeText={setGroupSearchQuery}
+                                        />
+                                        {isSearchingMembers && <ActivityIndicator size="small" color={COLORS.PRIMARY} />}
+                                    </View>
+
+                                    {/* Selected Members Chips */}
+                                    {selectedMemberIds.length > 0 && (
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                                            {selectedMemberIds.map(id => {
+                                                const friend = friends.find(f => f.id === id);
+                                                return (
+                                                    <TouchableOpacity key={id} onPress={() => toggleMemberSelection(id)} style={styles.selectedMember}>
+                                                        <View style={styles.selectedAvatar}>
+                                                            <Text style={styles.selectedAvatarText}>{(friend?.name || friend?.username || 'U').charAt(0).toUpperCase()}</Text>
+                                                            <View style={styles.removeIcon}>
+                                                                <Ionicons name="close" size={10} color="white" />
+                                                            </View>
+                                                        </View>
+                                                        <Text style={styles.selectedName} numberOfLines={1}>{friend?.name || friend?.username}</Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </ScrollView>
+                                    )}
+                                </View>
+
+                                {/* Member List */}
+                                {(groupSearchQuery.length >= 3 ? groupSearchResults : friends).map((item) => {
+                                    const isSelected = selectedMemberIds.includes(item.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={item.id}
+                                            style={[styles.memberItem, isSelected && styles.memberItemSelected]}
+                                            onPress={() => toggleMemberSelection(item.id)}
+                                        >
+                                            <View style={[styles.avatar, { width: 40, height: 40, backgroundColor: isSelected ? '#1e3a8a' : '#e2e8f0' }]}>
+                                                <Text style={[styles.avatarText, { fontSize: 16 }]}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
+                                            </View>
+                                            <Text style={styles.memberName}>{item.name || item.username}</Text>
+                                            <Ionicons
+                                                name={isSelected ? "checkmark-circle" : "add-circle-outline"}
+                                                size={24}
+                                                color={isSelected ? '#1e3a8a' : '#cbd5e1'}
+                                            />
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                                {groupSearchQuery.length >= 3 && groupSearchResults.length === 0 && !isSearchingMembers && (
+                                    <View style={styles.noResultsContainer}>
+                                        <Ionicons name="search-outline" size={40} color="#cbd5e1" />
+                                        <Text style={styles.noResultsText}>No friends found for "{groupSearchQuery}"</Text>
+                                    </View>
+                                )}
+                                {groupSearchQuery.length > 0 && groupSearchQuery.length < 3 && (
+                                    <Text style={styles.searchHint}>Type at least 3 characters...</Text>
+                                )}
+                                {friends.length === 0 && groupSearchQuery.length === 0 && (
+                                    <Text style={styles.searchHint}>You don't have any friends to add yet.</Text>
+                                )}
+                            </View>
+
+                            <TouchableOpacity
+                                style={{
+                                    backgroundColor: '#1e3a8a',
+                                    paddingVertical: 12,
+                                    paddingHorizontal: 24,
+                                    borderRadius: 10,
+                                    alignItems: 'center',
+                                    marginTop: 20,
+                                    marginBottom: 10,
+                                    opacity: isCreatingGroup ? 0.7 : 1,
+                                }}
+                                onPress={handleCreateGroup}
+                                disabled={isCreatingGroup}
+                            >
+                                {isCreatingGroup ? (
+                                    <ActivityIndicator color="white" size="small" />
+                                ) : (
+                                    <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700' }}>Create Group</Text>
+                                )}
+                            </TouchableOpacity>
                         </ScrollView>
                     </View>
                 </Modal>
+
 
                 {/* Attachment Menu */}
                 <Modal
@@ -880,8 +1194,49 @@ export default function MessagesScreen() {
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
-                </Modal>
-            </View>
+                </Modal >
+
+                {/* Delete Group Confirmation Dialog */}
+                < Modal
+                    visible={deleteConfirmOpen}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setDeleteConfirmOpen(false)
+                    }
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setDeleteConfirmOpen(false)}
+                    >
+                        <View style={{ backgroundColor: 'white', margin: 20, borderRadius: 20, padding: 24 }} onStartShouldSetResponder={() => true}>
+                            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#fee2e2', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="trash" size={28} color="#ef4444" />
+                                </View>
+                                <Text style={{ fontSize: 20, fontWeight: '800', color: '#1e293b', marginBottom: 8 }}>Delete Group?</Text>
+                                <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20 }}>
+                                    Are you sure you want to delete "{groupToDelete?.name}"? This action cannot be undone.
+                                </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', gap: 12 }}>
+                                <TouchableOpacity
+                                    style={{ flex: 1, padding: 14, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center' }}
+                                    onPress={() => setDeleteConfirmOpen(false)}
+                                >
+                                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#64748b' }}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={{ flex: 1, padding: 14, borderRadius: 12, backgroundColor: '#ef4444', alignItems: 'center' }}
+                                    onPress={confirmDeleteGroup}
+                                >
+                                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>Delete</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                </Modal >
+            </View >
         );
     }
 
@@ -901,10 +1256,16 @@ export default function MessagesScreen() {
                     </Text>
                     {selectedEntity.type === 'friend' ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <View style={[styles.headerStatusDot, selectedEntity.data.isActive ? styles.online : styles.offline]} />
-                            <Text style={[styles.chatHeaderSubtitle, { color: '#64748b', fontSize: 11 }]}>
-                                {selectedEntity.data.isActive ? 'Online' : 'Offline'}
-                            </Text>
+                            {typingUsers[selectedEntity.data.id] ? (
+                                <Text style={styles.typingIndicator}>typing...</Text>
+                            ) : (
+                                <>
+                                    <View style={[styles.headerStatusDot, selectedEntity.data.isActive ? styles.online : styles.offline]} />
+                                    <Text style={[styles.chatHeaderSubtitle, { color: '#64748b', fontSize: 11 }]}>
+                                        {selectedEntity.data.isActive ? 'Online' : 'Offline'}
+                                    </Text>
+                                </>
+                            )}
                         </View>
                     ) : (
                         <Text style={[styles.chatHeaderSubtitle, { color: '#64748b', fontSize: 11 }]}>
@@ -1243,7 +1604,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     addBtn: {
-        backgroundColor: COLORS.PRIMARY,
+        backgroundColor: '#1e3a8a',
         width: 40,
         height: 40,
         borderRadius: 12,
@@ -1323,7 +1684,7 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     primaryBtn: {
-        backgroundColor: COLORS.PRIMARY,
+        backgroundColor: '#1e3a8a',
         padding: 18,
         borderRadius: 16,
         alignItems: 'center',
@@ -1612,5 +1973,95 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontWeight: '600',
         textAlign: 'center',
+    },
+    closeBtn: {
+        padding: 8,
+        backgroundColor: '#f1f5f9',
+        borderRadius: 20,
+    },
+    errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fee2e2',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        marginHorizontal: 16,
+        borderRadius: 12,
+        marginBottom: 16,
+        gap: 8,
+    },
+    errorBannerText: {
+        color: '#b91c1c',
+        fontSize: 13,
+        fontWeight: '600',
+        flex: 1,
+    },
+    centerState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 60,
+        paddingHorizontal: 20,
+    },
+    centerStateText: {
+        marginTop: 16,
+        color: '#64748b',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    centerStateTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#1e293b',
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    centerStateSubtitle: {
+        fontSize: 14,
+        color: '#64748b',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        backgroundColor: '#f0fdf4',
+    },
+    statusBadgeText: {
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    addBtnText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    unreadBadge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: '#ef4444',
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 2,
+        borderColor: '#ffffff',
+    },
+    unreadBadgeText: {
+        color: '#ffffff',
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    typingIndicator: {
+        fontSize: 12,
+        color: '#3b82f6',
+        fontStyle: 'italic',
+        marginTop: 4,
     },
 });

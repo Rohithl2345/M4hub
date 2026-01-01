@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, View, Dimensions, Text, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/themed-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -166,6 +167,7 @@ function FeatureItem({ item, isActive, onPress }: { item: typeof FEATURES[0], is
 
 export default function WelcomeScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [activeIndex, setActiveIndex] = useState(0);
     const current = FEATURES[activeIndex];
 
@@ -216,7 +218,10 @@ export default function WelcomeScreen() {
                 pointerEvents="none"
             />
 
-            <View style={styles.safeArea}>
+            <View style={[styles.safeArea, {
+                paddingTop: insets.top + (Platform.OS === 'android' ? 20 : 0),
+                paddingBottom: insets.bottom + 20
+            }]}>
                 {/* Header Branding */}
                 <View style={styles.header}>
                     <View style={styles.logoBadge}>
@@ -265,8 +270,6 @@ const styles = StyleSheet.create({
     },
     safeArea: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? 60 : 60,
-        paddingBottom: 40,
         paddingHorizontal: 24,
         justifyContent: 'space-between',
     },

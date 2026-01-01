@@ -45,7 +45,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 onClose={handleClose}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
                 TransitionComponent={TransitionDown}
-                sx={{ mt: 2 }}
+                sx={{
+                    mt: 2,
+                    zIndex: 9999, // Ensure toast appears above all content
+                    '& .MuiSnackbarContent-root': {
+                        minWidth: '300px',
+                        maxWidth: '600px',
+                    }
+                }}
             >
                 <Alert
                     onClose={handleClose}
@@ -56,7 +63,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                         borderRadius: '12px',
                         boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
                         fontWeight: 600,
-                        fontSize: '0.95rem'
+                        fontSize: '0.95rem',
+                        minWidth: '300px',
                     }}
                 >
                     {message}

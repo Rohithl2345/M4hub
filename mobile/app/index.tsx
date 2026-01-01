@@ -10,8 +10,11 @@ import Animated, {
     withSequence,
     withRepeat,
     Easing,
-    withDelay
+    withDelay,
+    runOnJS
 } from 'react-native-reanimated';
+import { useSelector } from 'react-redux';
+import { selectAuth } from '@/store/slices/authSlice';
 
 
 const { width, height } = Dimensions.get('window');
@@ -40,13 +43,23 @@ export default function SplashScreen() {
         // Footer animation
         footerOpacity.value = withDelay(1200, withTiming(1, { duration: 800 }));
 
-        // Always navigate to Welcome screen after animation
-        const timer = setTimeout(() => {
-            router.replace('/welcome');
-        }, 3000);
-
-        return () => clearTimeout(timer);
     }, []);
+
+    // Navigation logic based on auth state
+    const { isAuthenticated, isLoading } = useSelector(selectAuth);
+
+    useEffect(() => {
+        if (!isLoading) {
+            const timer = setTimeout(() => {
+                if (isAuthenticated) {
+                    router.replace('/(tabs)');
+                } else {
+                    router.replace('/welcome');
+                }
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading, isAuthenticated]);
 
     const animatedLogoStyle = useAnimatedStyle(() => ({
         transform: [{ scale: logoScale.value }],

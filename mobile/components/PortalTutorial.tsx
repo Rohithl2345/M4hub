@@ -24,6 +24,7 @@ import Animated, {
     withSequence
 } from 'react-native-reanimated';
 import axios from 'axios';
+import { storageService } from '@/services/storage.service';
 
 const { width, height } = Dimensions.get('window');
 
@@ -111,7 +112,6 @@ export const PortalTutorial = () => {
             setIsVisible(false);
 
             // Notify backend
-            const { storageService } = require('@/services/storage.service');
             const authToken = await storageService.getAuthToken();
             if (authToken) {
                 await axios.post(`${API_URL}/api/users/tutorial-seen`, {}, {

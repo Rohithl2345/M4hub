@@ -22,6 +22,12 @@ class MusicService {
 
     private mapSongToTrack = (song: any): Track => {
         let audioUrl = song.audioUrl;
+
+        // Ensure URL is absolute
+        if (audioUrl && !audioUrl.startsWith('http')) {
+            audioUrl = `${this.baseUrl}${audioUrl.startsWith('/') ? '' : '/'}${audioUrl}`;
+        }
+
         // Fix for Android Emulator accessing localhost
         if (audioUrl && audioUrl.includes('http://localhost:8080')) {
             audioUrl = audioUrl.replace('http://localhost:8080', this.baseUrl);
