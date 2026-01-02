@@ -40,6 +40,7 @@ export default function EmailLoginScreen() {
     const [currentThemeIndex, setCurrentThemeIndex] = useState(0);
     const [attemptCount, setAttemptCount] = useState(0);
     const [isRateLimited, setIsRateLimited] = useState(false);
+    const [isServerWakingUp, setIsServerWakingUp] = useState(false);
 
     // Enhanced password strength using validation utility
     const [passwordStrength, setPasswordStrength] = useState({
@@ -71,6 +72,19 @@ export default function EmailLoginScreen() {
         setAttemptCount(0);
         setIsRateLimited(false);
     }, [mode]);
+
+    // Handle "Server Waking Up" feedback for slow initial requests (Render cold starts)
+    useEffect(() => {
+        let timer: any;
+        if (isLoading) {
+            timer = setTimeout(() => {
+                setIsServerWakingUp(true);
+            }, 3000); // Show message after 3 seconds
+        } else {
+            setIsServerWakingUp(false);
+        }
+        return () => clearTimeout(timer);
+    }, [isLoading]);
 
     const [touched, setTouched] = useState({ email: false, password: false });
 
@@ -139,6 +153,7 @@ export default function EmailLoginScreen() {
         }
 
         setIsLoading(true);
+        setIsServerWakingUp(false); // Reset waking up state
 
         try {
             if (mode === 'login') {
@@ -159,7 +174,7 @@ export default function EmailLoginScreen() {
                         const newCount = attemptCount + 1;
                         setAttemptCount(newCount);
 
-                        // Check if we've hit rate limit
+                        // Check if we&apos;ve hit rate limit
                         if (newCount >= 5) {
                             setIsRateLimited(true);
                             setTimeout(() => {
@@ -468,7 +483,14 @@ export default function EmailLoginScreen() {
                                             style={styles.submitGradient}
                                         >
                                             {isLoading ? (
-                                                <ActivityIndicator color="#fff" size="small" />
+                                                <View style={{ alignItems: 'center' }}>
+                                                    <ActivityIndicator color="#fff" size="small" />
+                                                    {isServerWakingUp && (
+                                                        <ThemedText style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, marginTop: 4, fontWeight: '600', textAlign: 'center' }}>
+                                                            Waking up server...{"\n"}(First load may take 30-50s)
+                                                        </ThemedText>
+                                                    )}
+                                                </View>
                                             ) : (
                                                 <>
                                                     <ThemedText style={styles.submitText}>

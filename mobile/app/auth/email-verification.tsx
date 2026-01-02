@@ -26,6 +26,7 @@ export default function EmailVerificationScreen() {
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const [timer, setTimer] = useState(60);
     const [isLoading, setIsLoading] = useState(false);
+    const [isServerWakingUp, setIsServerWakingUp] = useState(false);
     const [currentThemeIndex, setCurrentThemeIndex] = useState(0);
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -45,6 +46,19 @@ export default function EmailVerificationScreen() {
             return () => clearInterval(interval);
         }
     }, [timer]);
+
+    // Handle "Server Waking Up" feedback for slow initial requests (Render cold starts)
+    useEffect(() => {
+        let wakingTimer: any;
+        if (isLoading) {
+            wakingTimer = setTimeout(() => {
+                setIsServerWakingUp(true);
+            }, 3000); // Show message after 3 seconds
+        } else {
+            setIsServerWakingUp(false);
+        }
+        return () => clearTimeout(wakingTimer);
+    }, [isLoading]);
 
     const handleCodeChange = (value: string, index: number) => {
         if (value.length > 1) return;
@@ -164,7 +178,7 @@ export default function EmailVerificationScreen() {
                                 <View style={styles.titleSection}>
                                     <ThemedText style={styles.pageTitle}>Verify Your Email</ThemedText>
                                     <ThemedText style={styles.pageSubtitle}>
-                                        We've sent a 6-digit code to {email}
+                                        We&apos;ve sent a 6-digit code to {email}
                                     </ThemedText>
                                 </View>
 
@@ -218,7 +232,14 @@ export default function EmailVerificationScreen() {
                                         style={styles.submitGradient}
                                     >
                                         {isLoading ? (
-                                            <ActivityIndicator color="#fff" size="small" />
+                                            <View style={{ alignItems: 'center' }}>
+                                                <ActivityIndicator color="#fff" size="small" />
+                                                {isServerWakingUp && (
+                                                    <ThemedText style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, marginTop: 4, fontWeight: '600', textAlign: 'center' }}>
+                                                        Waking up server...{"\n"}(May take 30-50s)
+                                                    </ThemedText>
+                                                )}
+                                            </View>
                                         ) : (
                                             <>
                                                 <ThemedText style={styles.submitText}>

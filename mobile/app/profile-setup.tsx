@@ -29,6 +29,7 @@ export default function ProfileSetupScreen() {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
     const [isLoading, setIsLoading] = useState(false);
+    const [isServerWakingUp, setIsServerWakingUp] = useState(false);
     const [currentThemeIndex, setCurrentThemeIndex] = useState(0);
 
     // Auto-cycle themes every 10 seconds
@@ -38,6 +39,19 @@ export default function ProfileSetupScreen() {
         }, 10000);
         return () => clearInterval(interval);
     }, []);
+
+    // Handle "Server Waking Up" feedback for slow initial requests (Render cold starts)
+    useEffect(() => {
+        let wakingTimer: any;
+        if (isLoading) {
+            wakingTimer = setTimeout(() => {
+                setIsServerWakingUp(true);
+            }, 3000); // Show message after 3 seconds
+        } else {
+            setIsServerWakingUp(false);
+        }
+        return () => clearTimeout(wakingTimer);
+    }, [isLoading]);
 
     // Pre-fill email from user data
     useEffect(() => {
@@ -333,7 +347,14 @@ export default function ProfileSetupScreen() {
                                         style={styles.submitGradient}
                                     >
                                         {isLoading ? (
-                                            <ActivityIndicator color="#fff" size="small" />
+                                            <View style={{ alignItems: 'center' }}>
+                                                <ActivityIndicator color="#fff" size="small" />
+                                                {isServerWakingUp && (
+                                                    <ThemedText style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, marginTop: 4, fontWeight: '600', textAlign: 'center' }}>
+                                                        Saving profile...{"\n"}(May take 30-50s)
+                                                    </ThemedText>
+                                                )}
+                                            </View>
                                         ) : (
                                             <>
                                                 <ThemedText style={styles.submitText}>

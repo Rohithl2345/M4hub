@@ -8,6 +8,16 @@ export interface BankAccount {
     accountHolderName: string;
     isVerified: boolean;
     balance: number;
+    isPrimary: boolean;
+}
+
+export interface Beneficiary {
+    id: number;
+    name: string;
+    accountNumber: string;
+    ifscCode: string;
+    phoneNumber?: string;
+    type: 'INTERNAL' | 'EXTERNAL';
 }
 
 export interface BankInfo {
@@ -46,17 +56,33 @@ class PaymentService {
         }
     }
 
-    async getAccount(): Promise<BankAccount | null> {
+    async getAccounts(): Promise<BankAccount[]> {
         try {
-            const response = await fetch(`${env.apiUrl}/api/payments/account`, {
+            const response = await fetch(`${env.apiUrl}/api/payments/accounts`, {
                 headers: this.getHeaders()
             });
-            if (response.status === 204) return null;
+            if (!response.ok) return [];
             return await response.json();
         } catch (error) {
-            console.error('Error fetching bank account:', error);
-            return null;
+            console.error('Error fetching bank accounts:', error);
+            return [];
         }
+    }
+
+    async setPrimaryAccount(accountId: number): Promise<void> {
+        const response = await fetch(`${env.apiUrl}/api/payments/accounts/${accountId}/primary`, {
+            method: 'POST',
+            headers: this.getHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to set primary account');
+    }
+
+    async deleteAccount(accountId: number): Promise<void> {
+        const response = await fetch(`${env.apiUrl}/api/payments/accounts/${accountId}`, {
+            method: 'DELETE',
+            headers: this.getHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to delete account');
     }
 
     async linkAccount(accountNumber: string, bankName: string, ifscCode: string,
@@ -73,6 +99,32 @@ class PaymentService {
         return await response.json();
     }
 
+    async getBeneficiaries(): Promise<Beneficiary[]> {
+        const response = await fetch(`${env.apiUrl}/api/payments/beneficiaries`, {
+            headers: this.getHeaders()
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    }
+
+    async addBeneficiary(name: string, accountNumber: string, ifscCode: string, phoneNumber: string, type: 'INTERNAL' | 'EXTERNAL'): Promise<Beneficiary> {
+        const response = await fetch(`${env.apiUrl}/api/payments/beneficiaries`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ name, accountNumber, ifscCode, phoneNumber, type })
+        });
+        if (!response.ok) throw new Error('Failed to add recipient');
+        return await response.json();
+    }
+
+    async deleteBeneficiary(id: number): Promise<void> {
+        const response = await fetch(`${env.apiUrl}/api/payments/beneficiaries/${id}`, {
+            method: 'DELETE',
+            headers: this.getHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to delete recipient');
+    }
+
     async searchUserByPhone(phone: string): Promise<any> {
         const response = await fetch(`${env.apiUrl}/api/payments/search?phone=${encodeURIComponent(phone)}`, {
             headers: this.getHeaders()
@@ -81,20 +133,21 @@ class PaymentService {
         return await response.json();
     }
 
-    async transferMoney(receiverId: number, amount: number, upiPin: string, description: string): Promise<Transaction> {
+    async transferMoney(sourceAccountId: number, receiverId: number, amount: number, upiPin: string, description: string): Promise<Transaction> {
         const response = await fetch(`${env.apiUrl}/api/payments/transfer`, {
             method: 'POST',
             headers: this.getHeaders(),
-            body: JSON.stringify({ receiverId, amount, upiPin, description })
+            body: JSON.stringify({ sourceAccountId, receiverId, amount, upiPin, description })
         });
         if (!response.ok) {
-            const error = await response.text();
-            throw new Error(error || 'Transfer failed');
+            const error = await response.json();
+            throw new Error(error.message || 'Transfer failed');
         }
         return await response.json();
     }
 
     async transferToAccount(
+        sourceAccountId: number,
         recipientName: string,
         accountNumber: string,
         ifsc: string,
@@ -105,11 +158,11 @@ class PaymentService {
         const response = await fetch(`${env.apiUrl}/api/payments/transfer-external`, {
             method: 'POST',
             headers: this.getHeaders(),
-            body: JSON.stringify({ recipientName, accountNumber, ifsc, amount, upiPin, description })
+            body: JSON.stringify({ sourceAccountId, recipientName, accountNumber, ifsc, amount, upiPin, description })
         });
         if (!response.ok) {
-            const error = await response.text();
-            throw new Error(error || 'Transfer failed');
+            const error = await response.json();
+            throw new Error(error.message || 'Transfer failed');
         }
         return await response.json();
     }
@@ -127,15 +180,15 @@ class PaymentService {
         }
     }
 
-    async checkBalance(upiPin: string): Promise<number> {
+    async checkBalance(accountId: number, upiPin: string): Promise<number> {
         const response = await fetch(`${env.apiUrl}/api/payments/check-balance`, {
             method: 'POST',
             headers: this.getHeaders(),
-            body: JSON.stringify({ upiPin })
+            body: JSON.stringify({ accountId, upiPin })
         });
         if (!response.ok) {
-            const error = await response.text();
-            throw new Error(error || 'Failed to fetch balance');
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to fetch balance');
         }
         const data = await response.json();
         return data.balance;

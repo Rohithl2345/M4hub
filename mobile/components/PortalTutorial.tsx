@@ -26,7 +26,7 @@ import Animated, {
 import axios from 'axios';
 import { storageService } from '@/services/storage.service';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 // Use the correct internal API URL base on platform
 const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080';

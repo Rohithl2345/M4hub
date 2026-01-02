@@ -1131,14 +1131,14 @@ export default function MessagesScreen() {
                                 {groupSearchQuery.length >= 3 && groupSearchResults.length === 0 && !isSearchingMembers && (
                                     <View style={styles.noResultsContainer}>
                                         <Ionicons name="search-outline" size={40} color="#cbd5e1" />
-                                        <Text style={styles.noResultsText}>No friends found for "{groupSearchQuery}"</Text>
+                                        <Text style={styles.noResultsText}>No friends found for &quot;{groupSearchQuery}&quot;</Text>
                                     </View>
                                 )}
                                 {groupSearchQuery.length > 0 && groupSearchQuery.length < 3 && (
                                     <Text style={styles.searchHint}>Type at least 3 characters...</Text>
                                 )}
                                 {friends.length === 0 && groupSearchQuery.length === 0 && (
-                                    <Text style={styles.searchHint}>You don't have any friends to add yet.</Text>
+                                    <Text style={styles.searchHint}>You don&apos;t have any friends to add yet.</Text>
                                 )}
                             </View>
 
@@ -1216,7 +1216,7 @@ export default function MessagesScreen() {
                                 </View>
                                 <Text style={{ fontSize: 20, fontWeight: '800', color: '#1e293b', marginBottom: 8 }}>Delete Group?</Text>
                                 <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20 }}>
-                                    Are you sure you want to delete "{groupToDelete?.name}"? This action cannot be undone.
+                                    Are you sure you want to delete &quot;{groupToDelete?.name}&quot;? This action cannot be undone.
                                 </Text>
                             </View>
                             <View style={{ flexDirection: 'row', gap: 12 }}>

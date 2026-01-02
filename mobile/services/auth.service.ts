@@ -33,13 +33,17 @@ class AuthService {
             const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.SEND_EMAIL_OTP}`;
             const payload = { email, password };
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
-            });
+                signal: controller.signal
+            }).finally(() => clearTimeout(timeoutId));
 
             const data: AuthResponse = await response.json();
 
@@ -70,13 +74,17 @@ class AuthService {
             const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.VERIFY_EMAIL_OTP}`;
             const payload = { email, otpCode, password, registrationSource: source };
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
-            });
+                signal: controller.signal
+            }).finally(() => clearTimeout(timeoutId));
 
             const data: AuthResponse = await response.json();
 
@@ -104,13 +112,17 @@ class AuthService {
             const url = `${this.baseUrl}${API_ENDPOINTS.AUTH.LOGIN_EMAIL}`;
             const payload = { email: identifier, password }; // Backend uses 'email' field for both email and username
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
-            });
+                signal: controller.signal
+            }).finally(() => clearTimeout(timeoutId));
 
             // Check if response is JSON
             const contentType = response.headers.get('content-type');

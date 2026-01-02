@@ -69,6 +69,7 @@ const MagicParticle = React.memo(({ index }: { index: number }) => {
     />
   );
 });
+MagicParticle.displayName = 'MagicParticle';
 // Magic Background removed from page, now restricted to Sidebar only.
 
 const { width, height } = Dimensions.get('window');

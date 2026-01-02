@@ -1,11 +1,13 @@
 package com.m4hub.backend.service;
 
+import com.m4hub.backend.model.Beneficiary;
 import com.m4hub.backend.model.BankAccount;
 import com.m4hub.backend.model.Transaction;
 import com.m4hub.backend.model.User;
 import com.m4hub.backend.repository.BankAccountRepository;
 import com.m4hub.backend.repository.TransactionRepository;
 import com.m4hub.backend.repository.UserRepository;
+import com.m4hub.backend.repository.BeneficiaryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,9 @@ public class PaymentService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private BeneficiaryRepository beneficiaryRepository;
 
     @Autowired
     private com.m4hub.backend.component.BankingGateway bankingGateway;
@@ -50,21 +55,34 @@ public class PaymentService {
         }
     }
 
-    public Optional<BankAccount> getBankAccount(User user) {
+    public List<BankAccount> getBankAccounts(User user) {
         return bankAccountRepository.findByUser(user);
+    }
+
+    public Optional<BankAccount> getBankAccount(User user, Long accountId) {
+        return bankAccountRepository.findById(accountId)
+                .filter(acc -> acc.getUser().getId().equals(user.getId()));
     }
 
     @Transactional
     public BankAccount linkBankAccount(User user, String accountNumber, String bankName,
             String ifscCode, String accountHolderName, String upiPin) {
-        BankAccount account = bankAccountRepository.findByUser(user).orElse(new BankAccount());
+        List<BankAccount> existing = bankAccountRepository.findByUser(user);
+
+        if (bankAccountRepository.findByAccountNumber(accountNumber).isPresent()) {
+            throw new RuntimeException("This bank account number is already linked to a user.");
+        }
+
+        BankAccount account = new BankAccount();
         account.setUser(user);
         account.setAccountNumber(accountNumber);
         account.setBankName(bankName);
         account.setIfscCode(ifscCode.toUpperCase());
         account.setAccountHolderName(accountHolderName);
 
-        // PRODUCTION: Call Banking Gateway to verify account details
+        // If this is the first account, make it primary
+        account.setIsPrimary(existing.isEmpty());
+
         boolean isVerified = bankingGateway.verifyBankAccount(accountNumber, ifscCode, accountHolderName);
         account.setIsVerified(isVerified);
 
@@ -72,19 +90,85 @@ public class PaymentService {
             throw new RuntimeException("Bank account verification failed. Please check your details.");
         }
 
-        // PRODUCTION UPDATE: Hash the PIN before saving
         account.setUpiPin(hashPin(upiPin));
-
-        // Always sync the latest balance from the external bank verification
         account.setBalance(bankingGateway.getMockBalance(accountNumber));
         return bankAccountRepository.save(account);
     }
 
     @Transactional
-    public Transaction transferMoney(User sender, Long receiverId, BigDecimal amount, String upiPin,
+    public void deleteBankAccount(User user, Long accountId) {
+        BankAccount account = bankAccountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        if (!account.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        boolean wasPrimary = account.getIsPrimary();
+        bankAccountRepository.delete(account);
+
+        // If deleted account was primary, make another one primary if exists
+        if (wasPrimary) {
+            List<BankAccount> remaining = bankAccountRepository.findByUser(user);
+            if (!remaining.isEmpty()) {
+                BankAccount nextPrimary = remaining.get(0);
+                nextPrimary.setIsPrimary(true);
+                bankAccountRepository.save(nextPrimary);
+            }
+        }
+    }
+
+    @Transactional
+    public void setPrimaryAccount(User user, Long accountId) {
+        List<BankAccount> accounts = bankAccountRepository.findByUser(user);
+        boolean found = false;
+        for (BankAccount acc : accounts) {
+            if (acc.getId().equals(accountId)) {
+                acc.setIsPrimary(true);
+                found = true;
+            } else {
+                acc.setIsPrimary(false);
+            }
+        }
+
+        if (!found)
+            throw new RuntimeException("Account not found");
+        bankAccountRepository.saveAll(accounts);
+    }
+
+    @Transactional
+    public Beneficiary saveBeneficiary(User user, String name, String accountNumber, String ifsc, String phone,
+            String type) {
+        Beneficiary b = new Beneficiary();
+        b.setUser(user);
+        b.setName(name);
+        b.setAccountNumber(accountNumber);
+        b.setIfscCode(ifsc);
+        b.setPhoneNumber(phone);
+        b.setType(type);
+        return beneficiaryRepository.save(b);
+    }
+
+    public List<Beneficiary> getBeneficiaries(User user) {
+        return beneficiaryRepository.findByUser(user);
+    }
+
+    @Transactional
+    public void deleteBeneficiary(User user, Long beneficiaryId) {
+        Beneficiary b = beneficiaryRepository.findById(beneficiaryId)
+                .orElseThrow(() -> new RuntimeException("Beneficiary not found"));
+        if (!b.getUser().getId().equals(user.getId()))
+            throw new RuntimeException("Unauthorized");
+        beneficiaryRepository.delete(b);
+    }
+
+    @Transactional
+    public Transaction transferMoney(User sender, Long sourceAccountId, Long receiverId, BigDecimal amount,
+            String upiPin,
             String description) {
-        BankAccount senderAccount = bankAccountRepository.findByUser(sender)
-                .orElseThrow(() -> new RuntimeException("Your bank account is not linked."));
+        BankAccount senderAccount = bankAccountRepository.findById(sourceAccountId)
+                .filter(acc -> acc.getUser().getId().equals(sender.getId()))
+                .orElseThrow(() -> new RuntimeException("Source bank account not found or unauthorized."));
 
         // VERIFICATION: Check if sender's account is verified
         if (!senderAccount.getIsVerified()) {
@@ -104,8 +188,13 @@ public class PaymentService {
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new RuntimeException("Recipient not found."));
 
-        BankAccount receiverAccount = bankAccountRepository.findByUser(receiver)
-                .orElseThrow(() -> new RuntimeException("Recipient does not have a linked bank account."));
+        BankAccount receiverAccount = bankAccountRepository.findByUserAndIsPrimary(receiver, true)
+                .orElseGet(() -> {
+                    List<BankAccount> all = bankAccountRepository.findByUser(receiver);
+                    if (all.isEmpty())
+                        throw new RuntimeException("Recipient does not have a linked bank account.");
+                    return all.get(0);
+                });
 
         // VERIFICATION: Check if receiver's account is verified
         if (!receiverAccount.getIsVerified()) {
@@ -139,10 +228,12 @@ public class PaymentService {
     }
 
     @Transactional
-    public Transaction transferToAccount(User sender, String recipientName, String accountNumber, String ifsc,
+    public Transaction transferToAccount(User sender, Long sourceAccountId, String recipientName, String accountNumber,
+            String ifsc,
             BigDecimal amount, String upiPin, String description) {
-        BankAccount senderAccount = bankAccountRepository.findByUser(sender)
-                .orElseThrow(() -> new RuntimeException("Your bank account is not linked."));
+        BankAccount senderAccount = bankAccountRepository.findById(sourceAccountId)
+                .filter(acc -> acc.getUser().getId().equals(sender.getId()))
+                .orElseThrow(() -> new RuntimeException("Source bank account not found or unauthorized."));
 
         if (!senderAccount.getIsVerified()) {
             throw new RuntimeException("Your bank account is not verified.");
@@ -196,9 +287,10 @@ public class PaymentService {
     }
 
     @Transactional
-    public BigDecimal checkBalance(User user, String upiPin) {
-        BankAccount account = bankAccountRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("No bank account linked to this user."));
+    public BigDecimal checkBalance(User user, Long accountId, String upiPin) {
+        BankAccount account = bankAccountRepository.findById(accountId)
+                .filter(acc -> acc.getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> new RuntimeException("Bank account not found or unauthorized."));
 
         // Verify PIN
         String hashedInput = hashPin(upiPin);

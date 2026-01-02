@@ -35,13 +35,17 @@ class AnalyticsServiceClass {
         try {
             config.log(`Fetching hub analytics (${timeframe})...`);
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
             const response = await fetch(`${config.apiUrl}/api/analytics/hub?timeframe=${timeframe}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': token,
                     'Content-Type': 'application/json',
                 },
-            });
+                signal: controller.signal
+            }).finally(() => clearTimeout(timeoutId));
 
             if (!response.ok) {
                 config.error(`Hub analytics failed with status: ${response.status}`);

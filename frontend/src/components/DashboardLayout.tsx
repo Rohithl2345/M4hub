@@ -59,9 +59,10 @@ import HubIcon from '@mui/icons-material/Hub';
 interface DashboardLayoutProps {
     children: React.ReactNode;
     title: string;
+    subtitle?: string;
 }
 
-export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, title, subtitle }: DashboardLayoutProps) {
     const router = useRouter();
     const pathname = usePathname();
     const dispatch = useAppDispatch();
@@ -313,6 +314,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     >
                         <AccountBalanceWalletIcon className={styles.navIcon} />
                         <span>Money</span>
+                        <span className={styles.prototypeBadge}>PROTOTYPE</span>
                     </div>
                     <div
                         className={`${styles.navItem} ${isActive('/news') ? styles.navItemActive : ''}`}
@@ -388,7 +390,10 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
             <main className={styles.main}>
                 <div className={styles.pageHeader}>
-                    <h1 className={styles.title}>{title}</h1>
+                    <div>
+                        <h1 className={styles.title}>{title}</h1>
+                        {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+                    </div>
 
                     {user?.username && (
                         <div className={styles.headerProfileContainer}>

@@ -738,7 +738,7 @@ export default function MoneyScreen() {
                         <View style={[styles.stepContainer, { justifyContent: 'center', alignItems: 'center' }]}>
                             <ActivityIndicator size="large" color="#4c669f" style={{ marginBottom: 24 }} />
                             <Text style={styles.stepTitle}>Securing Connection</Text>
-                            <Text style={styles.stepSubtitle}>Connecting to your bank's secure SDK...</Text>
+                            <Text style={styles.stepSubtitle}>Connecting to your bank&apos;s secure SDK...</Text>
                         </View>
                     )}
 

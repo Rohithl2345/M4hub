@@ -106,6 +106,7 @@ export default function DashboardPage() {
                             className={`${styles.featureCard} ${styles.moneyCard}`}
                             onClick={() => router.push('/money')}
                         >
+                            <span className={styles.prototypeBadge}>PROTOTYPE</span>
                             <div className={styles.featureIconWrapper}>
                                 <AccountBalanceWalletIcon className={styles.featureIcon} />
                             </div>

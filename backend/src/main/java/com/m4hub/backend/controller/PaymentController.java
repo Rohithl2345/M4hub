@@ -33,16 +33,71 @@ public class PaymentController {
         return user;
     }
 
-    @GetMapping("/account")
-    public ResponseEntity<?> getAccount(@RequestHeader("Authorization") String authHeader) {
+    @GetMapping("/accounts")
+    public ResponseEntity<?> getAccounts(@RequestHeader("Authorization") String authHeader) {
         try {
             User user = getUserFromToken(authHeader);
-            return paymentService.getBankAccount(user)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.noContent().build());
+            return ResponseEntity.ok(paymentService.getBankAccounts(user));
         } catch (Exception e) {
             return ResponseEntity.status(401)
-                    .body(Map.of("success", false, "message", "Authentication or session error. Please try again."));
+                    .body(Map.of("success", false, "message", "Authentication or session error."));
+        }
+    }
+
+    @PostMapping("/accounts/{id}/primary")
+    public ResponseEntity<?> setPrimary(@RequestHeader("Authorization") String authHeader, @PathVariable Long id) {
+        try {
+            User user = getUserFromToken(authHeader);
+            paymentService.setPrimaryAccount(user, id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/accounts/{id}")
+    public ResponseEntity<?> deleteAccount(@RequestHeader("Authorization") String authHeader, @PathVariable Long id) {
+        try {
+            User user = getUserFromToken(authHeader);
+            paymentService.deleteBankAccount(user, id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/beneficiaries")
+    public ResponseEntity<?> getBeneficiaries(@RequestHeader("Authorization") String authHeader) {
+        try {
+            User user = getUserFromToken(authHeader);
+            return ResponseEntity.ok(paymentService.getBeneficiaries(user));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
+    @PostMapping("/beneficiaries")
+    public ResponseEntity<?> addBeneficiary(@RequestHeader("Authorization") String authHeader,
+            @RequestBody Map<String, String> request) {
+        try {
+            User user = getUserFromToken(authHeader);
+            return ResponseEntity.ok(paymentService.saveBeneficiary(user,
+                    request.get("name"), request.get("accountNumber"), request.get("ifscCode"),
+                    request.get("phoneNumber"), request.get("type")));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/beneficiaries/{id}")
+    public ResponseEntity<?> deleteBeneficiary(@RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id) {
+        try {
+            User user = getUserFromToken(authHeader);
+            paymentService.deleteBeneficiary(user, id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
@@ -62,7 +117,8 @@ public class PaymentController {
             return ResponseEntity.ok(account);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    Map.of("success", false, "message", "Transaction failed to initialize. Please try again later."));
+                    Map.of("success", false, "message",
+                            e.getMessage() != null ? e.getMessage() : "Transaction failed to initialize."));
         }
     }
 
@@ -84,12 +140,14 @@ public class PaymentController {
             @RequestBody Map<String, Object> request) {
         try {
             User user = getUserFromToken(authHeader);
+            Long sourceAccountId = Long.valueOf(request.get("sourceAccountId").toString());
             Long receiverId = Long.valueOf(request.get("receiverId").toString());
             BigDecimal amount = new BigDecimal(request.get("amount").toString());
             String upiPin = request.get("upiPin").toString();
             String description = request.getOrDefault("description", "").toString();
 
-            Transaction tx = paymentService.transferMoney(user, receiverId, amount, upiPin, description);
+            Transaction tx = paymentService.transferMoney(user, sourceAccountId, receiverId, amount, upiPin,
+                    description);
             return ResponseEntity.ok(tx);
         } catch (Exception e) {
             return ResponseEntity.badRequest()
@@ -102,6 +160,7 @@ public class PaymentController {
             @RequestBody Map<String, Object> request) {
         try {
             User user = getUserFromToken(authHeader);
+            Long sourceAccountId = Long.valueOf(request.get("sourceAccountId").toString());
             String recipientName = request.get("recipientName").toString();
             String accountNumber = request.get("accountNumber").toString();
             String ifsc = request.get("ifsc").toString();
@@ -109,7 +168,8 @@ public class PaymentController {
             String upiPin = request.get("upiPin").toString();
             String description = request.getOrDefault("description", "").toString();
 
-            Transaction tx = paymentService.transferToAccount(user, recipientName, accountNumber, ifsc, amount, upiPin,
+            Transaction tx = paymentService.transferToAccount(user, sourceAccountId, recipientName, accountNumber, ifsc,
+                    amount, upiPin,
                     description);
             return ResponseEntity.ok(tx);
         } catch (Exception e) {
@@ -149,8 +209,9 @@ public class PaymentController {
             @RequestBody Map<String, String> request) {
         try {
             User user = getUserFromToken(authHeader);
+            Long accountId = Long.valueOf(request.get("accountId").toString());
             String upiPin = request.get("upiPin");
-            BigDecimal balance = paymentService.checkBalance(user, upiPin);
+            BigDecimal balance = paymentService.checkBalance(user, accountId, upiPin);
             Map<String, Object> response = new HashMap<>();
             response.put("balance", balance);
             return ResponseEntity.ok(response);

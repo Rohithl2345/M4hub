@@ -128,11 +128,11 @@ export function AuthBackground({ currentThemeIndex }: AuthBackgroundProps) {
                 end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
             >
-                {/* Floating Icons - Increased to 80 for ultra-rich background */}
+                {/* Floating Icons - Reduced for performance on real devices */}
                 {magicEnabled && (
                     <View style={StyleSheet.absoluteFill}>
-                        {[...Array(80)].map((_, i) => (
-                            <FloatingIcon key={`${currentThemeIndex}-${i}`} icon={theme.icon} index={i} />
+                        {[...Array(40)].map((_, i) => (
+                            <FloatingIcon key={`${theme.name}-${i}`} icon={theme.icon} index={i} />
                         ))}
                     </View>
                 )}

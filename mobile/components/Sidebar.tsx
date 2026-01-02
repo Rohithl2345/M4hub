@@ -110,7 +110,7 @@ export const Sidebar = ({ isOpen: propIsOpen, onClose: propOnClose }: SidebarPro
     const animation = React.useRef(new RNAnimated.Value(0)).current;
 
     const segments = useSegments();
-    const currentTab = segments[1] || 'dashboard';
+    const currentTab = (segments as any)[1] || 'dashboard';
 
     const sidebarTheme = React.useMemo(() => {
         if (currentTab === 'music') return {
