@@ -57,7 +57,7 @@ jobs:
     name: 🚀 Deploy to Production
     needs: [build-and-test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_production_release == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_production_release == 'true'
     environment:
       name: Production
       url: https://m4hub.vercel.app

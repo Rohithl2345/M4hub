@@ -24,16 +24,34 @@ class MusicService {
     private baseUrl = BACKEND_API_BASE;
 
     private mapSongToTrack(song: any): Track {
+        let audioUrl = song.audioUrl || song.audio_url;
+        let imageUrl = song.imageUrl || song.image_url || '';
+
+        // Ensure URLs are absolute
+        if (audioUrl && !audioUrl.startsWith('http')) {
+            audioUrl = `${API_URL}${audioUrl.startsWith('/') ? '' : '/'}${audioUrl}`;
+        }
+
+        // Fix for localhost references if any
+        if (audioUrl && audioUrl.includes('localhost') && !audioUrl.includes(API_URL)) {
+            // If we are in dev and URL points to localhost but not our API URL, we might want to fix it
+            // But usually ensuring it starts with http + prepend API_URL is enough for relative paths.
+        }
+
+        if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = `${API_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+        }
+
         return {
             id: song.id.toString(),
             name: song.title,
             artist_name: song.artist,
             album_name: song.album || 'Unknown Album',
             duration: song.duration,
-            audio: song.audioUrl || song.audio_url,
-            audiodownload: song.audioUrl || song.audio_url,
-            image: song.imageUrl || song.image_url || '',
-            album_image: song.imageUrl || song.image_url || '',
+            audio: audioUrl,
+            audiodownload: audioUrl,
+            image: imageUrl,
+            album_image: imageUrl,
             genre: song.genre,
             isFavorite: song.isFavorite || false,
             isInWishlist: song.isInWishlist || false

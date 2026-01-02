@@ -34,7 +34,7 @@ class AuthService {
             const payload = { email, password };
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -75,7 +75,7 @@ class AuthService {
             const payload = { email, otpCode, password, registrationSource: source };
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -113,7 +113,7 @@ class AuthService {
             const payload = { email: identifier, password }; // Backend uses 'email' field for both email and username
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for cold starts
 
             const response = await fetch(url, {
                 method: 'POST',

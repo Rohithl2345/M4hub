@@ -152,7 +152,7 @@ function EmailLoginPageInner() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password }),
-                    signal: AbortSignal.timeout(15000) // 15 second timeout
+                    signal: AbortSignal.timeout(60000) // 60 second timeout for cold starts
                 });
 
                 const data = await response.json();
@@ -203,7 +203,7 @@ function EmailLoginPageInner() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password }),
-                    signal: AbortSignal.timeout(15000)
+                    signal: AbortSignal.timeout(60000) // 60 second timeout for cold starts
                 });
 
                 const data = await response.json();

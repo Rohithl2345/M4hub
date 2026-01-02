@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ReduxProvider } from '@/store/ReduxProvider';
 import PortalTutorial from '@/components/PortalTutorial';
+import BackendWarmer from '@/components/BackendWarmer';
 
 import { useAppTheme } from '@/hooks/use-app-theme';
 
@@ -25,6 +26,7 @@ export default function RootLayout() {
   return (
     <ReduxProvider>
       <AppThemeProvider>
+        <BackendWarmer />
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="welcome" options={{ headerShown: false }} />

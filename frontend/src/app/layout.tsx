@@ -4,6 +4,7 @@ import "./globals.css";
 import { ReduxProvider } from "@/store/ReduxProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/components/ToastProvider";
+import BackendWarmer from "@/components/BackendWarmer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -34,6 +35,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <ReduxProvider>
             <ToastProvider>
+              <BackendWarmer />
               {children}
             </ToastProvider>
           </ReduxProvider>

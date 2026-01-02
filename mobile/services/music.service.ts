@@ -21,7 +21,7 @@ class MusicService {
     private baseUrl = APP_CONFIG.API_URL;
 
     private mapSongToTrack = (song: any): Track => {
-        let audioUrl = song.audioUrl;
+        let audioUrl = song.audioUrl || song.audio_url;
 
         // Ensure URL is absolute
         if (audioUrl && !audioUrl.startsWith('http')) {
@@ -41,8 +41,8 @@ class MusicService {
             duration: song.duration,
             audio: audioUrl,
             audiodownload: audioUrl,
-            image: song.imageUrl || '',
-            album_image: song.imageUrl || '',
+            image: song.imageUrl || song.image_url || '',
+            album_image: song.imageUrl || song.image_url || '',
             genre: song.genre,
             isFavorite: song.isFavorite || false,
             isInWishlist: song.isInWishlist || false
