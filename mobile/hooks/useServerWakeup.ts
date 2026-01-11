@@ -6,8 +6,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo from '@react-native-community/netinfo';
-import { env } from '../utils/env';
+import { APP_CONFIG } from '../constants';
+
+// Get API URL from config
+const apiUrl = APP_CONFIG.API_URL;
 
 export interface ServerStatus {
     isWarm: boolean;
@@ -143,13 +145,23 @@ export function useServerWakeup() {
         startTimeRef.current = null;
     }, []);
 
-    // Check if device is online
+    // Check if device is online using a simple fetch test
     const isDeviceOnline = useCallback(async (): Promise<boolean> => {
         try {
-            const netState = await NetInfo.fetch();
-            return netState.isConnected === true;
+            // Try to reach a reliable endpoint
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            await fetch('https://www.google.com/favicon.ico', {
+                method: 'HEAD',
+                mode: 'no-cors',
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+            return true;
         } catch {
-            return true; // Assume online if check fails
+            return false;
         }
     }, []);
 
@@ -180,7 +192,7 @@ export function useServerWakeup() {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-            const response = await fetch(`${env.apiUrl}/api/health`, {
+            const response = await fetch(`${apiUrl}/api/health`, {
                 method: 'GET',
                 signal: controller.signal,
             });
