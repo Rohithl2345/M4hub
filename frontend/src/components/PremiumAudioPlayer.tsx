@@ -54,8 +54,6 @@ export default function PremiumAudioPlayer({
     const [showLyrics, setShowLyrics] = useState(false);
     const [lyrics, setLyrics] = useState('');
     const [loadingLyrics, setLoadingLyrics] = useState(false);
-    const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
-    const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
 
     useEffect(() => {
         if (audioRef.current && track && track.audio) {
@@ -87,20 +85,7 @@ export default function PremiumAudioPlayer({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [track]);
 
-    useEffect(() => {
-        if (isShuffle) {
-            const indices = Array.from({ length: playlist.length }, (_, i) => i);
-            for (let i = indices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
-            setShuffledIndices(indices);
-        } else {
-            setShuffledIndices([]);
-        }
-    }, [isShuffle, playlist.length]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     const fetchLyrics = async (songId: string) => {
         setLoadingLyrics(true);
         const l = await musicService.getLyrics(songId);

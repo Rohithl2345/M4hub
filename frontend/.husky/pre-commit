@@ -1,1 +1,19 @@
+#!/usr/bin/env sh
+
+cd frontend
+
+echo "🔍 Running lint check..."
 npx lint-staged
+if [ $? -ne 0 ]; then
+  echo "❌ Lint check failed. Please fix the errors above."
+  exit 1
+fi
+
+echo "🏗️ Running build check..."
+npm run build
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed. Please fix the errors above."
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
