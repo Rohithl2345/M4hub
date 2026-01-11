@@ -18,9 +18,8 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import LyricsIcon from '@mui/icons-material/Lyrics';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import CloseIcon from '@mui/icons-material/Close';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-import { Track, musicService, Playlist } from '@/services/music.service';
+import { Track, musicService } from '@/services/music.service';
 import { useToast } from '@/components/ToastProvider';
 
 interface PremiumAudioPlayerProps {
@@ -85,6 +84,7 @@ export default function PremiumAudioPlayer({
                     });
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [track]);
 
     useEffect(() => {
@@ -100,6 +100,7 @@ export default function PremiumAudioPlayer({
         }
     }, [isShuffle, playlist.length]);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const fetchLyrics = async (songId: string) => {
         setLoadingLyrics(true);
         const l = await musicService.getLyrics(songId);
@@ -119,8 +120,6 @@ export default function PremiumAudioPlayer({
         }
     };
 
-    // Playlist creation/addition handled by parent via onAddToPlaylist
-
     const togglePlay = () => {
         if (audioRef.current) {
             if (isPlaying) {
@@ -139,24 +138,6 @@ export default function PremiumAudioPlayer({
                 }
             }
         }
-    };
-
-    const handleNext = () => {
-        if (!playlist || playlist.length === 0) return;
-
-        if (isShuffle && shuffledIndices.length > 0) {
-            const currentShuffledOrderIndex = shuffledIndices.indexOf(currentQueueIndex);
-            const nextShuffledOrderIndex = (currentShuffledOrderIndex + 1) % shuffledIndices.length;
-            const nextActualIndex = shuffledIndices[nextShuffledOrderIndex];
-            setCurrentQueueIndex(nextActualIndex);
-            onNext?.(); // This might need to change to onTrackChange(playlist[nextActualIndex])
-        } else {
-            onNext?.();
-        }
-    };
-
-    const handlePrevious = () => {
-        onPrevious?.();
     };
 
     const handleTimeUpdate = () => {
@@ -200,6 +181,8 @@ export default function PremiumAudioPlayer({
         }
     };
 
+
+
     const toggleRepeat = () => {
         setRepeatMode(prev => {
             if (prev === 'off') return 'all';
@@ -233,9 +216,9 @@ export default function PremiumAudioPlayer({
         }
     };
 
-    const handleError = (e: any) => {
+    const handleError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
         console.error('Audio playback error:', e);
-        const error = e.target?.error;
+        const error = (e.target as HTMLAudioElement).error;
         let errorMessage = 'Unable to play this track.';
 
         if (error) {
