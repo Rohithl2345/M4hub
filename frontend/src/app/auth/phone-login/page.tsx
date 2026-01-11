@@ -119,11 +119,7 @@ export default function PhoneLoginPage() {
                                 />
                             </Box>
 
-                            {error && (
-                                <Alert severity="error" className={styles.alert}>
-                                    {error}
-                                </Alert>
-                            )}
+                            {/* Error shown via toast notification */}
 
                             <Button
                                 type="submit"

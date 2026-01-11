@@ -17,8 +17,41 @@ export class ErrorHandler {
      * Classify and format errors for user display
      */
     static handleError(error: any): AppError {
-        // Network errors
-        if (error.message?.includes('fetch') || error.message?.includes('Network') || error.message?.includes('network request failed')) {
+        // Server unavailable (backend is down)
+        if (
+            error.code === 'ECONNREFUSED' ||
+            error.message?.includes('ECONNREFUSED') ||
+            error.message?.includes('Failed to fetch') ||
+            error.message?.includes('NetworkError') ||
+            error.message?.includes('Network request failed')
+        ) {
+            // For React Native, we need to check the error more carefully
+            // 'Network request failed' with connection = usually server is down
+            const isServerUnavailable =
+                error.message?.includes('Network request failed') ||
+                error.code === 'ECONNREFUSED';
+
+            if (isServerUnavailable) {
+                return {
+                    code: 'SERVER_UNAVAILABLE',
+                    message: error.message,
+                    userMessage: 'Unable to connect to the server. Please try again later.',
+                    severity: 'error',
+                    retryable: true
+                };
+            }
+
+            return {
+                code: 'NETWORK_ERROR',
+                message: error.message,
+                userMessage: 'No internet connection. Please check your network and try again.',
+                severity: 'error',
+                retryable: true
+            };
+        }
+
+        // Network errors (fallback for other network-related issues)
+        if (error.message?.includes('Network')) {
             return {
                 code: 'NETWORK_ERROR',
                 message: error.message,

@@ -13,13 +13,16 @@ import {
     InputAdornment,
     IconButton,
     LinearProgress,
-    Chip
+    Chip,
+    CircularProgress
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
 import WifiIcon from '@mui/icons-material/Wifi';
 import SignalWifiStatusbarConnectedNoInternet4Icon from '@mui/icons-material/SignalWifiStatusbarConnectedNoInternet4';
+import CloudQueueIcon from '@mui/icons-material/CloudQueue';
+import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import AuthLayout from '../AuthLayout';
 import styles from './email-login.module.css';
 import { env } from '@/utils/env';
@@ -33,6 +36,7 @@ import {
 import ErrorHandler, { AuthErrors } from '@/utils/errorHandler';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useToast } from '@/components/ToastProvider';
+import { useServerWakeup } from '@/hooks/useServerWakeup';
 
 function EmailLoginPageInner() {
     const router = useRouter();
@@ -41,6 +45,7 @@ function EmailLoginPageInner() {
     const dispatch = useAppDispatch();
     const { isOnline, isSlowConnection } = useNetworkStatus();
     const { showSuccess, showError } = useToast();
+    const { status: serverStatus, progress: wakeupProgress, prewarmServer, fetchWithRetry, isServerReady } = useServerWakeup();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -55,6 +60,13 @@ function EmailLoginPageInner() {
         feedback: [] as string[],
         isValid: false
     });
+
+    // Pre-warm server when page loads (silent, non-blocking)
+    useEffect(() => {
+        if (isOnline && !isServerReady) {
+            prewarmServer();
+        }
+    }, [isOnline, isServerReady, prewarmServer]);
 
     useEffect(() => {
         if (mode === 'signup' && password) {
@@ -148,11 +160,11 @@ function EmailLoginPageInner() {
 
         try {
             if (mode === 'login') {
-                const response = await fetch(`${env.apiUrl}/api/auth/login`, {
+                // Use fetchWithRetry for automatic cold start handling
+                const response = await fetchWithRetry(`${env.apiUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password }),
-                    signal: AbortSignal.timeout(60000) // 60 second timeout for cold starts
                 });
 
                 const data = await response.json();
@@ -199,11 +211,11 @@ function EmailLoginPageInner() {
                     }
                 }
             } else {
-                const response = await fetch(`${env.apiUrl}/api/auth/send-email-otp`, {
+                // Use fetchWithRetry for automatic cold start handling
+                const response = await fetchWithRetry(`${env.apiUrl}/api/auth/send-email-otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password }),
-                    signal: AbortSignal.timeout(60000) // 60 second timeout for cold starts
                 });
 
                 const data = await response.json();
@@ -246,7 +258,8 @@ function EmailLoginPageInner() {
                 setError(msg);
                 showError(msg);
             } else {
-                const msg = 'Connection problem. Please check your internet and try again.';
+                // Use the ErrorHandler's classified message
+                const msg = appError.userMessage;
                 setError(msg);
                 showError(msg);
             }
@@ -442,7 +455,9 @@ function EmailLoginPageInner() {
                             className={styles.forgotPasswordLink}
                             disabled={!email || validateIdentifier(email).isValid === false}
                             onClick={() => {
-                                const q = email && validateEmail(email).isValid ? `?email=${encodeURIComponent(email)}` : '';
+                                // Always pass the email/username to the forgot password page
+                                const identifier = email.trim();
+                                const q = identifier ? `?email=${encodeURIComponent(identifier)}` : '';
                                 router.push(`/auth/forgot-password${q}`);
                             }}
                         >
@@ -465,11 +480,43 @@ function EmailLoginPageInner() {
                     </Alert>
                 )}
 
-                {error && (
-                    <Alert severity="error" className={styles.alert}>
-                        {error}
-                    </Alert>
+                {/* Server Wakeup Progress */}
+                {loading && wakeupProgress.stage !== 'ready' && wakeupProgress.stage !== 'idle' && (
+                    <Box sx={{
+                        mb: 2,
+                        p: 2,
+                        borderRadius: 2,
+                        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                    }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                            <CircularProgress size={20} thickness={4} sx={{ color: '#3b82f6' }} />
+                            <Typography variant="body2" sx={{ color: '#3b82f6', fontWeight: 600 }}>
+                                {wakeupProgress.message}
+                            </Typography>
+                        </Box>
+                        <LinearProgress
+                            variant="determinate"
+                            value={wakeupProgress.progress}
+                            sx={{
+                                height: 6,
+                                borderRadius: 3,
+                                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                '& .MuiLinearProgress-bar': {
+                                    backgroundColor: '#3b82f6',
+                                    borderRadius: 3,
+                                }
+                            }}
+                        />
+                        {wakeupProgress.elapsedSeconds > 5 && (
+                            <Typography variant="caption" sx={{ color: '#64748b', mt: 1, display: 'block' }}>
+                                First-time requests may take up to 30 seconds due to server warm-up
+                            </Typography>
+                        )}
+                    </Box>
                 )}
+
+                {/* Error is shown via toast notification - removed inline Alert to avoid duplicate */}
 
                 {/* Submit Button with Enhanced Validation */}
                 <Button
@@ -520,7 +567,7 @@ function EmailLoginPageInner() {
                 </Button>
 
                 {/* Connection Status Badge */}
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 1, flexWrap: 'wrap' }}>
                     {isOnline ? (
                         <Chip
                             icon={<WifiIcon />}
@@ -536,6 +583,17 @@ function EmailLoginPageInner() {
                             label="Offline"
                             size="small"
                             color="error"
+                            variant="outlined"
+                            sx={{ fontSize: '0.7rem', height: 24 }}
+                        />
+                    )}
+                    {/* Server Status */}
+                    {isOnline && (
+                        <Chip
+                            icon={isServerReady ? <CloudDoneIcon /> : <CloudQueueIcon />}
+                            label={isServerReady ? "Server Ready" : (serverStatus.isWaking ? "Warming Up..." : "Server Idle")}
+                            size="small"
+                            color={isServerReady ? "success" : (serverStatus.isWaking ? "warning" : "default")}
                             variant="outlined"
                             sx={{ fontSize: '0.7rem', height: 24 }}
                         />

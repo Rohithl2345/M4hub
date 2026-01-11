@@ -23,7 +23,6 @@ function ForgotPasswordPageInner() {
     const searchParams = useSearchParams();
     const { showSuccess, showError } = useToast();
     const emailParam = searchParams.get('email');
-    const [email, setEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -32,19 +31,21 @@ function ForgotPasswordPageInner() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    const validateIdentifier = (id: string) => {
-        return id.length >= 3; // Basic check for email or username
-    };
+    // Get the email from URL params - this is required
+    const email = emailParam?.trim() || '';
 
     const hasUppercase = (pw: string) => /[A-Z]/.test(pw);
+    const hasLowercase = (pw: string) => /[a-z]/.test(pw);
+    const hasNumber = (pw: string) => /[0-9]/.test(pw);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setSuccess('');
 
-        if (!validateIdentifier(email)) {
-            setError('Please enter a valid email or username');
+        if (!email) {
+            showError('No email/username provided. Redirecting to login...');
+            setTimeout(() => router.push('/auth/email-login?mode=login'), 1500);
             return;
         }
         if (newPassword.length < 8) {
@@ -86,16 +87,42 @@ function ForgotPasswordPageInner() {
         }
     };
 
+    // Redirect to login if no email is provided
     useEffect(() => {
-        setEmail(emailParam || '');
-        // Clear password fields when changing/entering the reset context
+        if (!emailParam) {
+            showError('Please enter your email/username on the login page first');
+            const timer = setTimeout(() => {
+                router.push('/auth/email-login?mode=login');
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+        // Clear password fields on mount
         setNewPassword('');
         setConfirmPassword('');
         setError('');
         setSuccess('');
-    }, [emailParam]);
+    }, [emailParam, router, showError]);
 
-    const isButtonDisabled = !email || newPassword.length < 8 || !hasUppercase(newPassword) || newPassword !== confirmPassword || loading || !!success;
+    // Button disabled logic - check all conditions
+    const isPasswordValid = newPassword.length >= 8 && hasUppercase(newPassword);
+    const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
+    const isButtonDisabled = !email || !isPasswordValid || !passwordsMatch || loading || !!success;
+
+    // Show loading state if no email (will redirect)
+    if (!email) {
+        return (
+            <AuthLayout>
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography variant="h6" sx={{ color: '#64748b', mb: 2 }}>
+                        No email provided
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                        Redirecting to login page...
+                    </Typography>
+                </Box>
+            </AuthLayout>
+        );
+    }
 
     return (
         <AuthLayout>
@@ -120,29 +147,39 @@ function ForgotPasswordPageInner() {
                 </Typography>
             </Box>
 
+            {/* Display the email/username from login page (read-only) */}
             <Box sx={{
                 mb: 3,
                 textAlign: 'center',
-                backgroundColor: 'rgba(226, 232, 240, 0.4)',
-                p: 1.5,
+                backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                p: 2,
                 borderRadius: '12px',
-                border: '1px solid rgba(203, 213, 225, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 1
+                border: '1px solid rgba(59, 130, 246, 0.2)',
             }}>
-                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '11px' }}>
+                <Typography variant="caption" sx={{
+                    color: '#64748b',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontSize: '10px',
+                    display: 'block',
+                    mb: 0.5
+                }}>
                     Resetting password for
                 </Typography>
-                <Typography sx={{ color: '#0f172a', fontWeight: 700, fontSize: '14px' }}>
-                    {email || 'User'}
+                <Typography sx={{
+                    color: '#1e40af',
+                    fontWeight: 700,
+                    fontSize: '16px',
+                    wordBreak: 'break-all'
+                }}>
+                    {email}
                 </Typography>
             </Box>
 
             <form onSubmit={handleSubmit} className={styles.form}>
                 <Box className={styles.inputGroup}>
-                    <label className={styles.fieldLabel}>New Password</label>
+                    <label className={styles.fieldLabel}>New Password *</label>
                     <TextField
                         fullWidth
                         type={showPassword ? 'text' : 'password'}
@@ -151,6 +188,9 @@ function ForgotPasswordPageInner() {
                         onChange={e => setNewPassword(e.target.value)}
                         className={styles.passwordField}
                         autoComplete="new-password"
+                        autoFocus
+                        error={newPassword.length > 0 && !isPasswordValid}
+                        helperText={newPassword.length > 0 && !isPasswordValid ? "Min 8 chars with uppercase required" : ""}
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
@@ -167,7 +207,7 @@ function ForgotPasswordPageInner() {
                 </Box>
 
                 <Box className={styles.inputGroup}>
-                    <label className={styles.fieldLabel}>Confirm Password</label>
+                    <label className={styles.fieldLabel}>Confirm Password *</label>
                     <TextField
                         fullWidth
                         type={showConfirmPassword ? 'text' : 'password'}
@@ -193,17 +233,30 @@ function ForgotPasswordPageInner() {
                     />
                 </Box>
 
-                {error && (
-                    <Alert severity="error" className={styles.alert}>
-                        {error}
-                    </Alert>
+                {/* Password Requirements Checklist */}
+                {newPassword.length > 0 && (
+                    <Box sx={{ mb: 2, p: 1.5, backgroundColor: 'rgba(226, 232, 240, 0.3)', borderRadius: '8px' }}>
+                        <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 1, display: 'block' }}>
+                            Password Requirements:
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            <Typography variant="caption" sx={{ color: newPassword.length >= 8 ? '#22c55e' : '#ef4444' }}>
+                                {newPassword.length >= 8 ? '✓' : '○'} At least 8 characters
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: hasUppercase(newPassword) ? '#22c55e' : '#ef4444' }}>
+                                {hasUppercase(newPassword) ? '✓' : '○'} One uppercase letter
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: hasLowercase(newPassword) ? '#22c55e' : '#64748b' }}>
+                                {hasLowercase(newPassword) ? '✓' : '○'} One lowercase letter (recommended)
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: hasNumber(newPassword) ? '#22c55e' : '#64748b' }}>
+                                {hasNumber(newPassword) ? '✓' : '○'} One number (recommended)
+                            </Typography>
+                        </Box>
+                    </Box>
                 )}
 
-                {success && (
-                    <Alert severity="success" className={styles.alert}>
-                        {success}
-                    </Alert>
-                )}
+                {/* Error/Success shown via toast notification - removed inline Alerts to avoid duplicate */}
 
                 <Button
                     type="submit"
@@ -241,3 +294,5 @@ export default function ForgotPasswordPage() {
         </Suspense>
     );
 }
+
+
