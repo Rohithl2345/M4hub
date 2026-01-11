@@ -160,7 +160,11 @@ public class Song {
     }
 
     public void incrementPlayCount() {
-        this.playCount++;
+        if (this.playCount == null) {
+            this.playCount = 1;
+        } else {
+            this.playCount++;
+        }
     }
 
     public Instant getCreatedAt() {
