@@ -1,8 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Snackbar, Alert, AlertColor, Slide, SlideProps } from '@mui/material';
-import { usePathname } from 'next/navigation';
 
 interface ToastContextType {
     showToast: (message: string, severity?: AlertColor) => void;

@@ -12,7 +12,6 @@ import {
     TextField,
     Button,
     Typography,
-    Alert,
     Container,
     Link
 } from '@mui/material';
@@ -28,7 +27,7 @@ function VerifyOTPContent() {
     const dispatch = useAppDispatch();
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [timer, setTimer] = useState(30);
-    const [error, setError] = useState('');
+
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
     const [sendOtp, { isLoading: isResending }] = useSendOtpMutation();
@@ -63,11 +62,11 @@ function VerifyOTPContent() {
 
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+
 
         const otpCode = otp.join('');
         if (otpCode.length !== 6) {
-            setError('Please enter the complete 6-digit code');
+            showError('Please enter the complete 6-digit code');
             return;
         }
 
@@ -109,14 +108,12 @@ function VerifyOTPContent() {
             } else {
                 logger.error('OTP verification failed', { message: result.message });
                 const errMsg = result.message || 'Invalid OTP';
-                setError(errMsg);
                 showError(errMsg);
             }
         } catch (err: unknown) {
             logger.error('Failed to verify OTP', { error: err });
-            const error = err as { data?: { message?: string }; status?: number };
-            const errMsg = error?.data?.message || 'Failed to verify OTP. Please try again.';
-            setError(errMsg);
+            const errorObj = err as { data?: { message?: string }; status?: number };
+            const errMsg = errorObj?.data?.message || 'Failed to verify OTP. Please try again.';
             showError(errMsg);
         }
     };
@@ -124,7 +121,7 @@ function VerifyOTPContent() {
     const handleResend = async () => {
         if (timer > 0) return;
 
-        setError('');
+
 
         try {
             const result = await sendOtp({ phoneNumber: phoneNumber || '' }).unwrap();
@@ -136,12 +133,10 @@ function VerifyOTPContent() {
                 inputRefs.current[0]?.focus();
             } else {
                 const errMsg = result.message || 'Failed to resend OTP';
-                setError(errMsg);
                 showError(errMsg);
             }
         } catch (err: unknown) {
             const errMsg = 'Failed to resend OTP. Please try again.';
-            setError(errMsg);
             showError(errMsg);
             logger.error('Failed to resend OTP', { error: err });
         }

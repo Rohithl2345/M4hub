@@ -10,7 +10,6 @@ import {
     TextField,
     Button,
     Typography,
-    Alert,
     Link as MuiLink
 } from '@mui/material';
 import AuthLayout from '../AuthLayout';
@@ -40,7 +39,7 @@ function VerifyEmailContent() {
 
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+
     const [timer, setTimer] = useState(60);
     const [canResend, setCanResend] = useState(false);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -63,7 +62,7 @@ function VerifyEmailContent() {
         const newCode = [...code];
         newCode[index] = value;
         setCode(newCode);
-        setError('');
+
 
         if (value && index < 5) {
             inputRefs.current[index + 1]?.focus();
@@ -90,12 +89,12 @@ function VerifyEmailContent() {
         e.preventDefault();
         const otpCode = code.join('');
         if (otpCode.length !== 6) {
-            setError('Please enter the complete 6-digit code');
+            showError('Please enter the complete 6-digit code');
             return;
         }
 
         setLoading(true);
-        setError('');
+
         logger.debug('Initiating email OTP verification');
 
         try {
@@ -107,7 +106,7 @@ function VerifyEmailContent() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Server error' }));
-                setError(errorData.message || `Server error (${response.status})`);
+                showError(errorData.message || `Server error (${response.status})`);
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
                 return;
@@ -129,14 +128,12 @@ function VerifyEmailContent() {
                 }
             } else {
                 const msg = data.message || 'Invalid OTP code';
-                setError(msg);
                 showError(msg);
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
             }
         } catch {
             const msg = 'Cannot connect to server. Please ensure backend is running.';
-            setError(msg);
             showError(msg);
         } finally {
             setLoading(false);
@@ -147,7 +144,7 @@ function VerifyEmailContent() {
         if (!canResend) return;
 
         setLoading(true);
-        setError('');
+
 
         try {
             const response = await fetch(`${env.apiUrl}/api/auth/resend-email-otp`, {
@@ -164,10 +161,9 @@ function VerifyEmailContent() {
                 setCanResend(false);
                 setCode(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
-                setError('');
+
             } else {
                 const msg = data.message || 'Failed to resend OTP';
-                setError(msg);
                 showError(msg);
                 if (!data.message?.includes('wait')) {
                     setTimer(60);
@@ -176,7 +172,6 @@ function VerifyEmailContent() {
             }
         } catch {
             const msg = 'Network error. Please try again.';
-            setError(msg);
             showError(msg);
         } finally {
             setLoading(false);

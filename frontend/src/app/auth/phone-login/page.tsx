@@ -10,7 +10,6 @@ import {
     TextField,
     Button,
     Typography,
-    Alert,
     Container
 } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -22,15 +21,15 @@ export default function PhoneLoginPage() {
     const { showSuccess, showError } = useToast();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [countryCode, setCountryCode] = useState('+91');
-    const [error, setError] = useState('');
+
     const [sendOtp, { isLoading }] = useSendOtpMutation();
 
     const handleContinue = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+
 
         if (phoneNumber.length < 10) {
-            setError('Please enter a valid phone number');
+            showError('Please enter a valid phone number');
             return;
         }
 
@@ -49,7 +48,6 @@ export default function PhoneLoginPage() {
             } else {
                 logger.error('OTP send failed', { message: result.message });
                 const errMsg = result.message || 'Failed to send OTP';
-                setError(errMsg);
                 showError(errMsg);
             }
         } catch (err: unknown) {
@@ -79,7 +77,6 @@ export default function PhoneLoginPage() {
             if (errorStatus === 'FETCH_ERROR' || !errorStatus) {
                 finalError = 'Cannot connect to server. Please ensure the backend is running.';
             }
-            setError(finalError);
             showError(finalError);
         }
     };

@@ -7,7 +7,6 @@ import {
     TextField,
     Button,
     Typography,
-    Alert,
     InputAdornment,
     IconButton,
 } from '@mui/material';
@@ -28,7 +27,7 @@ function ForgotPasswordPageInner() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+
     const [success, setSuccess] = useState('');
 
     // Get the email from URL params - this is required
@@ -40,7 +39,7 @@ function ForgotPasswordPageInner() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+
         setSuccess('');
 
         if (!email) {
@@ -49,15 +48,15 @@ function ForgotPasswordPageInner() {
             return;
         }
         if (newPassword.length < 8) {
-            setError('Password must be at least 8 characters');
+            showError('Password must be at least 8 characters');
             return;
         }
         if (!hasUppercase(newPassword)) {
-            setError('Password must contain at least one uppercase letter');
+            showError('Password must contain at least one uppercase letter');
             return;
         }
         if (newPassword !== confirmPassword) {
-            setError('Passwords do not match');
+            showError('Passwords do not match');
             return;
         }
 
@@ -75,12 +74,10 @@ function ForgotPasswordPageInner() {
                 setTimeout(() => router.push('/auth/email-login?mode=login'), 1800);
             } else {
                 const errMsg = data.message || 'Failed to reset password';
-                setError(errMsg);
                 showError(errMsg);
             }
         } catch {
             const errMsg = 'Cannot connect to server. Please ensure the backend is running.';
-            setError(errMsg);
             showError(errMsg);
         } finally {
             setLoading(false);
@@ -99,7 +96,7 @@ function ForgotPasswordPageInner() {
         // Clear password fields on mount
         setNewPassword('');
         setConfirmPassword('');
-        setError('');
+
         setSuccess('');
     }, [emailParam, router, showError]);
 

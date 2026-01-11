@@ -51,7 +51,7 @@ function EmailLoginPageInner() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+
     const [attemptCount, setAttemptCount] = useState(0);
     const [isRateLimited, setIsRateLimited] = useState(false);
 
@@ -78,7 +78,7 @@ function EmailLoginPageInner() {
     useEffect(() => {
         setEmail('');
         setPassword('');
-        setError('');
+
         setTouched({ email: false, password: false });
         setAttemptCount(0);
         setIsRateLimited(false);
@@ -116,11 +116,11 @@ function EmailLoginPageInner() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+
 
         // Check network status first
         if (!isOnline) {
-            setError('No internet connection. Please check your network and try again.');
+            showError('No internet connection. Please check your network and try again.');
             return;
         }
 
@@ -129,26 +129,26 @@ function EmailLoginPageInner() {
 
         // Validate all fields
         if (errors.email || errors.password) {
-            setError('Please fix the errors before continuing.');
+            showError('Please fix the errors before continuing.');
             return;
         }
 
         // Check password strength for signup
         if (mode === 'signup' && !passwordStrength.isValid) {
-            setError('Please choose a stronger password that meets all requirements.');
+            showError('Please choose a stronger password that meets all requirements.');
             return;
         }
 
         // Check if rate limited
         if (isRateLimited) {
-            setError('Too many attempts. Please wait a moment before trying again.');
+            showError('Too many attempts. Please wait a moment before trying again.');
             return;
         }
 
         // Check attempt count (client-side rate limiting)
         if (attemptCount >= 5) {
             setIsRateLimited(true);
-            setError('Too many failed attempts. Please wait 5 minutes before trying again.');
+            showError('Too many failed attempts. Please wait 5 minutes before trying again.');
             setTimeout(() => {
                 setIsRateLimited(false);
                 setAttemptCount(0);
@@ -188,25 +188,20 @@ function EmailLoginPageInner() {
                     if (response.status === 429) {
                         setIsRateLimited(true);
                         const msg = 'Too many login attempts. Please wait a few minutes and try again.';
-                        setError(msg);
                         showError(msg);
                     } else if (response.status === 403) {
-                        setError(AuthErrors.EMAIL_NOT_VERIFIED);
                         showError(AuthErrors.EMAIL_NOT_VERIFIED);
                     } else if (response.status === 401) {
                         // Wrong credentials - this is an authentication failure
                         const msg = data.message || AuthErrors.INVALID_CREDENTIALS;
-                        setError(msg);
                         showError(msg);
                     } else if (response.status === 400) {
                         // Validation error
                         const msg = data.message || 'Please check your email and password.';
-                        setError(msg);
                         showError(msg);
                     } else {
                         // Other errors (500, etc.)
                         const msg = data.message || 'Server error. Please try again later.';
-                        setError(msg);
                         showError(msg);
                     }
                 }
@@ -227,11 +222,10 @@ function EmailLoginPageInner() {
                     router.push('/auth/verify-email');
                 } else {
                     const errorMessage = data.message || 'Failed to send verification code. Please try again.';
-                    setError(errorMessage);
                     showError(errorMessage);
 
                     if (data.message?.toLowerCase().includes('already exists')) {
-                        setError(AuthErrors.EMAIL_EXISTS);
+                        // Email already exists
                     }
                 }
             }
@@ -247,20 +241,16 @@ function EmailLoginPageInner() {
             // Show user-friendly message based on error type
             if (err.name === 'AbortError' || err.message?.includes('timeout')) {
                 const msg = 'Request timed out. The server is taking too long to respond. Please try again.';
-                setError(msg);
                 showError(msg);
             } else if (err.message?.includes('fetch') || err.message?.includes('Failed to fetch')) {
                 const msg = 'Cannot connect to server. Please check if the backend is running or try again later.';
-                setError(msg);
                 showError(msg);
             } else if (!isOnline) {
                 const msg = 'No internet connection. Please check your network and try again.';
-                setError(msg);
                 showError(msg);
             } else {
                 // Use the ErrorHandler's classified message
                 const msg = appError.userMessage;
-                setError(msg);
                 showError(msg);
             }
 
@@ -276,7 +266,7 @@ function EmailLoginPageInner() {
         router.push(`/auth/email-login?mode=${newMode}`);
         setEmail('');
         setPassword('');
-        setError('');
+
         setTouched({ email: false, password: false });
     };
 
