@@ -35,6 +35,11 @@
         }
     },
     "submit": {
-        "production": {}
+        "production": {},
+        "production-aab": {
+            "android": {
+                "track": "internal"
+            }
+        }
     }
 }
