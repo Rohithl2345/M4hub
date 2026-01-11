@@ -10,6 +10,7 @@ const PremiumAudioPlayer = dynamic(() => import('@/components/PremiumAudioPlayer
 });
 
 import styles from './music.module.css';
+import playerStyles from '@/components/PremiumAudioPlayer.module.css';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
@@ -26,9 +27,11 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AlbumIcon from '@mui/icons-material/Album';
 import PersonIcon from '@mui/icons-material/Person';
 import LanguageIcon from '@mui/icons-material/Language';
-import { Track, musicService } from '@/services/music.service';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Track, musicService, Playlist } from '@/services/music.service';
+import { useToast } from '@/components/ToastProvider';
 
-type FilterType = 'all' | 'favorites' | 'wishlist';
+type FilterType = 'all' | 'favorites' | 'wishlist' | 'playlists';
 type CategoryType = 'songs' | 'trending' | 'albums' | 'artists' | 'languages';
 
 export default function MusicPage() {
@@ -36,16 +39,26 @@ export default function MusicPage() {
     const [cachedTracks, setCachedTracks] = useState<Record<FilterType, Track[]>>({
         all: [],
         favorites: [],
-        wishlist: []
+        wishlist: [],
+        playlists: []
     });
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+    const [playlists, setPlaylists] = useState<Playlist[]>([]);
+    const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
+    const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+    const [newPlaylistName, setNewPlaylistName] = useState('');
     const [currentTrackIndex, setCurrentTrackIndex] = useState(-1);
     const [filter, setFilter] = useState<FilterType>('all');
+    const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+    const [categoriesData, setCategoriesData] = useState<string[]>([]);
+    const [subLoading, setSubLoading] = useState(false);
+    const [playlistToAddTo, setPlaylistToAddTo] = useState<Track | null>(null);
     const [category, setCategory] = useState<CategoryType>('songs');
     const [isPlaying, setIsPlaying] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
+    const { showSuccess, showError } = useToast();
 
     // Load tracks with caching and searching support
     const loadTracksData = async (forceRefresh = false) => {
@@ -53,9 +66,25 @@ export default function MusicPage() {
         try {
             let results: Track[] = [];
 
+            // Reset subcategory if switching top-level category
+            if (category !== 'songs' && category !== 'trending' && !selectedSubCategory) {
+                setSubLoading(true);
+                let data: string[] = [];
+                if (category === 'albums') data = await musicService.getAlbums();
+                else if (category === 'artists') data = await musicService.getArtists();
+                else if (category === 'languages') data = await musicService.getLanguages();
+                setCategoriesData(data);
+                setSubLoading(false);
+                setLoading(false);
+                return;
+            }
+
             // 1. Fetch data based on filter or category if not cached
-            // For now, only 'songs' and 'trending' return Track[] directly
-            if (!forceRefresh && cachedTracks[filter].length > 0 && category === 'songs') {
+            if (selectedSubCategory) {
+                if (category === 'albums') results = await musicService.getTracksByAlbum(selectedSubCategory);
+                else if (category === 'artists') results = await musicService.getTracksByArtist(selectedSubCategory);
+                else if (category === 'languages') results = await musicService.getTracksByLanguage(selectedSubCategory);
+            } else if (!forceRefresh && cachedTracks[filter].length > 0 && category === 'songs' && filter !== 'playlists') {
                 results = cachedTracks[filter];
             } else {
                 if (filter === 'all') {
@@ -68,9 +97,17 @@ export default function MusicPage() {
                     results = await musicService.getFavorites();
                 } else if (filter === 'wishlist') {
                     results = await musicService.getWishlist();
+                } else if (filter === 'playlists') {
+                    const pls = await musicService.getMyPlaylists();
+                    setPlaylists(pls);
+                    if (selectedPlaylistId) {
+                        const pl = pls.find(p => p.id === selectedPlaylistId);
+                        results = pl ? (pl.tracks || []) : [];
+                    } else {
+                        results = [];
+                    }
                 }
 
-                // Cache 'songs' category only for simplicity
                 if (category === 'songs') {
                     setCachedTracks(prev => ({
                         ...prev,
@@ -127,6 +164,32 @@ export default function MusicPage() {
         setSearchError(null);
     };
 
+    const handleCategoryClick = (cat: CategoryType) => {
+        setCategory(cat);
+        setSelectedSubCategory(null);
+        if (cat !== 'songs') {
+            setFilter('all');
+        }
+    };
+
+    const handleSubCategoryClick = (subCat: string) => {
+        setSelectedSubCategory(subCat);
+        setFilter('all');
+    };
+
+    const handleAddToPlaylist = async (playlistId: string) => {
+        if (!playlistToAddTo) return;
+        const pl = await musicService.addSongToPlaylist(playlistId, playlistToAddTo.id);
+        if (pl) {
+            setPlaylistToAddTo(null);
+            showSuccess(`Added to ${pl.name}`);
+            // Refresh playlists if we are in playlist filter
+            if (filter === 'playlists') {
+                loadTracksData(true);
+            }
+        }
+    };
+
     const playTrack = (track: Track, index: number) => {
         setCurrentTrack(track);
         setCurrentTrackIndex(index);
@@ -153,6 +216,34 @@ export default function MusicPage() {
                     favorites: prev.favorites.filter(t => t.id !== track.id)
                 }));
             }
+        }
+    };
+
+    const handleCreatePlaylist = async () => {
+        if (!newPlaylistName.trim()) return;
+        const pl = await musicService.createPlaylist(newPlaylistName);
+        if (pl) {
+            setPlaylists(prev => [pl, ...prev]);
+            setNewPlaylistName('');
+            setIsCreatingPlaylist(false);
+            showSuccess(`Created playlist "${pl.name}"`);
+
+            if (playlistToAddTo) {
+                await musicService.addSongToPlaylist(pl.id, playlistToAddTo.id);
+                showSuccess(`Added song to "${pl.name}"`);
+                setPlaylistToAddTo(null);
+            }
+        } else {
+            showError("Failed to create playlist. Name might be taken.");
+        }
+    };
+
+    const handleDeletePlaylist = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        const success = await musicService.deletePlaylist(id);
+        if (success) {
+            setPlaylists(prev => prev.filter(p => p.id !== id));
+            if (selectedPlaylistId === id) setSelectedPlaylistId(null);
         }
     };
 
@@ -231,35 +322,35 @@ export default function MusicPage() {
                 <div className={styles.categories}>
                     <button
                         className={`${styles.categoryBtn} ${category === 'songs' ? styles.categoryActive : ''}`}
-                        onClick={() => setCategory('songs')}
+                        onClick={() => handleCategoryClick('songs')}
                     >
                         <LibraryMusicIcon fontSize="small" />
                         <span>Songs</span>
                     </button>
                     <button
                         className={`${styles.categoryBtn} ${category === 'trending' ? styles.categoryActive : ''}`}
-                        onClick={() => setCategory('trending')}
+                        onClick={() => handleCategoryClick('trending')}
                     >
                         <TrendingUpIcon fontSize="small" />
                         <span>Trending</span>
                     </button>
                     <button
                         className={`${styles.categoryBtn} ${category === 'albums' ? styles.categoryActive : ''}`}
-                        onClick={() => setCategory('albums')}
+                        onClick={() => handleCategoryClick('albums')}
                     >
                         <AlbumIcon fontSize="small" />
                         <span>Albums</span>
                     </button>
                     <button
                         className={`${styles.categoryBtn} ${category === 'artists' ? styles.categoryActive : ''}`}
-                        onClick={() => setCategory('artists')}
+                        onClick={() => handleCategoryClick('artists')}
                     >
                         <PersonIcon fontSize="small" />
                         <span>Artists</span>
                     </button>
                     <button
                         className={`${styles.categoryBtn} ${category === 'languages' ? styles.categoryActive : ''}`}
-                        onClick={() => setCategory('languages')}
+                        onClick={() => handleCategoryClick('languages')}
                     >
                         <LanguageIcon fontSize="small" />
                         <span>Languages</span>
@@ -270,40 +361,91 @@ export default function MusicPage() {
                 <div className={styles.tabs}>
                     <button
                         className={`${styles.tab} ${filter === 'all' ? styles.tabActive : ''}`}
-                        onClick={() => setFilter('all')}
+                        onClick={() => { setFilter('all'); setSelectedPlaylistId(null); setSelectedSubCategory(null); }}
                     >
                         <LibraryMusicIcon fontSize="small" />
                         All Songs
                     </button>
                     <button
                         className={`${styles.tab} ${filter === 'favorites' ? styles.tabActive : ''}`}
-                        onClick={() => setFilter('favorites')}
+                        onClick={() => { setFilter('favorites'); setSelectedPlaylistId(null); setSelectedSubCategory(null); }}
                     >
                         <FavoriteIcon fontSize="small" />
                         Favorites
                     </button>
                     <button
                         className={`${styles.tab} ${filter === 'wishlist' ? styles.tabActive : ''}`}
-                        onClick={() => setFilter('wishlist')}
+                        onClick={() => { setFilter('wishlist'); setSelectedPlaylistId(null); setSelectedSubCategory(null); }}
                     >
                         <BookmarkIcon fontSize="small" />
                         Wishlist
+                    </button>
+                    <button
+                        className={`${styles.tab} ${filter === 'playlists' ? styles.tabActive : ''}`}
+                        onClick={() => { setFilter('playlists'); setSelectedPlaylistId(null); setSelectedSubCategory(null); setCategory('songs'); }}
+                    >
+                        <QueueMusicIcon fontSize="small" />
+                        My Playlists
                     </button>
                 </div>
 
                 {/* Tracks List */}
                 <div className={styles.section}>
-                    {loading ? (
+                    {loading || subLoading ? (
                         <div className={styles.loading}>
                             <div className={styles.spinner}></div>
-                            <p>Loading songs...</p>
+                            <p>Loading {category !== 'songs' && !selectedSubCategory ? category : 'songs'}...</p>
+                        </div>
+                    ) : (category !== 'songs' && category !== 'trending' && !selectedSubCategory) ? (
+                        <div className={styles.subCatGrid}>
+                            {categoriesData.length === 0 ? (
+                                <div className={styles.noResults}>
+                                    <AlbumIcon className={styles.emptyStateIcon} />
+                                    <h3>No {category} found</h3>
+                                    <p>Try refreshing or checking back later.</p>
+                                </div>
+                            ) : categoriesData.map(item => (
+                                <div key={item} className={styles.subCatCard} onClick={() => handleSubCategoryClick(item)}>
+                                    <div className={styles.subCatIcon}>
+                                        {category === 'albums' ? <AlbumIcon /> :
+                                            category === 'artists' ? <PersonIcon /> : <LanguageIcon />}
+                                    </div>
+                                    <h4>{item}</h4>
+                                </div>
+                            ))}
+                        </div>
+                    ) : filter === 'playlists' && !selectedPlaylistId ? (
+                        <div className={styles.playlistsGrid}>
+                            <div className={styles.createPlaylistCard} onClick={() => setIsCreatingPlaylist(true)}>
+                                <div className={styles.plusIcon}>+</div>
+                                <span>Create Playlist</span>
+                            </div>
+                            {playlists.map(pl => (
+                                <div key={pl.id} className={styles.playlistCard} onClick={() => {
+                                    setSelectedPlaylistId(pl.id);
+                                    setTracks(pl.tracks || []);
+                                }}>
+                                    <div className={styles.playlistArt}>
+                                        <QueueMusicIcon style={{ fontSize: '40px', color: '#10b981' }} />
+                                    </div>
+                                    <div className={styles.playlistMeta}>
+                                        <h4>{pl.name}</h4>
+                                        <p>{pl.tracks?.length || 0} tracks</p>
+                                    </div>
+                                    <button className={styles.deletePlBtn} onClick={(e) => handleDeletePlaylist(e, pl.id)}>
+                                        <CloseIcon fontSize="small" />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
                     ) : tracks.length === 0 ? (
                         <div className={styles.noResults}>
                             {filter === 'favorites' ? (
-                                <QueueMusicIcon className={styles.emptyStateIcon} />
+                                <FavoriteIcon className={styles.emptyStateIcon} />
                             ) : filter === 'wishlist' ? (
-                                <LibraryMusicIcon className={styles.emptyStateIcon} />
+                                <BookmarkIcon className={styles.emptyStateIcon} />
+                            ) : filter === 'playlists' ? (
+                                <QueueMusicIcon className={styles.emptyStateIcon} />
                             ) : (
                                 <SearchOffIcon className={styles.emptyStateIcon} />
                             )}
@@ -311,89 +453,167 @@ export default function MusicPage() {
                             <h3>
                                 {filter === 'favorites' ? 'No Favorites Yet' :
                                     filter === 'wishlist' ? 'Your Wishlist is Empty' :
-                                        searchQuery ? 'No Songs Found' : 'No Songs Available'}
+                                        filter === 'playlists' ? 'Playlist is Empty' :
+                                            searchQuery ? 'No Songs Found' : 'No Songs Available'}
                             </h3>
                             <p>
                                 {filter === 'favorites' ? 'Mark songs as favorite to see them here.' :
                                     filter === 'wishlist' ? 'Save songs for later to build your collection.' :
-                                        searchQuery ? `We couldn't find any matches for "${searchQuery}".` : 'Explore our library to start listening.'}
+                                        filter === 'playlists' ? 'Add some tunes to this playlist!' :
+                                            searchQuery ? `We couldn't find any matches for "${searchQuery}".` : 'Explore our library to start listening.'}
                             </p>
-                            {searchQuery && (
-                                <button onClick={handleResetSearch} className={styles.clearSearchButton}>
-                                    Clear Search
+                            {(selectedPlaylistId || selectedSubCategory) && (
+                                <button onClick={() => { setSelectedPlaylistId(null); setSelectedSubCategory(null); }} className={styles.clearSearchButton}>
+                                    Back to {selectedPlaylistId ? 'Playlists' : category}
                                 </button>
                             )}
                         </div>
                     ) : (
-                        <div className={styles.tracksList}>
-                            {tracks.map((track, index) => (
-                                <div
-                                    key={track.id}
-                                    className={`${styles.trackCard} ${currentTrack?.id === track.id ? styles.trackCardActive : ''}`}
-                                    onClick={() => playTrack(track, index)}
-                                >
-                                    {/* Album Icon - Green Gradient with Music Note (matching mobile) */}
-                                    <div className={styles.trackIconContainer}>
-                                        <div className={styles.trackIcon}>
-                                            <MusicNoteIcon style={{ fontSize: '24px', color: 'white' }} />
+                        <div>
+                            {(selectedPlaylistId || selectedSubCategory) && (
+                                <div className={styles.listHeader}>
+                                    <button className={styles.backBtn} onClick={() => { setSelectedPlaylistId(null); setSelectedSubCategory(null); }}>
+                                        <ArrowBackIcon />
+                                    </button>
+                                    <h3>{selectedPlaylistId ? playlists.find(p => p.id === selectedPlaylistId)?.name : selectedSubCategory}</h3>
+                                </div>
+                            )}
+                            <div className={styles.tracksList}>
+                                {tracks.map((track, index) => (
+                                    <div
+                                        key={track.id}
+                                        className={`${styles.trackCard} ${currentTrack?.id === track.id ? styles.trackCardActive : ''}`}
+                                        onClick={() => playTrack(track, index)}
+                                    >
+                                        <div className={styles.trackIconContainer}>
+                                            <div className={styles.trackIcon}>
+                                                <MusicNoteIcon style={{ fontSize: '24px', color: 'white' }} />
+                                            </div>
+                                        </div>
+
+                                        <div className={styles.trackInfo}>
+                                            <h4>{track.name}</h4>
+                                            <p>{track.artist_name}</p>
+                                            {track.album_name && track.album_name !== 'Unknown Album' && (
+                                                <span className={styles.albumName}>{track.album_name}</span>
+                                            )}
+                                        </div>
+
+                                        <div className={styles.trackDuration}>
+                                            {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, '0')}
+                                        </div>
+
+                                        <div className={styles.trackActions}>
+                                            <button
+                                                className={styles.playButton}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    playTrack(track, index);
+                                                }}
+                                                title="Play"
+                                            >
+                                                {currentTrack?.id === track.id && isPlaying ? (
+                                                    <PauseCircleOutlineIcon />
+                                                ) : (
+                                                    <PlayCircleOutlineIcon />
+                                                )}
+                                            </button>
+                                            <button
+                                                className={`${styles.actionButton} ${track.isFavorite ? styles.favoriteActive : ''}`}
+                                                onClick={(e) => toggleFavorite(e, track)}
+                                                title={track.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                                            >
+                                                {track.isFavorite ? (
+                                                    <FavoriteIcon sx={{ color: '#ef4444' }} />
+                                                ) : (
+                                                    <FavoriteBorderIcon sx={{ color: '#94a3b8' }} />
+                                                )}
+                                            </button>
+                                            <button
+                                                className={`${styles.actionButton} ${track.isInWishlist ? styles.wishlistActive : ''}`}
+                                                onClick={(e) => toggleWishlist(e, track)}
+                                                title={track.isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+                                            >
+                                                {track.isInWishlist ? (
+                                                    <BookmarkIcon sx={{ color: '#f59e0b' }} />
+                                                ) : (
+                                                    <BookmarkBorderIcon sx={{ color: '#94a3b8' }} />
+                                                )}
+                                            </button>
+                                            <button
+                                                className={styles.actionButton}
+                                                onClick={(e) => { e.stopPropagation(); setPlaylistToAddTo(track); }}
+                                                title="Add to Playlist"
+                                            >
+                                                <QueueMusicIcon sx={{ color: '#10b981' }} />
+                                            </button>
                                         </div>
                                     </div>
-
-                                    <div className={styles.trackInfo}>
-                                        <h4>{track.name}</h4>
-                                        <p>{track.artist_name}</p>
-                                        {track.album_name && track.album_name !== 'Unknown Album' && (
-                                            <span className={styles.albumName}>{track.album_name}</span>
-                                        )}
-                                    </div>
-
-                                    <div className={styles.trackDuration}>
-                                        {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, '0')}
-                                    </div>
-
-                                    <div className={styles.trackActions}>
-                                        <button
-                                            className={styles.playButton}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                playTrack(track, index);
-                                            }}
-                                            title="Play"
-                                        >
-                                            {currentTrack?.id === track.id && isPlaying ? (
-                                                <PauseCircleOutlineIcon />
-                                            ) : (
-                                                <PlayCircleOutlineIcon />
-                                            )}
-                                        </button>
-                                        <button
-                                            className={`${styles.actionButton} ${track.isFavorite ? styles.favoriteActive : ''}`}
-                                            onClick={(e) => toggleFavorite(e, track)}
-                                            title={track.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                        >
-                                            {track.isFavorite ? (
-                                                <FavoriteIcon sx={{ color: '#ef4444' }} />
-                                            ) : (
-                                                <FavoriteBorderIcon sx={{ color: '#94a3b8' }} />
-                                            )}
-                                        </button>
-                                        <button
-                                            className={`${styles.actionButton} ${track.isInWishlist ? styles.wishlistActive : ''}`}
-                                            onClick={(e) => toggleWishlist(e, track)}
-                                            title={track.isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-                                        >
-                                            {track.isInWishlist ? (
-                                                <BookmarkIcon sx={{ color: '#f59e0b' }} />
-                                            ) : (
-                                                <BookmarkBorderIcon sx={{ color: '#94a3b8' }} />
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
+
+                {isCreatingPlaylist && (
+                    <div className={styles.modalOverlay} onClick={() => setIsCreatingPlaylist(false)}>
+                        <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                            <h3>Create New Playlist</h3>
+                            <input
+                                type="text"
+                                placeholder="Playlist Name"
+                                value={newPlaylistName}
+                                onChange={e => setNewPlaylistName(e.target.value)}
+                                autoFocus
+                            />
+                            <div className={styles.modalActions}>
+                                <button onClick={() => setIsCreatingPlaylist(false)}>Cancel</button>
+                                <button onClick={handleCreatePlaylist} className={styles.primary}>Create</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {playlistToAddTo && (
+                    <div className={playerStyles.drawerOverlay} onClick={() => setPlaylistToAddTo(null)}>
+                        <div className={playerStyles.drawer} onClick={e => e.stopPropagation()}>
+                            <div className={playerStyles.modalHeader}>
+                                <h3>Add to Playlist</h3>
+                                <button onClick={() => setPlaylistToAddTo(null)}>
+                                    <CloseIcon />
+                                </button>
+                            </div>
+                            <div className={playerStyles.playlistList}>
+                                <button
+                                    className={playerStyles.createPlaylistBtn}
+                                    onClick={() => setIsCreatingPlaylist(true)}
+                                >
+                                    <div className={playerStyles.createIcon}>+</div>
+                                    <span>Create New Playlist</span>
+                                </button>
+                                {playlists.length === 0 ? (
+                                    <p className={playerStyles.noPlaylists}>You haven't created any playlists yet.</p>
+                                ) : (
+                                    playlists.map(pl => (
+                                        <button
+                                            key={pl.id}
+                                            className={playerStyles.playlistItem}
+                                            onClick={() => handleAddToPlaylist(pl.id)}
+                                        >
+                                            <div className={playerStyles.playlistIcon}>
+                                                <QueueMusicIcon />
+                                            </div>
+                                            <div className={playerStyles.playlistInfo}>
+                                                <span className={playerStyles.playlistName}>{pl.name}</span>
+                                                <span className={playerStyles.playlistTracks}>{pl.tracks?.length || 0} songs</span>
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {currentTrack && (
@@ -403,6 +623,7 @@ export default function MusicPage() {
                     onNext={handleNext}
                     onPrevious={handlePrevious}
                     onPlayStateChange={setIsPlaying}
+                    onAddToPlaylist={(track) => setPlaylistToAddTo(track)}
                 />
             )}
         </DashboardLayout>

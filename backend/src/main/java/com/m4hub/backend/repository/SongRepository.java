@@ -34,5 +34,11 @@ public interface SongRepository extends JpaRepository<Song, Long> {
     @Query("SELECT s FROM Song s ORDER BY s.id DESC")
     List<Song> findTopTracks();
 
+    @Query("SELECT DISTINCT SUBSTRING(s.genre, LOCATE('(', s.genre) + 1, LOCATE(')', s.genre) - LOCATE('(', s.genre) - 1) FROM Song s WHERE s.genre LIKE '%(%)%'")
+    List<String> findDistinctLanguages();
+
+    @Query("SELECT s FROM Song s WHERE s.genre LIKE %:language%")
+    List<Song> findByLanguage(@Param("language") String language);
+
     List<Song> findByAlbum(String album);
 }

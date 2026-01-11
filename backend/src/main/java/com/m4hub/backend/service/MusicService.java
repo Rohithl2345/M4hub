@@ -215,7 +215,33 @@ public class MusicService {
         return songRepository.findDistinctArtists();
     }
 
+    public List<String> getLanguages() {
+        return songRepository.findDistinctLanguages();
+    }
+
+    public List<Song> getSongsByLanguage(String language) {
+        return songRepository.findByLanguage(language);
+    }
+
+    public List<Song> getSongsByArtist(String artist) {
+        return songRepository.findByArtist(artist);
+    }
+
     public List<Song> getSongsByAlbum(String albumName) {
         return songRepository.findByAlbum(albumName);
+    }
+
+    @Transactional
+    public void trackPlay(Long songId) {
+        songRepository.findById(songId).ifPresent(song -> {
+            song.incrementPlayCount();
+            songRepository.save(song);
+        });
+    }
+
+    public String getLyrics(Long songId) {
+        return songRepository.findById(songId)
+                .map(Song::getLyrics)
+                .orElse(null);
     }
 }

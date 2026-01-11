@@ -15,8 +15,13 @@ import ShuffleIcon from '@mui/icons-material/Shuffle';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import AlbumIcon from '@mui/icons-material/Album';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import LyricsIcon from '@mui/icons-material/Lyrics';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-import { Track } from '@/services/music.service';
+import { Track, musicService, Playlist } from '@/services/music.service';
+import { useToast } from '@/components/ToastProvider';
 
 interface PremiumAudioPlayerProps {
     track: Track | null;
@@ -24,12 +29,21 @@ interface PremiumAudioPlayerProps {
     onNext?: () => void;
     onPrevious?: () => void;
     onPlayStateChange?: (isPlaying: boolean) => void;
+    onAddToPlaylist?: (track: Track) => void;
 }
 
 type RepeatMode = 'off' | 'all' | 'one';
 
-export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious, onPlayStateChange }: PremiumAudioPlayerProps) {
+export default function PremiumAudioPlayer({
+    track,
+    playlist,
+    onNext,
+    onPrevious,
+    onPlayStateChange,
+    onAddToPlaylist
+}: PremiumAudioPlayerProps) {
     const audioRef = useRef<HTMLAudioElement>(null);
+    const { showError } = useToast();
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -38,10 +52,21 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
     const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
     const [isShuffle, setIsShuffle] = useState(false);
     const [showQueue, setShowQueue] = useState(false);
+    const [showLyrics, setShowLyrics] = useState(false);
+    const [lyrics, setLyrics] = useState('');
+    const [loadingLyrics, setLoadingLyrics] = useState(false);
+    const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
+    const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
 
     useEffect(() => {
         if (audioRef.current && track && track.audio) {
             audioRef.current.load();
+
+            // Track play on backend
+            musicService.trackPlay(track.id);
+
+            // Fetch lyrics if panel is open or proactively
+            if (showLyrics) fetchLyrics(track.id);
 
             // Auto-play when track changes
             const playPromise = audioRef.current.play();
@@ -62,6 +87,40 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
         }
     }, [track]);
 
+    useEffect(() => {
+        if (isShuffle) {
+            const indices = Array.from({ length: playlist.length }, (_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            setShuffledIndices(indices);
+        } else {
+            setShuffledIndices([]);
+        }
+    }, [isShuffle, playlist.length]);
+
+    const fetchLyrics = async (songId: string) => {
+        setLoadingLyrics(true);
+        const l = await musicService.getLyrics(songId);
+        setLyrics(l);
+        setLoadingLyrics(false);
+    };
+
+    const handleToggleLyrics = () => {
+        const nextState = !showLyrics;
+        setShowLyrics(nextState);
+        if (nextState && track) fetchLyrics(track.id);
+    };
+
+    const handlePlaylistClick = () => {
+        if (track && onAddToPlaylist) {
+            onAddToPlaylist(track);
+        }
+    };
+
+    // Playlist creation/addition handled by parent via onAddToPlaylist
+
     const togglePlay = () => {
         if (audioRef.current) {
             if (isPlaying) {
@@ -80,6 +139,24 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                 }
             }
         }
+    };
+
+    const handleNext = () => {
+        if (!playlist || playlist.length === 0) return;
+
+        if (isShuffle && shuffledIndices.length > 0) {
+            const currentShuffledOrderIndex = shuffledIndices.indexOf(currentQueueIndex);
+            const nextShuffledOrderIndex = (currentShuffledOrderIndex + 1) % shuffledIndices.length;
+            const nextActualIndex = shuffledIndices[nextShuffledOrderIndex];
+            setCurrentQueueIndex(nextActualIndex);
+            onNext?.(); // This might need to change to onTrackChange(playlist[nextActualIndex])
+        } else {
+            onNext?.();
+        }
+    };
+
+    const handlePrevious = () => {
+        onPrevious?.();
     };
 
     const handleTimeUpdate = () => {
@@ -156,6 +233,33 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
         }
     };
 
+    const handleError = (e: any) => {
+        console.error('Audio playback error:', e);
+        const error = e.target?.error;
+        let errorMessage = 'Unable to play this track.';
+
+        if (error) {
+            switch (error.code) {
+                case error.MEDIA_ERR_ABORTED:
+                    errorMessage = 'Playback aborted.';
+                    break;
+                case error.MEDIA_ERR_NETWORK:
+                    errorMessage = 'Network error caused download to fail.';
+                    break;
+                case error.MEDIA_ERR_DECODE:
+                    errorMessage = 'Media playback aborted due to a corruption problem.';
+                    break;
+                case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                    errorMessage = 'Audio source format not supported or file not found.';
+                    break;
+            }
+        }
+
+        showError(errorMessage);
+        setIsPlaying(false);
+        onPlayStateChange?.(false);
+    };
+
     if (!track) return null;
 
     const hasAudio = track.audio && track.audio.trim() !== '';
@@ -176,6 +280,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                     onTimeUpdate={handleTimeUpdate}
                     onLoadedMetadata={handleLoadedMetadata}
                     onEnded={handleEnded}
+                    onError={handleError}
                 />
             )}
 
@@ -183,7 +288,7 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                 {/* Track Info Section */}
                 <div className={styles.trackInfo}>
                     <div className={styles.albumArt}>
-                        <AlbumIcon style={{ fontSize: '40px', color: '#8b5cf6' }} />
+                        <AlbumIcon style={{ fontSize: '32px', color: '#8b5cf6' }} />
                     </div>
                     <div className={styles.trackDetails}>
                         <div className={styles.trackName}>{track.name}</div>
@@ -286,6 +391,22 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                     </div>
 
                     <button
+                        onClick={handleToggleLyrics}
+                        className={`${styles.queueButton} ${showLyrics ? styles.active : ''}`}
+                        title="Lyrics"
+                    >
+                        <LyricsIcon />
+                    </button>
+
+                    <button
+                        onClick={handlePlaylistClick}
+                        className={styles.queueButton}
+                        title="Add to Playlist"
+                    >
+                        <PlaylistAddIcon />
+                    </button>
+
+                    <button
                         onClick={() => setShowQueue(!showQueue)}
                         className={`${styles.queueButton} ${showQueue ? styles.active : ''}`}
                         title="Queue"
@@ -295,6 +416,32 @@ export default function PremiumAudioPlayer({ track, playlist, onNext, onPrevious
                     </button>
                 </div>
             </div>
+
+            {/* Lyrics Panel */}
+            {showLyrics && (
+                <div className={styles.overlayPanel}>
+                    <div className={styles.overlayHeader}>
+                        <div className={styles.overlayTitle}>
+                            <LyricsIcon className={styles.overlayIcon} />
+                            <span>Lyrics</span>
+                        </div>
+                        <button onClick={() => setShowLyrics(false)} className={styles.closeOverlay}>
+                            <CloseIcon />
+                        </button>
+                    </div>
+                    <div className={styles.lyricsContent}>
+                        {loadingLyrics ? (
+                            <div className={styles.overlayLoading}>
+                                <div className={styles.spinner}></div>
+                                <span>Fetching lyrics...</span>
+                            </div>
+                        ) : (
+                            <pre className={styles.lyricsText}>{lyrics || "No lyrics available for this track."}</pre>
+                        )}
+                    </div>
+                </div>
+            )}
+
 
             {/* Queue Display */}
             {showQueue && (

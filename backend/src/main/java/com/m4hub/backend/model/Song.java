@@ -38,6 +38,12 @@ public class Song {
     @com.fasterxml.jackson.annotation.JsonProperty("external_id")
     private String externalId; // Jamendo track ID
 
+    @Column(columnDefinition = "TEXT")
+    private String lyrics;
+
+    @Column(nullable = true)
+    private Integer playCount = 0;
+
     private Instant createdAt = Instant.now();
 
     // Constructors
@@ -135,6 +141,26 @@ public class Song {
 
     public void setExternalId(String externalId) {
         this.externalId = externalId;
+    }
+
+    public String getLyrics() {
+        return lyrics;
+    }
+
+    public void setLyrics(String lyrics) {
+        this.lyrics = lyrics;
+    }
+
+    public Integer getPlayCount() {
+        return playCount;
+    }
+
+    public void setPlayCount(Integer playCount) {
+        this.playCount = playCount;
+    }
+
+    public void incrementPlayCount() {
+        this.playCount++;
     }
 
     public Instant getCreatedAt() {

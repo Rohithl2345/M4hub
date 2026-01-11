@@ -18,12 +18,34 @@ export interface Track {
     isInWishlist?: boolean;
     shareurl?: string;
     releasedate?: string;
+    lyrics?: string;
+    playCount?: number;
+}
+
+export interface Playlist {
+    id: string;
+    name: string;
+    description: string;
+    imageUrl?: string;
+    tracks: Track[];
+    isPublic: boolean;
 }
 
 class MusicService {
     private baseUrl = BACKEND_API_BASE;
 
+    private logError(message: string, error?: any) {
+        // eslint-disable-next-line no-console
+        console.error(`[MusicService] ${message}`, error || '');
+    }
+
+    private logWarn(message: string) {
+        // eslint-disable-next-line no-console
+        console.warn(`[MusicService] ${message}`);
+    }
+
     private mapSongToTrack(song: any): Track {
+        if (!song) return {} as Track;
         let audioUrl = song.audioUrl || song.audio_url;
         let imageUrl = song.imageUrl || song.image_url || '';
 
@@ -32,29 +54,31 @@ class MusicService {
             audioUrl = `${API_URL}${audioUrl.startsWith('/') ? '' : '/'}${audioUrl}`;
         }
 
-        // Fix for localhost references if any
-        if (audioUrl && audioUrl.includes('localhost') && !audioUrl.includes(API_URL)) {
-            // If we are in dev and URL points to localhost but not our API URL, we might want to fix it
-            // But usually ensuring it starts with http + prepend API_URL is enough for relative paths.
-        }
-
         if (imageUrl && !imageUrl.startsWith('http')) {
             imageUrl = `${API_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
         }
 
         return {
-            id: song.id.toString(),
-            name: song.title,
-            artist_name: song.artist,
-            album_name: song.album || 'Unknown Album',
-            duration: song.duration,
-            audio: audioUrl,
-            audiodownload: audioUrl,
-            image: imageUrl,
-            album_image: imageUrl,
+            id: (song.id || '').toString(),
+            name: song.title || song.name || 'Unknown Track',
+            artist_name: song.artist || song.artist_name || 'Unknown Artist',
+            album_name: song.album || song.album_name || 'Unknown Album',
+            duration: song.duration || 0,
+            audio: audioUrl || '',
+            audiodownload: audioUrl || '',
+            image: imageUrl || '',
+            album_image: imageUrl || '',
             genre: song.genre,
             isFavorite: song.isFavorite || false,
             isInWishlist: song.isInWishlist || false
+        };
+    }
+
+    private mapPlaylist(pl: any): Playlist {
+        return {
+            ...pl,
+            id: pl.id.toString(),
+            tracks: (pl.tracks || []).map((t: any) => this.mapSongToTrack(t))
         };
     }
 
@@ -87,25 +111,25 @@ class MusicService {
             const response = await fetchWithAuth(`${this.baseUrl}/songs`);
 
             if (!response.ok) {
-                console.error('Music API error:', response.status, response.statusText);
+                this.logError(`API error: ${response.status} ${response.statusText}`);
                 return [];
             }
 
             const text = await response.text();
             if (!text || text.trim().length === 0) {
-                console.warn('Empty response from music API');
+                this.logWarn('Empty response from music API');
                 return [];
             }
 
             const songs = JSON.parse(text);
             if (!Array.isArray(songs)) {
-                console.error('Invalid response format from music API');
+                this.logError('Invalid response format from music API');
                 return [];
             }
 
             return songs.map(this.mapSongToTrack).slice(0, limit);
         } catch (error) {
-            console.error('Error fetching songs from backend:', error);
+            this.logError('Error fetching songs from backend', error);
             return [];
         }
     }
@@ -122,7 +146,7 @@ class MusicService {
             const response = await fetchWithAuth(`${this.baseUrl}/search?q=${encodeURIComponent(query)}`);
 
             if (!response.ok) {
-                console.error('Music search API error:', response.status);
+                this.logError(`Search API error: ${response.status}`);
                 return [];
             }
 
@@ -134,7 +158,7 @@ class MusicService {
             const songs = JSON.parse(text);
             return Array.isArray(songs) ? songs.map(this.mapSongToTrack).slice(0, limit) : [];
         } catch (error) {
-            console.error('Error searching tracks from backend:', error);
+            this.logError('Error searching tracks from backend', error);
             return [];
         }
     }
@@ -152,7 +176,7 @@ class MusicService {
             const data = await (await this.handleResponse(response)).json();
             return data.success;
         } catch (error) {
-            console.error('Error toggling favorite:', error);
+            this.logError('Error toggling favorite', error);
             return false;
         }
     }
@@ -168,7 +192,7 @@ class MusicService {
             const songs = await (await this.handleResponse(response)).json();
             return songs.map((s: any) => ({ ...this.mapSongToTrack(s), isFavorite: true }));
         } catch (error) {
-            console.error('Error fetching favorites:', error);
+            this.logError('Error fetching favorites', error);
             return [];
         }
     }
@@ -186,7 +210,7 @@ class MusicService {
             const data = await (await this.handleResponse(response)).json();
             return data.success;
         } catch (error) {
-            console.error('Error toggling wishlist:', error);
+            this.logError('Error toggling wishlist', error);
             return false;
         }
     }
@@ -202,7 +226,7 @@ class MusicService {
             const songs = await (await this.handleResponse(response)).json();
             return songs.map((s: any) => ({ ...this.mapSongToTrack(s), isInWishlist: true }));
         } catch (error) {
-            console.error('Error fetching wishlist:', error);
+            this.logError('Error fetching wishlist', error);
             return [];
         }
     }
@@ -217,8 +241,110 @@ class MusicService {
             const songs = await response.json();
             return songs.map((s: any) => this.mapSongToTrack(s));
         } catch (error) {
-            console.error('Error fetching trending tracks:', error);
+            this.logError('Error fetching trending tracks', error);
             return [];
+        }
+    }
+
+    /**
+     * Track Play
+     */
+    async trackPlay(songId: string): Promise<void> {
+        try {
+            await fetch(`${this.baseUrl}/${songId}/play`, {
+                method: 'POST',
+                headers: this.getHeaders()
+            });
+        } catch (error) {
+            this.logError('Error tracking play', error);
+        }
+    }
+
+    /**
+     * Get Lyrics
+     */
+    async getLyrics(songId: string): Promise<string> {
+        try {
+            const response = await fetch(`${this.baseUrl}/${songId}/lyrics`, {
+                headers: this.getHeaders()
+            });
+            const data = await response.json();
+            return data.lyrics;
+        } catch (error) {
+            this.logError('Error getting lyrics', error);
+            return 'Lyrics not available.';
+        }
+    }
+
+    /**
+     * Playlist Management
+     */
+    async getMyPlaylists(): Promise<Playlist[]> {
+        try {
+            const response = await fetch(`${this.baseUrl}/playlists`, {
+                headers: this.getHeaders()
+            });
+            const data = await (await this.handleResponse(response)).json();
+            return (data || []).map((pl: any) => this.mapPlaylist(pl));
+        } catch (error) {
+            this.logError('Error fetching playlists', error);
+            return [];
+        }
+    }
+
+    async createPlaylist(name: string, description: string = ''): Promise<Playlist | null> {
+        try {
+            const response = await fetch(`${this.baseUrl}/playlists`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({ name, description })
+            });
+            const data = await (await this.handleResponse(response)).json();
+            return this.mapPlaylist(data);
+        } catch (error) {
+            this.logError('Error creating playlist', error);
+            return null;
+        }
+    }
+
+    async addSongToPlaylist(playlistId: string, songId: string): Promise<Playlist | null> {
+        try {
+            const response = await fetch(`${this.baseUrl}/playlists/${playlistId}/add/${songId}`, {
+                method: 'POST',
+                headers: this.getHeaders()
+            });
+            const data = await (await this.handleResponse(response)).json();
+            return this.mapPlaylist(data);
+        } catch (error) {
+            this.logError('Error adding song to playlist', error);
+            return null;
+        }
+    }
+
+    async removeSongFromPlaylist(playlistId: string, songId: string): Promise<Playlist | null> {
+        try {
+            const response = await fetch(`${this.baseUrl}/playlists/${playlistId}/remove/${songId}`, {
+                method: 'DELETE',
+                headers: this.getHeaders()
+            });
+            return await (await this.handleResponse(response)).json();
+        } catch (error) {
+            this.logError('Error removing song from playlist', error);
+            return null;
+        }
+    }
+
+    async deletePlaylist(playlistId: string): Promise<boolean> {
+        try {
+            const response = await fetch(`${this.baseUrl}/playlists/${playlistId}`, {
+                method: 'DELETE',
+                headers: this.getHeaders()
+            });
+            const data = await (await this.handleResponse(response)).json();
+            return data.success;
+        } catch (error) {
+            this.logError('Error deleting playlist', error);
+            return false;
         }
     }
 
@@ -231,7 +357,7 @@ class MusicService {
             if (!response.ok) return [];
             return await response.json();
         } catch (error) {
-            console.error('Error fetching albums:', error);
+            this.logError('Error fetching albums', error);
             return [];
         }
     }
@@ -245,7 +371,57 @@ class MusicService {
             if (!response.ok) return [];
             return await response.json();
         } catch (error) {
-            console.error('Error fetching artists:', error);
+            this.logError('Error fetching artists', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get Languages
+     */
+    async getLanguages(): Promise<string[]> {
+        try {
+            const response = await fetchWithAuth(`${this.baseUrl}/languages`);
+            if (!response.ok) return [];
+            return await response.json();
+        } catch (error) {
+            this.logError('Error fetching languages', error);
+            return [];
+        }
+    }
+
+    async getTracksByLanguage(language: string): Promise<Track[]> {
+        try {
+            const response = await fetchWithAuth(`${this.baseUrl}/language/${encodeURIComponent(language)}`);
+            if (!response.ok) return [];
+            const songs = await response.json();
+            return songs.map((s: any) => this.mapSongToTrack(s));
+        } catch (error) {
+            this.logError(`Error fetching tracks for language ${language}`, error);
+            return [];
+        }
+    }
+
+    async getTracksByArtist(artist: string): Promise<Track[]> {
+        try {
+            const response = await fetchWithAuth(`${this.baseUrl}/artist/${encodeURIComponent(artist)}`);
+            if (!response.ok) return [];
+            const songs = await response.json();
+            return songs.map((s: any) => this.mapSongToTrack(s));
+        } catch (error) {
+            this.logError(`Error fetching tracks for artist ${artist}`, error);
+            return [];
+        }
+    }
+
+    async getTracksByAlbum(album: string): Promise<Track[]> {
+        try {
+            const response = await fetchWithAuth(`${this.baseUrl}/album/${encodeURIComponent(album)}`);
+            if (!response.ok) return [];
+            const songs = await response.json();
+            return songs.map((s: any) => this.mapSongToTrack(s));
+        } catch (error) {
+            this.logError(`Error fetching tracks for album ${album}`, error);
             return [];
         }
     }

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/music")
@@ -132,8 +133,58 @@ public class MusicController {
         return ResponseEntity.ok(musicService.getArtists());
     }
 
+    @GetMapping("/languages")
+    public ResponseEntity<List<String>> getLanguages(@RequestHeader("Authorization") String token) {
+        if (authHeaderInvalid(token))
+            return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(musicService.getLanguages());
+    }
+
+    @GetMapping("/language/{language}")
+    public ResponseEntity<List<Song>> getSongsByLanguage(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String language) {
+        if (authHeaderInvalid(token))
+            return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(musicService.getSongsByLanguage(language));
+    }
+
+    @GetMapping("/artist/{artist}")
+    public ResponseEntity<List<Song>> getSongsByArtist(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String artist) {
+        if (authHeaderInvalid(token))
+            return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(musicService.getSongsByArtist(artist));
+    }
+
+    @GetMapping("/album/{album}")
+    public ResponseEntity<List<Song>> getSongsByAlbum(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String album) {
+        if (authHeaderInvalid(token))
+            return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(musicService.getSongsByAlbum(album));
+    }
+
     private boolean authHeaderInvalid(String token) {
         return token == null || token.isEmpty() || authService.getUserFromToken(token) == null;
+    }
+
+    @PostMapping("/{songId}/play")
+    public ResponseEntity<ApiResponse<String>> trackPlay(
+            @RequestHeader(value = "Authorization", required = false) String token,
+            @PathVariable Long songId) {
+        // Optional auth: we track even if not logged in, but would be better to link to
+        // user if logged in
+        musicService.trackPlay(songId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Play tracked"));
+    }
+
+    @GetMapping("/{songId}/lyrics")
+    public ResponseEntity<Map<String, String>> getLyrics(@PathVariable Long songId) {
+        String lyrics = musicService.getLyrics(songId);
+        return ResponseEntity.ok(Map.of("lyrics", lyrics != null ? lyrics : "Lyrics not available for this track."));
     }
 
     @GetMapping("/stream/{filename}")
