@@ -158,14 +158,56 @@ public class MusicService {
     }
 
     /**
-     * Transform audio URLs in songs to use the correct base URL.
-     * This ensures existing database entries with localhost URLs work in
-     * production.
+     * External audio URLs from Free Music Archive (for production use).
+     * These are used when local files are not available.
+     */
+    private static final String[] EXTERNAL_AUDIO_URLS = {
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Scott_Holmes/Inspiring__Upbeat_Music/Scott_Holmes_-_04_-_Upbeat_Party.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Algorithms.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Scott_Holmes/Inspiring__Upbeat_Music/Scott_Holmes_-_04_-_Upbeat_Party.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/KieLoKaz/Free_Ganymed/KieLoKaz_-_03_-_Wow_Kielokaz_ID_359.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Kai_Engel/Satin/Kai_Engel_-_04_-_Sentinel.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Komiku/Its_time_for_adventure/Komiku_-_04_-_Skate.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Algorithms.mp3",
+            "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Scott_Holmes/Inspiring__Upbeat_Music/Scott_Holmes_-_04_-_Upbeat_Party.mp3"
+    };
+
+    /**
+     * Transform audio URLs in songs to use external URLs in production.
+     * In production (non-localhost baseUrl), local stream URLs won't work
+     * because Render doesn't have persistent file storage.
+     * We map song_X.mp3 URLs to external Free Music Archive URLs.
      */
     private List<Song> transformSongUrls(List<Song> songs) {
+        boolean isProduction = !baseUrl.contains("localhost");
+
         for (Song song : songs) {
             String audioUrl = song.getAudioUrl();
-            if (audioUrl != null && audioUrl.contains("localhost:8080")) {
+            if (audioUrl == null)
+                continue;
+
+            // In production, replace local streaming URLs with external audio URLs
+            if (isProduction && audioUrl.contains("/api/music/stream/song_")) {
+                // Extract song number from URL like ".../stream/song_5.mp3"
+                try {
+                    String filename = audioUrl.substring(audioUrl.lastIndexOf("/") + 1);
+                    String numberPart = filename.replace("song_", "").replace(".mp3", "");
+                    int songIndex = Integer.parseInt(numberPart);
+                    if (songIndex >= 0 && songIndex < EXTERNAL_AUDIO_URLS.length) {
+                        song.setAudioUrl(EXTERNAL_AUDIO_URLS[songIndex]);
+                    } else {
+                        // Default to first external URL if index out of bounds
+                        song.setAudioUrl(EXTERNAL_AUDIO_URLS[0]);
+                    }
+                } catch (Exception e) {
+                    // If parsing fails, use default external URL
+                    song.setAudioUrl(EXTERNAL_AUDIO_URLS[0]);
+                }
+            }
+            // In development, replace localhost:8080 with configured baseUrl
+            else if (audioUrl.contains("localhost:8080")) {
                 song.setAudioUrl(audioUrl.replace("http://localhost:8080", baseUrl));
             }
         }
