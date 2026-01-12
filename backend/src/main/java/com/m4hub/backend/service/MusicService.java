@@ -36,6 +36,9 @@ public class MusicService {
     @Value("${jamendo.api.client_id:56d30c95}")
     private String clientId;
 
+    @Value("${app.base-url:http://localhost:8080}")
+    private String baseUrl;
+
     public MusicService(SongRepository songRepository,
             FavoriteRepository favoriteRepository,
             WishlistRepository wishlistRepository,
@@ -83,6 +86,12 @@ public class MusicService {
                 if (songRepository.findByExternalId(song.getExternalId()).isEmpty()) {
                     // Ensure ID is null so JPA generates a new one
                     song.setId(null);
+                    // Rewrite localhost URLs to use configured baseUrl (for production)
+                    String audioUrl = song.getAudioUrl();
+                    if (audioUrl != null && audioUrl.contains("localhost:8080")) {
+                        audioUrl = audioUrl.replace("http://localhost:8080", baseUrl);
+                        song.setAudioUrl(audioUrl);
+                    }
                     songRepository.save(song);
                     savedCount++;
                 }
@@ -148,12 +157,27 @@ public class MusicService {
         }
     }
 
+    /**
+     * Transform audio URLs in songs to use the correct base URL.
+     * This ensures existing database entries with localhost URLs work in
+     * production.
+     */
+    private List<Song> transformSongUrls(List<Song> songs) {
+        for (Song song : songs) {
+            String audioUrl = song.getAudioUrl();
+            if (audioUrl != null && audioUrl.contains("localhost:8080")) {
+                song.setAudioUrl(audioUrl.replace("http://localhost:8080", baseUrl));
+            }
+        }
+        return songs;
+    }
+
     public List<Song> getAllSongs() {
-        return songRepository.findAll();
+        return transformSongUrls(songRepository.findAll());
     }
 
     public List<Song> searchSongs(String query) {
-        return songRepository.searchSongs(query);
+        return transformSongUrls(songRepository.searchSongs(query));
     }
 
     // Favorite management
@@ -169,10 +193,11 @@ public class MusicService {
 
     public List<Song> getUserFavorites(Long userId) {
         List<Favorite> favs = favoriteRepository.findByUserId(userId);
-        return favs.stream()
+        List<Song> songs = favs.stream()
                 .map(f -> songRepository.findById(f.getSongId()).orElse(null))
                 .filter(s -> s != null)
                 .toList();
+        return transformSongUrls(songs);
     }
 
     // Wishlist management
@@ -188,10 +213,11 @@ public class MusicService {
 
     public List<Song> getUserWishlist(Long userId) {
         List<Wishlist> wishes = wishlistRepository.findByUserId(userId);
-        return wishes.stream()
+        List<Song> songs = wishes.stream()
                 .map(w -> songRepository.findById(w.getSongId()).orElse(null))
                 .filter(s -> s != null)
                 .toList();
+        return transformSongUrls(songs);
     }
 
     @Transactional
@@ -204,7 +230,7 @@ public class MusicService {
     }
 
     public List<Song> getTrendingSongs() {
-        return songRepository.findTopTracks();
+        return transformSongUrls(songRepository.findTopTracks());
     }
 
     public List<String> getAlbums() {
@@ -220,15 +246,15 @@ public class MusicService {
     }
 
     public List<Song> getSongsByLanguage(String language) {
-        return songRepository.findByLanguage(language);
+        return transformSongUrls(songRepository.findByLanguage(language));
     }
 
     public List<Song> getSongsByArtist(String artist) {
-        return songRepository.findByArtist(artist);
+        return transformSongUrls(songRepository.findByArtist(artist));
     }
 
     public List<Song> getSongsByAlbum(String albumName) {
-        return songRepository.findByAlbum(albumName);
+        return transformSongUrls(songRepository.findByAlbum(albumName));
     }
 
     @Transactional

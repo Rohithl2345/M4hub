@@ -2,6 +2,7 @@ package com.m4hub.backend.util;
 
 import com.m4hub.backend.model.Song;
 import com.m4hub.backend.repository.SongRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,9 @@ public class DataGenerator {
 
         private final SongRepository songRepository;
         private final Random random = new Random();
+
+        @Value("${app.base-url:http://localhost:8080}")
+        private String baseUrl;
 
         public DataGenerator(SongRepository songRepository) {
                 this.songRepository = songRepository;
@@ -111,7 +115,7 @@ public class DataGenerator {
                         String[] s = FEATURED_SONGS[i];
                         String externalUrl = s[3];
                         String filename = "song_" + i + ".mp3";
-                        String localUrl = "http://localhost:8080/api/music/stream/" + filename;
+                        String localUrl = baseUrl + "/api/music/stream/" + filename;
 
                         // Try to download and cache the file
                         boolean isDownloaded = downloadFile(externalUrl, "music-library/" + filename);
@@ -157,7 +161,7 @@ public class DataGenerator {
                 String filename = "song_" + audioIndex + ".mp3";
                 // Check if file exists to decide url
                 boolean exists = new java.io.File("music-library/" + filename).exists();
-                String audioUrl = exists ? "http://localhost:8080/api/music/stream/" + filename
+                String audioUrl = exists ? baseUrl + "/api/music/stream/" + filename
                                 : FEATURED_SONGS[audioIndex][3];
 
                 String imageUrl = "https://images.unsplash.com/photo-" + (1500000000000L + random.nextInt(1000000))
